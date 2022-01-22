@@ -82,4 +82,23 @@ export default class Urls {
       status: 201,
     };
   }
+  urlRerunRequest() {
+    return {
+      url: `${this._baseUrl}/api/reporting/v1/run-context-exchanges`,
+      status: 200,
+    };
+  }
+
+  urlRerunTestStart(testRunId: number, testId: number) {
+    return {
+      url: `${this._baseUrl}/api/reporting/v1/test-runs/${testRunId}/tests/${testId}`,
+      status: 200,
+    }
+  }
+  // urlGetRunId(ciRunId) {
+  //   return {
+  //     url: `${this._baseUrl}/api/tests/runs?ciRunId=${ciRunId}`,
+  //     status: 
+  //   }
+  // }
 }
