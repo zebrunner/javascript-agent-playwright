@@ -1,5 +1,6 @@
 // playwright.config.ts
 import {PlaywrightTestConfig, devices} from '@playwright/test';
+require('dotenv').config();
 
 const config: PlaywrightTestConfig = {
   forbidOnly: !!process.env.CI,
@@ -27,7 +28,7 @@ const config: PlaywrightTestConfig = {
     [
       './src/lib/zebReporter.ts',
       {
-        reporterBaseUrl: 'https://default.zebrunner.com',
+        reporterBaseUrl: 'https://webdriver.zebrunner.com',
         projectKey: 'DEF',
         enabled: true,
         concurrentTasks: 19,

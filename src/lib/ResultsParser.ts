@@ -175,9 +175,6 @@ export default class ResultsParser {
     const browserCapabilities = this.parseBrowserCapabilities(launchInfo);
     let testResults: testResult[] = [];
     for (const test of tests) {
-      // console.log('test', test.additionField);
-      let browser = test._testType?.fixtures[0]?.fixtures?.defaultBrowserType[0];
-
       for (const result of test.results) {
         testResults.push({
           suiteName: suiteName,
@@ -187,6 +184,7 @@ export default class ResultsParser {
           retry: result.retry,
           startedAt: new Date(result.startTime),
           endedAt: new Date(new Date(result.startTime).getTime() + result.duration),
+          browserCapabilities: browserCapabilities,
           // testCase: `${result.location.file?}${result.location.line?}:${result.location.column?}`,
           reason: `${this.cleanseReason(result.error?.message)} \n ${this.cleanseReason(
             result.error?.stack
@@ -282,15 +280,15 @@ export default class ResultsParser {
           .outputOptions([
             '-vsync 2'
           ])
-          .on("start", commandLine => {
-            console.log(`Spawned Ffmpeg with command: ${commandLine}`);
-          })
-          .on("error", (err, stdout, stderr) => {
-            console.log(err, stdout, stderr);
-          })
-          .on("end", (stdout, stderr) => {
-            console.log(stdout, stderr);
-          })
+          // .on("start", commandLine => {
+          //   console.log(`Spawned Ffmpeg with command: ${commandLine}`);
+          // })
+          // .on("error", (err, stdout, stderr) => {
+          //   console.log(err, stdout, stderr);
+          // })
+          // .on("end", (stdout, stderr) => {
+          //   console.log(stdout, stderr);
+          // })
           .saveToFile(convertedFilePath);
     } catch (error) {
       console.log(error)
