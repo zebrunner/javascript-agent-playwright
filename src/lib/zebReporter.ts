@@ -7,8 +7,6 @@ import SlackReporter from './SlackReporter';
 import { tcmEvents } from './constants';
 import { parseNotifications, parsePwConfig, parseTcmRunOptions, parseTcmTestOptions } from './utils';
 
-const mockFailedTestNames = ['nested foo > foo - l2  > basic test @broke', 'nested foo > foo - l2  > my test1'];
-
 export type zebrunnerConfig = {
   enabled: boolean;
   reportingServerHostname: string,
@@ -78,7 +76,7 @@ class ZebRunnerReporter implements Reporter {
       }
 
       if (!this.rerunConfig.runAllowed) {
-        throw new Error(this.rerunConfig.reason);
+        throw new Error(`${this.rerunConfig.reason}`);
       }
 
       const recursiveTestsTraversal = (suite) => {
@@ -167,7 +165,7 @@ class ZebRunnerReporter implements Reporter {
     let testRunName = testResults.testRunName;
 
     await this.startTestRuns(runStartTime, testRunName);
-    
+
     console.log('testRuns >>', this.testRunId);
     
     const runTags = this.createRunTags();

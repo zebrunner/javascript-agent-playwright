@@ -421,8 +421,6 @@ export default class ZebAgent {
   async rerunRequest(payload) {
     try {
       const endpoint = this._urls.urlRerunRequest();
-      console.log(this._header);
-      console.log(payload)
       let r = await this._api.post({
         url: endpoint.url,
         payload,
