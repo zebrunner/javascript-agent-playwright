@@ -1,6 +1,6 @@
-# pw-zeb ![Biulds](https://github.com/ryanrosello-og/zebrunner-playwright-agent/actions/workflows/main.yml/badge.svg) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ryanrosello-og/zebrunner-playwright-agent/blob/master/LICENSE)
+<!-- # pw-zeb ![Biulds](https://github.com/ryanrosello-og/zebrunner-playwright-agent/actions/workflows/main.yml/badge.svg) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ryanrosello-og/zebrunner-playwright-agent/blob/master/LICENSE)
 
-> Publish [Playwright](https://playwright.dev/) test results directly to [Zebrunner](https://zebrunner.com/) after the completion of all test suite execution.
+> Publish [Playwright](https://playwright.dev/) test results directly to [Zebrunner](https://zebrunner.com/) after the completion of all test suite execution. -->
 
 # Setup
 
@@ -8,21 +8,50 @@ Run the following:
 
 `yarn add zebrunner-playwright-agent -D`
 
-Modify your playwright config by enabling the reporter.  You will need to update the `reporterBaseUrl` and `projectKey` keys to match your account.
+It is currently possible to provide the configuration via:
+- Environment variables
+- Playwright config
+
+Environment variables:
+- `REPORTING_ENABLED` - `mandatory`, enables or disables reporting. The default value is false. If disabled, the agent will use no op component implementations that will simply log output for tracing purposes with the trace level;
+- `REPORTING_SERVER_HOSTNAME` - `mandatory` if reporting is enabled. It is Zebrunner server hostname. It can be obtained in Zebrunner on the 'Account & profile' page under the 'Service URL' section;
+- `REPORTING_SERVER_ACCESS_TOKEN` - `mandatory` if reporting is enabled. Access token must be used to perform API calls. It can be obtained in Zebrunner on the 'Account & profile' page under the 'Token' section;
+- `REPORTING_PROJECT_KEY` - `optional` value. It is the project that the test run belongs to. The default value is DEF. You can manage projects in Zebrunner in the appropriate section;
+REPORTING_RUN_DISPLAY_NAME - optional value. It is the display name of the test run. The default value is Default Suite;
+REPORTING_RUN_BUILD - optional value. It is the build number that is associated with the test run. It can depict either the test build number or the application build number;
+REPORTING_RUN_ENVIRONMENT - optional value. It is the environment where the tests will run;
+REPORTING_RUN_RETRY_KNOWN_ISSUES - optional value. If set to false and test failed with an issue previously occurred for the test method, then the agent will ignore results of the IRetryAnalyzer assigned to test and stop retries. The default value is true;
+REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE - optional value. Specifies whether Zebrunner should send notification to Slack/Teams on each test failure. The notifications will be sent even if the suite is still running. The default value is false;
+REPORTING_NOTIFICATION_SLACK_CHANNELS - optional value. The list of comma-separated Slack channels to send notifications to. Notification will be sent only if Slack integration is properly configured in Zebrunner with valid credentials for the project the tests are reported to. Zebrunner can send two type of notifications: on each test failure (if appropriate property is enabled) and on suite finish;
+REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS - optional value. The list of comma-separated Microsoft Teams channels to send notifications to. Notification will be sent only if Teams integration is configured in Zebrunner project with valid webhooks for the channels. Zebrunner can send two type of notifications: on each test failure (if appropriate property is enabled) and on suite finish;
+REPORTING_NOTIFICATION_EMAILS - optional value. The list of comma-separated emails to send notifications to. This type of notification does not require further configuration on Zebrunner side. Unlike other notification mechanisms, Zebrunner can send emails only on suite finish;
+REPORTING_MILESTONE_ID - optional value. Id of the Zebrunner milestone to link the suite execution to. The id is not displayed on Zebrunner UI, so the field is basically used for internal purposes. If the milestone does not exist, appropriate warning message will be displayed in logs, but the test suite will continue executing;
+REPORTING_MILESTONE_NAME - optional value. Name of the Zebrunner milestone to link the suite execution to. If the milestone does not exist, appropriate warning message will be displayed in logs, but the test suite will continue executing.
 
 ```
   reporter: [
     [
       './node_modules/zebrunner-playwright-agent/src/build/src/lib/zebReporter.js',
       {
-        reporterBaseUrl: 'https://default.zebrunner.com',
-        projectKey: 'DEF',
         enabled: true,
-        concurrentTasks: 10,
+        reportingServerHostname: 'https://default.zebrunner.com',
+        reportingProjectKey: 'DEF',
+        reportingRunDisplayName: 'PW-tests',
+        reportingRunBuild: 'alpha-1',
+        reportingRunEnvironment: 'STAGE',
+        reportingNotificationSlackChannels: 'channel1,channel2',
+        reportingNotificationMsTeamsChannels: 'channel1,channel2',
+        reportingNotificationEmails: 'channel1,channel2',
+        reportingMilestoneId: '1',
+        reportingMilestoneName: 'test',
+        pwConcurrentTasks: 19,
       },
     ],
   ],
 ```
+
+
+
 
 Run your tests by providing your Zebrunner API_KEY as an environment variable:
 

@@ -23,7 +23,7 @@ export default class ZebAgent {
 
   constructor(config: zebrunnerConfig) {
     this._accessToken = process.env.REPORTING_SERVER_ACCESS_TOKEN;
-    this._projectKey = config.reportingProjectKey;
+    this._projectKey = config.reportingProjectKey || 'DEF';
     this._reportBaseUrl = config.reportingServerHostname;
 
     if (config.enabled) {
