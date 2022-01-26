@@ -1,4 +1,5 @@
 import { testRailLabels, xrayLabels, zephyrLabels } from "./constants";
+require('dotenv').config();
 
 export type TcmConfig = {
   xray: {
@@ -261,8 +262,104 @@ const parseTcmTestOptions = (data, tcmConfig) => {
   }).flat();
 };
 
+const parsePwConfig = (config) => {
+  const pwConfig = {
+    enabled: false,
+    reportingServerHostname: process.env.REPORTING_SERVER_HOSTNAME,
+    reportingProjectKey: process.env.REPORTING_PROJECT_KEY,
+    reportingRunDisplayName: process.env.REPORTING_RUN_DISPLAY_NAME,
+    reportingRunBuild: process.env.REPORTING_RUN_BUILD,
+    reportingRunEnvironment: process.env.REPORTING_RUN_ENVIRONMENT,
+    reportingNotificationSlackChannels: process.env.REPORTING_NOTIFICATION_SLACK_CHANNELS,
+    reportingNotificationMsTeamsChannels: process.env.REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS,
+    reportingNotificationEmails: process.env.REPORTING_NOTIFICATION_EMAILS,
+    reportingMilestoneId: process.env.REPORTING_MILESTONE_ID,
+    reportingMilestoneName: process.env.REPORTING_MILESTONE_NAME,
+    pwConcurrentTasks: 10,
+  };
+  const configObject = config.reporter[0][1];
+  Object.keys(configObject).forEach(key => {
+    if (key === 'enabled') {
+      pwConfig.enabled = _getConfigVar('ENABLED', configObject[key]);
+    }
+    if (key === 'reportingServerHostname') {
+      pwConfig.reportingServerHostname = _getConfigVar('REPORTING_SERVER_HOSTNAME', configObject[key])
+    }
+    if (key === 'reportingProjectKey') {
+      pwConfig.reportingProjectKey = _getConfigVar('REPORTING_PROJECT_KEY', configObject[key]);
+    }
+    if (key === 'reportingRunDisplayName') {
+      pwConfig.reportingRunDisplayName = _getConfigVar('REPORTING_RUN_DISPLAY_NAME', configObject[key]);
+    }
+    if (key === 'reportingRunBuild') {
+      pwConfig.reportingRunBuild = _getConfigVar('REPORTING_RUN_BUILD', configObject[key]);
+    }
+    if (key === 'reportingRunEnvironment') {
+      pwConfig.reportingRunEnvironment = _getConfigVar('REPORTING_RUN_ENVIRONMENT', configObject[key]);
+    }
+    if (key === 'reportingNotificationSlackChannels') {
+      pwConfig.reportingNotificationSlackChannels = _getConfigVar('REPORTING_NOTIFICATION_SLACK_CHANNELS', configObject[key]);
+    }
+    if (key === 'reportingNotificationMsTeamsChannels') {
+      pwConfig.reportingNotificationMsTeamsChannels = _getConfigVar('REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS', configObject[key]);
+    }
+    if (key === 'reportingNotificationEmails') {
+      pwConfig.reportingNotificationEmails = _getConfigVar('REPORTING_NOTIFICATION_EMAILS', configObject[key]);
+    }
+    if (key === 'reportingMilestoneId') {
+      pwConfig.reportingMilestoneId = _getConfigVar('REPORTING_MILESTONE_ID', configObject[key]);
+    }
+    if (key === 'reportingMilestoneName') {
+      pwConfig.reportingMilestoneName = _getConfigVar('REPORTING_MILESTONE_NAME', configObject[key]);
+    }
+    if (key === 'pwConcurrentTasks') {
+      pwConfig.pwConcurrentTasks = _getConfigVar('PW_CURRENT_TASKS', configObject[key]);
+    }
+  });
+
+  if (process.env.ENABLED) {
+    pwConfig.enabled = JSON.parse(process.env.ENABLED);
+  }
+
+  Object.keys(pwConfig).forEach((key) => {
+    if (!pwConfig[key]) {
+      delete pwConfig[key];
+    }
+  });
+
+  return pwConfig;
+}
+
+const _getConfigVar = (envVarName, configVar) => {
+  if (process.env[envVarName]) {
+    return process.env[envVarName];
+  } else if (configVar) {
+    return configVar;
+  } else {
+    return undefined;
+  }
+}
+
+const parseNotifications = (config) => {
+  const arr = [];
+  Object.keys(config).forEach((key) => {
+    if (key === 'reportingNotificationSlackChannels') {
+      arr.push({ type: 'SLACK_CHANNELS', value: config[key]});
+    }
+    if (key === 'reportingNotificationMsTeamsChannels') {
+      arr.push({ type: 'MS_TEAMS_CHANNELS', value: config[key]});
+    }
+    if (key === 'reportingNotificationEmails') {
+      arr.push({ type: 'EMAIL_RECIPIENTS', value: config[key]});
+    }
+  })
+  return arr;
+}
+
 export {
   sendEventToReporter,
   parseTcmRunOptions,
   parseTcmTestOptions,
+  parsePwConfig,
+  parseNotifications,
 };

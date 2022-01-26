@@ -4,24 +4,31 @@ import ZebAgent from './ZebAgent';
 import ResultsParser, {testResult, testRun} from './ResultsParser';
 import {PromisePool} from '@supercharge/promise-pool';
 import SlackReporter from './SlackReporter';
-import { tcmEvents, testRailLabels, xrayLabels, zephyrLabels } from './constants';
-import { parseTcmRunOptions, parseTcmTestOptions } from './utils';
+import { tcmEvents } from './constants';
+import { parseNotifications, parsePwConfig, parseTcmRunOptions, parseTcmTestOptions } from './utils';
 
 
 export type zebrunnerConfig = {
-  projectKey: string;
-  reporterBaseUrl: string;
   enabled: boolean;
-  concurrentTasks: number;
-  slackEnabled: boolean;
-  slackReportOnlyOnFailures: boolean;
-  slackDisplayNumberOfFailures: number;
-  slackReportingChannels: string;
-  slackStacktraceLength: number;
+  reportingServerHostname: string,
+  reportingProjectKey?: string,
+  reportingRunDisplayName?: string,
+  reportingRunBuild?: string,
+  reportingRunEnvironment?: string,
+  reportingNotificationSlackChannels?: string,
+  reportingNotificationMsTeamsChannels?: string,
+  reportingNotificationEmails?: string,
+  reportingMilestoneId?: string,
+  reportingMilestoneName?: string,
+  pwConcurrentTasks?: number,
+  slackEnabled?: boolean;
+  slackReportOnlyOnFailures?: boolean;
+  slackDisplayNumberOfFailures?: number;
+  slackReportingChannels?: string;
+  slackStacktraceLength?: number;
 };
 
 class ZebRunnerReporter implements Reporter {
-  private config!: FullConfig;
   private suite!: Suite;
   private zebConfig: zebrunnerConfig;
   private zebAgent: ZebAgent;
@@ -30,19 +37,7 @@ class ZebRunnerReporter implements Reporter {
   private tcmConfig: {};
 
   onBegin(config: FullConfig, suite: Suite) {
-    const configKeys = config.reporter.filter((f) => f[0].includes('zeb') || f[1]?.includes('zeb'));
-    this.zebConfig = {
-      projectKey: configKeys[0][1].projectKey,
-      reporterBaseUrl: configKeys[0][1].reporterBaseUrl,
-      enabled: configKeys[0][1].enabled,
-      concurrentTasks: configKeys[0][1].concurrentTasks,
-      slackEnabled: configKeys[0][1].slackEnabled,
-      slackReportOnlyOnFailures: configKeys[0][1].slackReportOnlyOnFailures,
-      slackDisplayNumberOfFailures: configKeys[0][1].slackDisplayNumberOfFailures,
-      slackReportingChannels: configKeys[0][1].slackReportingChannels,
-      slackStacktraceLength: configKeys[0][1].slackStacktraceLength,
-    };
-    this.config = config;
+    this.zebConfig = parsePwConfig(config);
     this.suite = suite;
     this.zebAgent = new ZebAgent(this.zebConfig);
   }
@@ -62,7 +57,7 @@ class ZebRunnerReporter implements Reporter {
     }
 
     if (type === tcmEvents.SET_MAINTAINER) {
-      test.maintainer = data
+      test.maintainer = data;
     }
   }
 
@@ -78,10 +73,10 @@ class ZebRunnerReporter implements Reporter {
     console.time('Duration');
     let zebrunnerResults = await this.postResultsToZebRunner(
       resultsParser.getRunStartTime(),
-      parsedResults
+      parsedResults,
     );
 
-    const slackResults = zebrunnerResults.testsExecutions.results;
+    // const slackResults = zebrunnerResults.testsExecutions.results;
     delete zebrunnerResults.testsExecutions.results; // omit results from printing
     console.log(zebrunnerResults);
     console.log(
@@ -92,20 +87,21 @@ class ZebRunnerReporter implements Reporter {
     console.timeEnd('Duration');
 
     // post to Slack (if enabled)
-    this.slackReporter = new SlackReporter(this.zebConfig);
-    if (this.slackReporter.isEnabled) {
-      let testSummary = await this.slackReporter.getSummaryResults(
-        this.testRunId,
-        slackResults,
-        resultsParser.build,
-        resultsParser.environment
-      );
-      await this.slackReporter.sendMessage(testSummary, zebrunnerResults.resultsLink);
-    }
+    // this.slackReporter = new SlackReporter(this.zebConfig);
+    // if (this.slackReporter.isEnabled) {
+    //   let testSummary = await this.slackReporter.getSummaryResults(
+    //     this.testRunId,
+    //     slackResults,
+    //     resultsParser.build,
+    //     resultsParser.environment
+    //   );
+    //   await this.slackReporter.sendMessage(testSummary, zebrunnerResults.resultsLink);
+    // }
   }
 
   async postResultsToZebRunner(runStartTime: number, testResults: testRun) {
     let testRunName = testResults.testRunName;
+
     await this.startTestRuns(runStartTime, testRunName);
     console.log('testRuns >>', this.testRunId);
     let testsExecutions = await this.startTestExecutions(this.testRunId, testResults.tests);
@@ -185,13 +181,21 @@ class ZebRunnerReporter implements Reporter {
   }
 
   async startTestRuns(runStartTime: number, testRunName: string): Promise<number> {
+    const targets = parseNotifications(this.zebConfig);
     let r = await this.zebAgent.startTestRun({
-      name: testRunName,
+      name: this.zebConfig.reportingRunDisplayName || testRunName || 'anonymous',
       startedAt: new Date(runStartTime).toISOString(),
-      framework: 'Playwright',
+      framework: 'playwright',
       config: {
-        environment: process.env.TEST_ENVIRONMENT ? process.env.TEST_ENVIRONMENT : '-',
-        build: process.env.BUILD_INFO ? process.env.BUILD_INFO : new Date().toISOString(),
+        environment: this.zebConfig.reportingRunEnvironment || '-',
+        build: this.zebConfig.reportingRunBuild || '1.0 alpha',
+      },
+      milestone: {
+        id: this.zebConfig.reportingMilestoneId,
+        name: this.zebConfig.reportingMilestoneName,
+      },
+      notifications: {
+        targets,
       },
     });
 
@@ -278,7 +282,6 @@ class ZebRunnerReporter implements Reporter {
     const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
       .for(tests)
       .process(async (test: testResult, index, pool) => {
-
         let testExecResponse = await this.zebAgent.startTestExecution(testRunId, {
           name: test.name,
           className: test.suiteName,
@@ -296,7 +299,6 @@ class ZebRunnerReporter implements Reporter {
     const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
       .for(tests)
       .process(async (test: testResult, index, pool) => {
-        // console.log('start', test.startedAt);
         let r = await this.zebAgent.finishTestExecution(testRunId, test.testId, {
           result: test.status,
           reason: test.reason,
