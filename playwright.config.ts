@@ -41,13 +41,9 @@ const config: PlaywrightTestConfig = {
         reportingMilestoneId: '1',
         reportingMilestoneName: 'test',
         // pwConcurrentTasks: 19,
-        // slackEnabled: true,
-        // slackDisplayNumberOfFailures: 10,
-        // slackReportOnlyOnFailures: true,
-        // slackReportingChannels: 'zeb,general',
-        // slackStacktraceLength: 270,
       },
     ],
   ],
 };
+
 export default config;

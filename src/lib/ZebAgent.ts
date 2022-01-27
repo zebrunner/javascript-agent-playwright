@@ -104,14 +104,18 @@ export default class ZebAgent {
       }[];
     }
   }): Promise<AxiosResponse> {
-    let endpoint = this._urls.urlRegisterRun();
-    let r = await this._api.post({
-      url: endpoint.url,
-      payload: payload,
-      expectedStatusCode: endpoint.status,
-      config: this._header,
-    });
-    return r;
+    try {
+      let endpoint = this._urls.urlRegisterRun();
+      let r = await this._api.post({
+        url: endpoint.url,
+        payload: payload,
+        expectedStatusCode: endpoint.status,
+        config: this._header,
+      });
+      return r;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async startTestExecution(
@@ -124,9 +128,30 @@ export default class ZebAgent {
       maintainer?: string;
       testCase?: string;
       labels?: {key: string; value: string}[];
+      argumentsIndex: number;
     }
   ): Promise<AxiosResponse> {
     let endpoint = this._urls.urlStartTest(testRunId);
+    let r = await this._api.post({
+      url: endpoint.url,
+      payload: payload,
+      expectedStatusCode: endpoint.status,
+      config: this._header,
+    });
+    return r;
+  }
+
+  async startRerunTestExecution(testRunId: number, testId: number, payload: {
+    name: string;
+      className: string;
+      methodName: string;
+      startedAt: Date;
+      maintainer?: string;
+      testCase?: string;
+      labels?: {key: string; value: string}[];
+      argumentsIndex: number;
+  }) {
+    let endpoint = this._urls.urlRerunTestStart(testRunId, testId);
     let r = await this._api.post({
       url: endpoint.url,
       payload: payload,
@@ -391,5 +416,20 @@ export default class ZebAgent {
       config: this._header,
     });
     return r;
+  }
+
+  async rerunRequest(payload) {
+    try {
+      const endpoint = this._urls.urlRerunRequest();
+      let r = await this._api.post({
+        url: endpoint.url,
+        payload,
+        expectedStatusCode: endpoint.status,
+        config: this._header,
+      })
+      return r;
+    } catch (error) {
+      console.log('err',error)
+    }
   }
 }
