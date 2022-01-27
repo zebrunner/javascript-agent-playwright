@@ -1,20 +1,32 @@
+import {zebrunnerConfig} from './zebReporter';
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegPath);
+let UAParser = require('ua-parser-js');
+let parser = new UAParser();
+
 export type testResult = {
   suiteName: string;
   name: string;
   testId?: number;
   testRunId?: number;
-  attachment?: string;
-  browser: string;
-  endedAt: string;
+  attachment?: {
+    video: Record<string, string>[];
+    files: Record<string, string>[];
+    screenshots: Record<string, number>[];
+  };
+  browserCapabilities: browserCapabilities;
+  endedAt: Date;
   reason: string;
   retry: number;
-  startedAt: string;
+  startedAt: Date;
   status: 'FAILED' | 'PASSED' | 'SKIPPED' | 'ABORTED';
   tags: {
     key: string;
     value: string;
   }[];
   steps?: testStep[];
+  maintainer: string;
 };
 
 export type testStep = {
@@ -23,6 +35,31 @@ export type testStep = {
   message: string;
   testId?: number;
 };
+
+export type browserCapabilities = {
+    ua: string;
+    browser: {
+      name: string;
+      version: string;
+      major: string;
+    };
+    engine: { 
+      name: string;
+      version: string; 
+    };
+    os: { 
+      name: string;
+      version: string;
+    };
+    device: { 
+      vendor: string | undefined;
+      model: string | undefined;
+      type: string | undefined;
+      };
+    cpu: { 
+      architecture: string;
+    };
+}
 
 export type testSuite = {
   testSuite: {
@@ -36,24 +73,60 @@ export type testRun = {
   tests: testResult[];
   testRunId?: number;
   title: string;
+  testRunName: string;
+  build: string;
+  environment: string;
+};
+
+export type testSummary = {
+  build: string;
+  environment: string;
+  passed: number;
+  failed: number;
+  skipped: number;
+  aborted: number;
+  duration: number;
+  failures: {
+    zebResult: string;
+    test: string;
+    message: string;
+  }[];
 };
 
 export default class ResultsParser {
   private _resultsData: any;
   private _result: testRun;
+  private _build: string;
+  private _environment: string;
 
-  constructor(results) {
+  constructor(results, config: zebrunnerConfig) {
+    this._build = config?.reportingRunBuild ? config?.reportingRunBuild  : '1.0 alpha(default)';
+    this._environment = config?.reportingRunEnvironment ? config?.reportingRunEnvironment : '-';
     this._result = {
       tests: [],
       testRunId: 0,
       title: '',
+      testRunName: config?.reportingRunDisplayName ? config?.reportingRunDisplayName : 'Default Suite',
+      build: this._build,
+      environment: this._environment,
     };
     this._resultsData = results;
-    console.log(this._resultsData);
+  }
+
+  public get build() {
+    return this._build;
+  }
+
+  public get environment() {
+    return this._environment;
   }
 
   async getParsedResults(): Promise<testRun> {
     return this._result;
+  }
+
+  getRunStartTime(): number {
+    return new Date(this._result.tests[0].startedAt).getTime() - 1000;
   }
 
   async parse() {
@@ -65,11 +138,13 @@ export default class ResultsParser {
   }
 
   async parseTestSuite(suite, suiteIndex = 0) {
+    const launchInfo = suite.project();
     let testResults = [];
     if (suite.suites?.length > 0) {
       testResults = await this.parseTests(
         suite.parent.title ? `${suite.parent.title} > ${suite.title}` : suite.title,
-        suite.tests
+        suite.tests,
+        launchInfo,
       );
       this.updateResults({
         tests: testResults,
@@ -78,41 +153,11 @@ export default class ResultsParser {
     } else {
       testResults = await this.parseTests(
         suite.parent.title ? `${suite.parent.title} > ${suite.title}` : suite.title,
-        suite.tests
+        suite.tests,
+        launchInfo
       );
       this.updateResults({
         tests: testResults,
-      });
-      return;
-    }
-  }
-
-  async parseGroupedByTestSuite() {
-    for (const project of this._resultsData.suites) {
-      for (const testSuite of project.suites) {
-        await this.parseByTestSuite(testSuite);
-      }
-    }
-  }
-
-  async parseByTestSuite(suite, suiteIndex = 0) {
-    let testResults = [];
-    if (suite.suites?.length > 0) {
-      testResults = await this.parseTests(suite.title, suite.tests);
-      this.updateResults({
-        testSuite: {
-          title: suite.parent.title ? `${suite.parent.title} > ${suite.title}` : suite.title,
-          tests: testResults,
-        },
-      });
-      await this.parseByTestSuite(suite.suites[suiteIndex], suiteIndex++);
-    } else {
-      testResults = await this.parseTests(suite.title, suite.tests);
-      this.updateResults({
-        testSuite: {
-          title: suite.parent.title ? `${suite.parent.title} > ${suite.title}` : suite.title,
-          tests: testResults,
-        },
       });
       return;
     }
@@ -124,31 +169,36 @@ export default class ResultsParser {
     }
   }
 
-  async parseTests(suiteName, tests) {
+  async parseTests(suiteName, tests, launchInfo) {
+    const browserCapabilities = this.parseBrowserCapabilities(launchInfo);
     let testResults: testResult[] = [];
-
     for (const test of tests) {
-      let browser = test._testType?.fixtures[0]?.fixtures?.defaultBrowserType[0];
       for (const result of test.results) {
         testResults.push({
           suiteName: suiteName,
           name: `${suiteName} > ${test.title}`,
-          tags: this.getTestTags(test.title),
+          tags: this.getTestTags(test.title, test.tcmTestOptions),
           status: this.determineStatus(result.status),
           retry: result.retry,
-          startedAt: new Date(result.startTime).toISOString(),
-          endedAt: new Date(new Date(result.startTime).getTime() + result.duration).toISOString(),
+          startedAt: new Date(result.startTime),
+          endedAt: new Date(new Date(result.startTime).getTime() + result.duration),
+          browserCapabilities: browserCapabilities,
           // testCase: `${result.location.file?}${result.location.line?}:${result.location.column?}`,
           reason: `${this.cleanseReason(result.error?.message)} \n ${this.cleanseReason(
             result.error?.stack
           )}`,
           attachment: this.processAttachment(result.attachments),
-          browser: browser,
           steps: this.getTestSteps(result.steps),
+          maintainer: test.maintainer || 'anonymous',
         });
       }
     }
     return testResults;
+  }
+
+  parseBrowserCapabilities (launchInfo) {
+    parser.setUA(launchInfo.use.userAgent);
+    return parser.getResult();
   }
 
   cleanseReason(rawReason) {
@@ -164,25 +214,84 @@ export default class ResultsParser {
       : '';
   }
 
-  getTestTags(testTitle) {
-    let tags = testTitle.match(/@\w*/g);
+  getTestTags(testTitle, tcmTestOptions) {
+    let tags = testTitle.match(/@\w*/g) || [];
 
-    if (tags) {
-      return tags.map((c) => ({key: 'tag', value: c.replace('@', '')}));
+    if (tcmTestOptions) {
+      tcmTestOptions.forEach((el) => {
+        tags.push(el);
+      })
+    }
+    
+    if (tags.length !== 0) {
+      return tags.map((c) => {
+        if (typeof c === 'string') {
+          return {key: 'tag', value: c.replace('@', '')}
+        }
+        if (typeof c === 'object') {
+          return c;
+        }
+      });
     }
     return null;
   }
 
   processAttachment(attachment) {
     if (attachment) {
-      let screenshot = attachment.filter((a) => a.contentType === 'image/png');
-      if (screenshot.length > 0) {
-        // TODO: there could be more than one screenshot?
-        return screenshot[0].path;
-      }
+      let attachmentObj = {
+        video: [],
+        files: [],
+        screenshots: [],
+      };
+      attachment.forEach(async (el) => {
+        if (el.contentType === 'video/webm') {
+          await this.convertVideo(el.path, 'mp4');
+          attachmentObj.video.push({
+            path: el.path.replace('.webm', '.mp4'),
+            timestamp: Date.now(),
+          });
+        }
+        if (el.contentType === 'application/zip') {
+          attachmentObj.files.push({
+            path: el.path,
+            timestamp: Date.now(),
+          });
+        }
+        if (el.contentType === 'image/png') {
+          attachmentObj.screenshots.push({
+            path: el.path,
+            timestamp: Date.now(),
+          });
+        }
+      });
+      return attachmentObj;
     }
     return null;
   }
+
+  async convertVideo (path, format) {
+    try {
+      const fileName = path.replace('.webm', '');
+      const convertedFilePath = `${fileName}.${format}`;
+        await ffmpeg(path)
+          .toFormat(format)
+          .outputOptions([
+            '-vsync 2'
+          ])
+          // .on("start", commandLine => {
+          //   console.log(`Spawned Ffmpeg with command: ${commandLine}`);
+          // })
+          // .on("error", (err, stdout, stderr) => {
+          //   console.log(err, stdout, stderr);
+          // })
+          // .on("end", (stdout, stderr) => {
+          //   console.log(stdout, stderr);
+          // })
+          .saveToFile(convertedFilePath);
+    } catch (error) {
+      console.log(error)
+    }
+  };
 
   determineStatus(status) {
     if (status === 'failed') return 'FAILED';

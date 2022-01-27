@@ -2,9 +2,11 @@ import {AxiosResponse} from 'axios';
 import Logger from '../lib/Logger';
 import Api from './Api';
 import Urls from './Urls';
-import {readFileSync} from 'fs';
+import * as fs from 'fs';
 import {randomUUID} from 'crypto';
-import {testStep} from './ResultsParser';
+import {browserCapabilities, testStep} from './ResultsParser';
+import {zebrunnerConfig} from './zebReporter';
+const FormData = require('form-data');
 
 export default class ZebAgent {
   private _refreshToken: string;
@@ -19,21 +21,18 @@ export default class ZebAgent {
   private readonly _defaultConcurrentTask = 10;
   private readonly _maximumConcurrentTask = 20;
 
-  constructor(config: {reporter: any[]}) {
-    const zebRunnerConf = config.reporter.filter(
-      (f) => f[0].includes('zeb') || f[1]?.includes('zeb')
-    );
-    this._accessToken = process.env.ZEB_API_KEY;
-    this._projectKey = zebRunnerConf[0][1].projectKey;
-    this._reportBaseUrl = zebRunnerConf[0][1].reporterBaseUrl;
+  constructor(config: zebrunnerConfig) {
+    this._accessToken = process.env.REPORTING_SERVER_ACCESS_TOKEN;
+    this._projectKey = config.reportingProjectKey || 'DEF';
+    this._reportBaseUrl = config.reportingServerHostname;
 
-    if (zebRunnerConf[0][1].enabled) {
+    if (config.enabled) {
       this._enabled = true;
     } else {
       this._enabled = false;
     }
 
-    this._concurrentTasks = zebRunnerConf[0][1].concurrentTasks || this._defaultConcurrentTask;
+    this._concurrentTasks = config.pwConcurrentTasks || this._defaultConcurrentTask;
 
     if (this._concurrentTasks > this._maximumConcurrentTask) {
       this._concurrentTasks = this._maximumConcurrentTask;
@@ -97,6 +96,13 @@ export default class ZebAgent {
     framework: string;
     config?: any;
     milestone?: any;
+    notifications: {
+      notifyOnEachFailure: boolean;
+      targets: {
+        type: string;
+        value: string;
+      }[];
+    }
   }): Promise<AxiosResponse> {
     let endpoint = this._urls.urlRegisterRun();
     let r = await this._api.post({
@@ -114,7 +120,7 @@ export default class ZebAgent {
       name: string;
       className: string;
       methodName: string;
-      startedAt: string;
+      startedAt: Date;
       maintainer?: string;
       testCase?: string;
       labels?: {key: string; value: string}[];
@@ -136,17 +142,21 @@ export default class ZebAgent {
     payload: {
       result: 'PASSED' | 'FAILED' | 'ABORTED' | 'SKIPPED';
       reason?: string;
-      endedAt?: string;
+      endedAt?: Date;
     }
   ): Promise<AxiosResponse> {
-    let endpoint = this._urls.urlFinishTest(testRunId, testId);
-    let r = await this._api.put({
-      url: endpoint.url,
-      payload: payload,
-      expectedStatusCode: endpoint.status,
-      config: this._header,
-    });
-    return r;
+    try {
+      let endpoint = this._urls.urlFinishTest(testRunId, testId);
+      let r = await this._api.put({
+        url: endpoint.url,
+        payload: payload,
+        expectedStatusCode: endpoint.status,
+        config: this._header,
+      });
+      return r;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async finishTestRun(
@@ -168,25 +178,107 @@ export default class ZebAgent {
   async attachScreenshot(
     testRunId?: number,
     testId?: number,
-    imagePath?: string
+    screenshotsArray?: Record<string, number>[]
   ): Promise<AxiosResponse> {
-    if (!imagePath) return;
+    if (screenshotsArray.length === 0) return;
 
-    const file = readFileSync(imagePath);
-    const endpoint = this._urls.urlScreenshots(testRunId, testId);
-    let r = await this._api.post({
-      url: endpoint.url,
-      payload: Buffer.from(file),
-      expectedStatusCode: endpoint.status,
-      config: {
-        headers: {
-          Authorization: this._refreshToken,
-          'Content-Type': 'image/png',
+    const screenshotsPromises = screenshotsArray.map((screenshot) => {
+      const file = fs.readFileSync(screenshot.path);
+      const endpoint = this._urls.urlScreenshots(testRunId, testId);
+      return this._api.post({
+        url: endpoint.url,
+        payload: Buffer.from(file),
+        expectedStatusCode: endpoint.status,
+        config: {
+          headers: {
+            Authorization: this._refreshToken,
+            'Content-Type': 'image/png',
+            'x-zbr-screenshot-captured-at': screenshot.timestamp,
+          },
         },
-      },
+      });
     });
-    return r;
+
+    const response = await Promise.all(screenshotsPromises);
+
+    return response[0];
   }
+
+  async attachTestArtifacts(
+    testRunId?: number,
+    testId?: number,
+    artifactsAttachments?: Record<string, string>[]
+  ): Promise<AxiosResponse> {
+    if (artifactsAttachments.length === 0) {
+      return;
+    }
+    try {
+      const artifactsPromises = artifactsAttachments.map((file) => {
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(file.path));
+        const endpoint = this._urls.urlTestArtifacts(testRunId, testId);
+        const contentTypeHeader = formData.getHeaders()['content-type'];
+        return this._api.post({
+          url: endpoint.url,
+          payload: formData,
+          expectedStatusCode: endpoint.status,
+          config: {
+            headers: {
+              Authorization: this._refreshToken,
+              'Content-Type': contentTypeHeader,
+              Accept: '*/*',
+            },
+          },
+        });
+      });
+      const response = await Promise.all(artifactsPromises);
+      return response[0];
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async sendVideoArtifacts(
+    testRunId: number,
+    testSessionId: number,
+    videoPathsArray: Record<string, string>[]
+  ) {
+    if (videoPathsArray.length === 0) {
+      return;
+    }
+
+    const promise = videoPathsArray.map((video) => {
+      const formData = new FormData();
+
+      formData.append('video', fs.createReadStream(video.path));
+      const endpoint = this._urls.urlSessionArtifacts(testRunId, testSessionId);
+      const contentTypeHeader = formData.getHeaders()['content-type'];
+      const fileSize = this._getFileSizeInBytes(video.path);
+      return this._api.post({
+        url: endpoint.url,
+        payload: formData,
+        expectedStatusCode: endpoint.status,
+        config: {
+          headers: {
+            Authorization: this._refreshToken,
+            'Content-Type': contentTypeHeader,
+            Accept: '*/*',
+            'x-zbr-video-content-length': fileSize,
+          },
+        },
+      });
+    });
+
+    const response = await Promise.all(promise);
+    return response[0];
+  }
+
+  _getFileSizeInBytes = (filename) => {
+    const stats = fs.statSync(filename);
+    const fileSizeInBytes = stats.size;
+    console.log('size', fileSizeInBytes);
+    return fileSizeInBytes;
+  };
 
   async addTestLogs(testRunId: number, logs: testStep[]): Promise<AxiosResponse> {
     if (logs.length <= 0) return;
@@ -206,19 +298,22 @@ export default class ZebAgent {
     let payload = {
       items,
     };
-
-    const endpoint = this._urls.urlTestExecutionLabel(testRunId, testId);
-    let r = await this._api.put({
-      url: endpoint.url,
-      payload: payload,
-      expectedStatusCode: endpoint.status,
-      config: this._header,
-    });
-    return r;
+    try {
+      const endpoint = this._urls.urlTestExecutionLabel(testRunId, testId);
+      let r = await this._api.put({
+        url: endpoint.url,
+        payload: payload,
+        expectedStatusCode: endpoint.status,
+        config: this._header,
+      });
+      return r;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async addTestRunTags(testRunId: number, items: any[]): Promise<AxiosResponse> {
-    if (!items) return;
+    if (items.length === 0) return;
 
     let payload = {
       items,
@@ -238,45 +333,56 @@ export default class ZebAgent {
 
   // this sends browser type to ZebRunner
   async startTestSession(options: {
-    browser: string;
-    startedAt: string;
+    browserCapabilities: browserCapabilities;
+    startedAt: Date;
     testRunId: number;
-    testIds: number[];
+    testIds: number[] | number;
   }): Promise<AxiosResponse> {
     let payload = {
       sessionId: randomUUID(),
       initiatedAt: options.startedAt,
       startedAt: options.startedAt,
       desiredCapabilities: {
-        browserName: options.browser,
-        platformName: process.platform, // This is an assumption - platform type is not defined in the Playwright results
+        browserName: options.browserCapabilities.browser.name || 'n/a',
+        browserVersion: options.browserCapabilities.browser.version || 'n/a',
+        platformName: options.browserCapabilities.os.name || 'n/a',
       },
       capabilities: {
-        browserName: options.browser,
-        platformName: process.platform, // This is an assumption - platform type is not defined in the Playwright results
+        browserName: options.browserCapabilities.browser.name || 'n/a',
+        browserVersion: options.browserCapabilities.browser.version || 'n/a',
+        platformName: options.browserCapabilities.os.name || 'n/a',
       },
-      testIds: options.testIds,
+      testIds: [],
     };
-    const endpoint = this._urls.urlStartSession(options.testRunId);
-    let r = await this._api.post({
-      url: endpoint.url,
-      payload: payload,
-      expectedStatusCode: endpoint.status,
-      config: this._header,
-    });
-    return r;
+
+    payload.testIds.push(options.testIds);
+    try {
+      const endpoint = this._urls.urlStartSession(options.testRunId);
+      let r = await this._api.post({
+        url: endpoint.url,
+        payload: payload,
+        expectedStatusCode: endpoint.status,
+        config: this._header,
+      });
+      return r;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async finishTestSession(
     sessionId: string,
     testRunId: number,
-    endedAt: string,
-    testIds: number[]
+    endedAt: Date,
+    testIds: number[] | number,
   ): Promise<AxiosResponse> {
     let payload = {
       endedAt: endedAt,
-      testIds: testIds,
+      testIds: [],
     };
+
+    payload.testIds.push(testIds);
+
     const endpoint = this._urls.urlFinishSession(testRunId, sessionId);
     let r = await this._api.put({
       url: endpoint.url,

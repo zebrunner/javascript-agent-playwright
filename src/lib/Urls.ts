@@ -68,4 +68,18 @@ export default class Urls {
   urlSendLogs(testRunId: number) {
     return {url: `${this._baseUrl}/api/reporting/v1/test-runs/${testRunId}/logs`, status: 202};
   }
+
+  urlTestArtifacts(testRunId: number, testId: number) {
+    return {
+      url: `${this._baseUrl}/api/reporting/v1/test-runs/${testRunId}/tests/${testId}/artifacts`,
+      status: 201,
+    };
+  }
+
+  urlSessionArtifacts(testRunId: number, testSessionId: number) {
+    return {
+      url: `${this._baseUrl}/api/reporting/v1/test-runs/${testRunId}/test-sessions/${testSessionId}/artifacts`,
+      status: 201,
+    };
+  }
 }

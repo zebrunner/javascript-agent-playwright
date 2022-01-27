@@ -6,6 +6,49 @@ type ParserFixture = {
   parsedResults: testRun;
 };
 
+const config =  {
+  enabled: true,
+  reportingServerHostname: 'https://default.zebrunner.com',
+  reportingProjectKey: 'DEF',
+  reportingRunDisplayName: 'PW-tests conf',
+  reportingRunBuild: 'alpha-1 conf',
+  reportingRunEnvironment: 'STAGE conf',
+  reportingNotificationSlackChannels: 'channel1,channel2',
+  reportingNotificationMsTeamsChannels: 'channel1,channel2',
+  reportingNotificationEmails: 'channel1,channel2',
+  reportingMilestoneId: '1',
+  reportingMilestoneName: 'test',
+  pwConcurrentTasks: 19
+}
+
+const projectObj = {
+  define: [],
+  expect: undefined,
+  outputDir: '/Users/it/repo/pw-zeb/test-results',
+  repeatEach: 1,
+  retries: 0,
+  metadata: undefined,
+  name: 'webkit',
+  testDir: '/Users/it/repo/pw-zeb',
+  snapshotDir: '/Users/it/repo/pw-zeb',
+  testIgnore: [],
+  testMatch: '**/?(*.)@(spec|test).@(ts|js|mjs)',
+  timeout: 0,
+  use: {
+    video: 'on',
+    trace: 'on',
+    screenshot: 'only-on-failure',
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15',
+    screen: { width: 1792, height: 1120 },
+    viewport: { width: 1280, height: 720 },
+    deviceScaleFactor: 2,
+    isMobile: false,
+    hasTouch: false,
+    defaultBrowserType: 'webkit',
+    headless: false
+  }
+};
+
 const test = base.extend<ParserFixture>({
   testData: {
     title: '',
@@ -18,14 +61,17 @@ const test = base.extend<ParserFixture>({
           {
             title: 'tests/pw_nested_testsuite.spec.js',
             tests: [],
+            project: () => projectObj,
             suites: [
               {
                 title: 'nested foo',
                 tests: [],
+                project: () => projectObj,
                 suites: [
                   {
                     title: 'foo - L2',
                     suites: [],
+                    project: () => projectObj,
                     parent: {
                       title: 'nested foo',
                     },
@@ -97,8 +143,8 @@ const test = base.extend<ParserFixture>({
     tests: [],
   },
   parsedResults: async ({testData}, use) => {
-    let resultsParser = new ResultsParser(testData);
-    await resultsParser.parse();
+    let resultsParser = new ResultsParser(testData, config);
+    resultsParser.parse();
     let r = await resultsParser.getParsedResults();
     await use(r);
   },
@@ -129,16 +175,23 @@ test('parses test failure details from the results @unit_test', async ({parsedRe
 });
 
 test('parses path to the screenshot from the results @unit_test', async ({parsedResults}) => {
-  expect(parsedResults.tests[0].attachment).toEqual(
+  expect(parsedResults.tests[0].attachment.screenshots[0].path).toEqual(
     '/Users/it/repo/pw-zeb/test-results/tests-pw_nested_testsuite-nested-foo-foo-l2-basic-test-broke-webkit/test-failed-1.png'
   );
 });
 
 test('parses test details from the results @unit_test', async ({parsedResults}) => {
   expect(parsedResults.tests.length).toEqual(1);
-  expect(parsedResults.tests[0].startedAt).toEqual('2021-12-18T09:43:16.000Z');
-  expect(parsedResults.tests[0].endedAt).toEqual('2021-12-18T09:43:23.630Z');
+  expect(parsedResults.tests[0].startedAt).toEqual(new Date('2021-12-18T09:43:16.000Z'));
+  expect(parsedResults.tests[0].endedAt).toEqual(new Date('2021-12-18T09:43:23.630Z'));
   expect(parsedResults.tests[0].name).toEqual('nested foo > foo - L2 > basic test @broke');
   expect(parsedResults.tests[0].suiteName).toEqual('nested foo > foo - L2');
-  expect(parsedResults.tests[0].browser).toBe(undefined);
+  expect(parsedResults.tests[0].browserCapabilities).toStrictEqual({
+    ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15',
+    browser: { name: 'Safari', version: '15.4', major: '15' },
+    engine: { name: 'WebKit', version: '605.1.15' },
+    os: { name: 'Mac OS', version: '10.15.7' },
+    device: { vendor: undefined, model: undefined, type: undefined },
+    cpu: { architecture: undefined }
+  });
 });

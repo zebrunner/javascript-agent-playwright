@@ -1,19 +1,65 @@
 // playwright.config.ts
 import {FullConfig, Reporter, Suite} from '@playwright/test/reporter';
 import ZebAgent from './ZebAgent';
-import ResultsParser, {testResult, testRun, testSuite} from './ResultsParser';
+import ResultsParser, {testResult, testRun} from './ResultsParser';
 import {PromisePool} from '@supercharge/promise-pool';
+import SlackReporter from './SlackReporter';
+import { tcmEvents } from './constants';
+import { parseNotifications, parsePwConfig, parseTcmRunOptions, parseTcmTestOptions } from './utils';
+
+
+export type zebrunnerConfig = {
+  enabled: boolean;
+  reportingServerHostname: string,
+  reportingProjectKey?: string,
+  reportingRunDisplayName?: string,
+  reportingRunBuild?: string,
+  reportingRunEnvironment?: string,
+  reportingNotifyOnEachFailure: boolean,
+  reportingNotificationSlackChannels?: string,
+  reportingNotificationMsTeamsChannels?: string,
+  reportingNotificationEmails?: string,
+  reportingMilestoneId?: string,
+  reportingMilestoneName?: string,
+  pwConcurrentTasks?: number,
+  slackEnabled?: boolean;
+  slackReportOnlyOnFailures?: boolean;
+  slackDisplayNumberOfFailures?: number;
+  slackReportingChannels?: string;
+  slackStacktraceLength?: number;
+};
 
 class ZebRunnerReporter implements Reporter {
-  private config!: FullConfig;
   private suite!: Suite;
+  private zebConfig: zebrunnerConfig;
   private zebAgent: ZebAgent;
+  private slackReporter: SlackReporter;
   private testRunId: number;
+  private tcmConfig: {};
 
   onBegin(config: FullConfig, suite: Suite) {
-    this.config = config;
+    this.zebConfig = parsePwConfig(config);
     this.suite = suite;
-    this.zebAgent = new ZebAgent(this.config);
+    this.zebAgent = new ZebAgent(this.zebConfig);
+  }
+
+  onStdOut(chunk, test, result) {
+    if (chunk.includes('connect') || chunk.includes('POST')) {
+      return;
+    }
+    const {type, data} = JSON.parse(chunk);
+    if (type === tcmEvents.TCM_RUN_OPTIONS) {
+      this.tcmConfig = parseTcmRunOptions(data);
+    }
+
+    if (type === tcmEvents.TCM_TEST_OPTIONS) {
+      const parseTestTcmOptions = parseTcmTestOptions(data, this.tcmConfig);
+      test.tcmTestOptions = parseTestTcmOptions;
+    }
+
+    if (type === tcmEvents.SET_MAINTAINER) {
+      test.maintainer = data;
+    }
   }
 
   async onEnd() {
@@ -22,13 +68,17 @@ class ZebRunnerReporter implements Reporter {
       return;
     }
     await this.zebAgent.initialize();
-
-    let resultsParser = new ResultsParser(this.suite);
+    let resultsParser = new ResultsParser(this.suite, this.zebConfig);
     await resultsParser.parse();
     let parsedResults = await resultsParser.getParsedResults();
-    console.log(parsedResults);
     console.time('Duration');
-    let zebrunnerResults = await this.postResultsToZebRunner(parsedResults);
+    let zebrunnerResults = await this.postResultsToZebRunner(
+      resultsParser.getRunStartTime(),
+      parsedResults,
+    );
+
+    // const slackResults = zebrunnerResults.testsExecutions.results;
+    delete zebrunnerResults.testsExecutions.results; // omit results from printing
     console.log(zebrunnerResults);
     console.log(
       zebrunnerResults.resultsLink !== ''
@@ -36,43 +86,61 @@ class ZebRunnerReporter implements Reporter {
         : ''
     );
     console.timeEnd('Duration');
+
+    // post to Slack (if enabled)
+    // this.slackReporter = new SlackReporter(this.zebConfig);
+    // if (this.slackReporter.isEnabled) {
+    //   let testSummary = await this.slackReporter.getSummaryResults(
+    //     this.testRunId,
+    //     slackResults,
+    //     resultsParser.build,
+    //     resultsParser.environment
+    //   );
+    //   await this.slackReporter.sendMessage(testSummary, zebrunnerResults.resultsLink);
+    // }
   }
 
-  async postResultsToZebRunner(testResults: testRun) {
-    let runStartTime = new Date(testResults.tests[0].startedAt).getTime() - 1000;
-    let testRunName = `${
-      process.env.BUILD_INFO ? process.env.BUILD_INFO : new Date().toISOString()
-    } ${process.env.TEST_ENVIRONMENT ? process.env.TEST_ENVIRONMENT : '-'}`;
-    let testRunId = await this.startTestRuns(runStartTime, testRunName);
-    console.log('testRuns >>', testRunId);
+  async postResultsToZebRunner(runStartTime: number, testResults: testRun) {
+    let testRunName = testResults.testRunName;
 
-    let testRunTags = await this.addTestRunTags(testRunId, [
-      {
-        key: 'group',
-        value: 'Regression',
-      },
-    ]); // broke - labels does not appear in the UI
+    await this.startTestRuns(runStartTime, testRunName);
+    console.log('testRuns >>', this.testRunId);
+    let testsExecutions = await this.startTestExecutions(this.testRunId, testResults.tests);
+    
+    const runTags = this.createRunTags();
+    let testRunTags = await this.addTestRunTags(this.testRunId, runTags); // broke - labels does not appear in the UI
+    let testTags = await this.addTestTags(this.testRunId, testsExecutions.results);
+    let screenshots = await this.addScreenshots(this.testRunId, testsExecutions.results);
+    let testArtifacts = await this.addTestArtifacts(this.testRunId, testsExecutions.results);
+    let testSteps = await this.sendTestSteps(this.testRunId, testsExecutions.results);
+    let endTestExecutions = await this.finishTestExecutions(
+      this.testRunId,
+      testsExecutions.results
+    );
 
-    let testsExecutions = await this.startTestExecutions(testRunId, testResults.tests);
-    let testTags = await this.addTestTags(testRunId, testsExecutions.results);
-    let screenshots = await this.addScreenshots(testRunId, testsExecutions.results);
-    let testSteps = await this.sendTestSteps(testRunId, testsExecutions.results);
-    let endTestExecutions = await this.finishTestExecutions(testRunId, testsExecutions.results);
     let testSessions = await this.sendTestSessions(
-      testRunId,
+      this.testRunId,
       runStartTime,
       testsExecutions.results
     );
-    let stopTestRunsResult = await this.stopTestRuns(testRunId, new Date().toISOString());
+
+    let videoArtifacts = await this.addVideoArtifacts(
+      this.testRunId,
+      testSessions.sessionsWithVideoAttachments,
+      testsExecutions.results
+    );
+    let stopTestRunsResult = await this.stopTestRuns(this.testRunId, new Date().toISOString());
 
     let summary = {
       testsExecutions: {
         success: testsExecutions.results.length,
         errors: testsExecutions.errors.length,
+        results: testsExecutions.results,
       },
       testRunTags: {
-        success: testRunTags.status === 204 ? 1 : 0,
-        errors: testRunTags.status !== 204 ? 1 : 0,
+        success: testRunTags && testRunTags.status === 204 ? 1 : 0,
+        errors: testRunTags && testRunTags.status !== 204 ? 1 : 0,
+        isEmpty: !testRunTags ? true : false,
       },
       testTags: {
         success: testTags.results.filter((f) => f && f.status === 204).length,
@@ -81,6 +149,14 @@ class ZebRunnerReporter implements Reporter {
       screenshots: {
         success: screenshots.results.filter((f) => f && f.status === 201).length,
         errors: screenshots.errors.length,
+      },
+      testArtifacts: {
+        success: testArtifacts.results.filter((f) => f && f.status === 201).length,
+        errors: testArtifacts.errors.length,
+      },
+      videoArtifacts: {
+        success: videoArtifacts.results.filter((f) => f && f.status === 201).length,
+        errors: videoArtifacts.errors.length,
       },
       testStepsRequests: {
         success: testSteps.status === 202 ? 1 : 0,
@@ -98,7 +174,7 @@ class ZebRunnerReporter implements Reporter {
         success: stopTestRunsResult.status === 200 ? 1 : 0,
         errors: stopTestRunsResult.status !== 200 ? 1 : 0,
       },
-      resultsLink: testRunId
+      resultsLink: this.testRunId
         ? `${this.zebAgent.baseUrl}/projects/${this.zebAgent.projectKey}/test-runs/${this.testRunId}`
         : '',
     };
@@ -106,13 +182,22 @@ class ZebRunnerReporter implements Reporter {
   }
 
   async startTestRuns(runStartTime: number, testRunName: string): Promise<number> {
+    const targets = parseNotifications(this.zebConfig);
     let r = await this.zebAgent.startTestRun({
-      name: testRunName,
+      name: this.zebConfig.reportingRunDisplayName || testRunName,
       startedAt: new Date(runStartTime).toISOString(),
-      framework: 'Playwright',
+      framework: 'playwright',
       config: {
-        environment: process.env.TEST_ENVIRONMENT ? process.env.TEST_ENVIRONMENT : '-',
-        build: process.env.BUILD_INFO ? process.env.BUILD_INFO : new Date().toISOString(),
+        environment: this.zebConfig.reportingRunEnvironment || '-',
+        build: this.zebConfig.reportingRunBuild || '1.0 alpha',
+      },
+      milestone: {
+        id: this.zebConfig.reportingMilestoneId,
+        name: this.zebConfig.reportingMilestoneName,
+      },
+      notifications: {
+        notifyOnEachFailure: this.zebConfig.reportingNotifyOnEachFailure,
+        targets,
       },
     });
 
@@ -132,8 +217,12 @@ class ZebRunnerReporter implements Reporter {
   }
 
   async addTestRunTags(testRunId: number, tags: any[]) {
-    let r = await this.zebAgent.addTestRunTags(testRunId, tags);
-    return r;
+    try {
+      let r = await this.zebAgent.addTestRunTags(testRunId, tags);
+      return r;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async addTestTags(testRunId: number, tests) {
@@ -151,7 +240,26 @@ class ZebRunnerReporter implements Reporter {
     const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
       .for(tests)
       .process(async (test: testResult, index, pool) => {
-        let r = await this.zebAgent.attachScreenshot(testRunId, test.testId, test.attachment);
+        let r = await this.zebAgent.attachScreenshot(
+          testRunId,
+          test.testId,
+          test.attachment.screenshots
+        );
+        return r;
+      });
+
+    return {results, errors};
+  }
+
+  async addTestArtifacts(testRunId: number, tests) {
+    const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
+      .for(tests)
+      .process(async (test: testResult, index, pool) => {
+        let r = await this.zebAgent.attachTestArtifacts(
+          testRunId,
+          test.testId,
+          test.attachment.files
+        );
         return r;
       });
 
@@ -180,6 +288,7 @@ class ZebRunnerReporter implements Reporter {
           name: test.name,
           className: test.suiteName,
           methodName: test.name,
+          maintainer: test.maintainer,
           startedAt: test.startedAt,
         });
         let testId = testExecResponse.data.id;
@@ -204,35 +313,68 @@ class ZebRunnerReporter implements Reporter {
   }
 
   async sendTestSessions(testRunId: number, runStartTime: number, tests: testResult[]) {
-    const groupBy = (array, key) => {
-      return array.reduce((result, currentValue) => {
-        (result[currentValue[key]] = result[currentValue[key]] || []).push(currentValue);
-        return result;
-      }, {});
-    };
-
-    const testSuitesGrouped = groupBy(tests, 'suiteName');
+    let sessionsWithVideoAttachments = [];
     const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
-      .for(Object.entries(testSuitesGrouped))
-      .process(async (suite: [string, testResult[]], index, pool) => {
+      .for(tests)
+      .process(async (test, index, pool) => {
         let sess = await this.zebAgent.startTestSession({
-          browser: 'chrome', // TODO: - need to figure out how to determine the browser type testIds[0].browser,
-          startedAt: new Date(runStartTime).toISOString(),
+          browserCapabilities: test.browserCapabilities,
+          startedAt: test.startedAt,
           testRunId: testRunId,
-          testIds: suite[1].map((t) => t.testId),
+          testIds: test.testId,
         });
 
-        let r = await this.zebAgent.finishTestSession(
+        let res = await this.zebAgent.finishTestSession(
           sess.data.id,
           testRunId,
-          new Date(runStartTime + 1).toISOString(),
-          suite[1].map((t) => t.testId)
+          test.endedAt,
+          test.testId,
         );
+        
+        if (test.attachment.video.length > 0) {
+          sessionsWithVideoAttachments.push({
+            sessionId: sess.data.id,
+            testId: test.testId
+          })
+        }
+        return res;
+      });
 
-        return r;
+    return {sessionsWithVideoAttachments, results, errors};
+  }
+
+  async addVideoArtifacts(testRunId: number, sessionsWithVideoAttachments: Record<string, number>[], tests: testResult[]) {
+    const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
+      .for(tests)
+      .process(async (test, index, pool) => {
+        let res;
+        const result = sessionsWithVideoAttachments.filter(el => el.testId === test.testId);
+        if (result.length > 0) {
+          res = await this.zebAgent.sendVideoArtifacts(
+            testRunId,
+            result[0].sessionId,
+            test.attachment.video
+          );
+        };
+        
+        return res;
       });
 
     return {results, errors};
+  }
+
+  createRunTags() {
+    let tags = [];
+    if (!this.tcmConfig) {
+      return tags;
+    } 
+
+    Object.keys(this.tcmConfig).forEach((key) => {
+      Object.keys(this.tcmConfig[key]).forEach((el) => {
+        tags.push(this.tcmConfig[key][el]);
+      })
+    })
+    return tags;
   }
 }
 export default ZebRunnerReporter;
