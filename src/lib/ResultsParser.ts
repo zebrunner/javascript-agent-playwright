@@ -1,4 +1,4 @@
-import {zebrunnerConfig} from './zebReporter';
+import {RerunConfig, zebrunnerConfig} from './zebReporter';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -98,8 +98,8 @@ export default class ResultsParser {
   private _result: testRun;
   private _build: string;
   private _environment: string;
-
-  constructor(results, config: zebrunnerConfig) {
+  private _rerunConfig: RerunConfig;
+  constructor(results, config: zebrunnerConfig, rerunConfig) {
     this._build = config?.reportingRunBuild ? config?.reportingRunBuild  : '1.0 alpha(default)';
     this._environment = config?.reportingRunEnvironment ? config?.reportingRunEnvironment : '-';
     this._result = {
@@ -111,6 +111,7 @@ export default class ResultsParser {
       environment: this._environment,
     };
     this._resultsData = results;
+    this._rerunConfig = rerunConfig;
   }
 
   public get build() {
@@ -302,7 +303,6 @@ export default class ResultsParser {
 
   getTestSteps(steps): testStep[] {
     let testSteps = [];
-
     for (const testStep of steps) {
       testSteps.push({
         timestamp: new Date(testStep.startTime).getTime(),
@@ -313,6 +313,19 @@ export default class ResultsParser {
           : testStep.title,
         level: testStep.error ? 'ERROR' : 'INFO',
       });
+    }
+
+    if (this._rerunConfig?.mode === 'RERUN') {
+      testSteps.push({
+        timestamp: new Date(steps[0].startTime).getTime() - 1,
+        message: `RERUN START`,
+        level: 'INFO',
+      })
+      testSteps.push({
+        timestamp: new Date(steps[steps.length - 1].startTime).getTime() + 1,
+        message: `RERUN END`,
+        level: 'INFO',
+      })
     }
 
     return testSteps;

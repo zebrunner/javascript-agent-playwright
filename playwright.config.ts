@@ -24,7 +24,6 @@ const config: PlaywrightTestConfig = {
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  // testMatch: ['pw_nested_testsuite.spec.ts'],
   reporter: [
     [
       './src/lib/zebReporter.ts',
@@ -42,13 +41,9 @@ const config: PlaywrightTestConfig = {
         reportingMilestoneId: '1',
         reportingMilestoneName: 'test',
         // pwConcurrentTasks: 19,
-        // slackEnabled: true,
-        // slackDisplayNumberOfFailures: 10,
-        // slackReportOnlyOnFailures: true,
-        // slackReportingChannels: 'zeb,general',
-        // slackStacktraceLength: 270,
       },
     ],
   ],
 };
+
 export default config;

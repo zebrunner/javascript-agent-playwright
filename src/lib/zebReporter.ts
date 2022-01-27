@@ -27,7 +27,7 @@ export type zebrunnerConfig = {
   slackReportingChannels?: string;
   slackStacktraceLength?: number;
 };
-export type RerunObject = {
+export type RerunConfig = {
   rerunOnlyFailedTests: boolean;
   mode: string;
   runAllowed: boolean;
@@ -52,7 +52,7 @@ class ZebRunnerReporter implements Reporter {
   private slackReporter: SlackReporter;
   private testRunId: number;
   private tcmConfig: {};
-  private rerunConfig: RerunObject;
+  private rerunConfig: RerunConfig;
 
   async onBegin(config: FullConfig, suite: Suite) {
     this.zebConfig = parsePwConfig(config);
@@ -70,7 +70,6 @@ class ZebRunnerReporter implements Reporter {
     
       const response = await this.zebAgent.rerunRequest(JSON.parse(process.env.REPORTING_RUN_CONTEXT));
       this.rerunConfig = response.data;
-      console.log('rerun response', this.rerunConfig);
       if (this.rerunConfig.mode === 'NEW' || !this.rerunConfig.runOnlySpecificTests) {
         return suite;
       }
@@ -129,7 +128,7 @@ class ZebRunnerReporter implements Reporter {
     }
     await this.zebAgent.initialize();
     
-    let resultsParser = new ResultsParser(this.suite, this.zebConfig);
+    let resultsParser = new ResultsParser(this.suite, this.zebConfig, this.rerunConfig);
     await resultsParser.parse();
     let parsedResults = await resultsParser.getParsedResults();
     console.time('Duration');
@@ -347,6 +346,7 @@ class ZebRunnerReporter implements Reporter {
           ...s,
         }))
       );
+      console.log('log', logEntries);
     }
     let r = await this.zebAgent.addTestLogs(testRunId, logEntries);
     return r;
@@ -374,7 +374,14 @@ class ZebRunnerReporter implements Reporter {
     const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
       .for(tests)
       .process(async (test: testResult, index, pool) => {
-        const rerunTest = this.rerunConfig.testsToRun.filter((el) => el.name === test.name)[0];
+        const rerunTest = this.rerunConfig.testsToRun.filter((el: {
+          id: number,
+          name: string;
+          correlationData: string;
+          status: string;
+          startedAt: string;
+          endedAt: string;
+        }) => el.name === test.name)[0];
         let testExecResponse = await this.zebAgent.startRerunTestExecution(testRunId, rerunTest.id, {
           name: test.name,
           className: test.suiteName,

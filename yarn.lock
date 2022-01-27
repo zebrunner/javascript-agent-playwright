@@ -761,9 +761,9 @@ call-bind@^1.0.0:
     get-intrinsic "^1.0.2"
 
 caniuse-lite@^1.0.30001286:
-  version "1.0.30001301"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001301.tgz#ebc9086026534cab0dab99425d9c3b4425e5f450"
-  integrity sha512-csfD/GpHMqgEL3V3uIgosvh+SVIQvCh43SNu9HRbP1lnxkKm1kjDG4f32PP571JplkLjfS+mg2p1gxR7MYrrIA==
+  version "1.0.30001303"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001303.tgz#9b168e4f43ccfc372b86f4bc5a551d9b909c95c9"
+  integrity sha512-/Mqc1oESndUNszJP0kx0UaQU9kEv9nNtJ7Kn8AdA0mNnH8eR1cj0kG+NbNuC1Wq/b21eA8prhKRA3bbkjONegQ==
 
 chalk@^2.0.0:
   version "2.4.2"
@@ -864,15 +864,15 @@ diff-sequences@^27.4.0:
   resolved "https://registry.yarnpkg.com/diff-sequences/-/diff-sequences-27.4.0.tgz#d783920ad8d06ec718a060d00196dfef25b132a5"
   integrity sha512-YqiQzkrsmHMH5uuh8OdQFU9/ZpADnwzml8z0O5HvRNda+5UZsaX/xN+AAxfR2hWq1Y7HZnAzO9J5lJXOuDz2Ww==
 
-dotenv@^14.3.0:
-  version "14.3.0"
-  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-14.3.0.tgz#40f537fe90e229d35361c66cf432903e0db49001"
-  integrity sha512-PCTcOQSXVo9FI1dB7AichJXMEvmiGCq0gnCpjfDUc8505uR+2MeLXWe+Ue4PN5UXa2isHSa78sr7L59fk+2mnQ==
+dotenv@^14.3.2:
+  version "14.3.2"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-14.3.2.tgz#7c30b3a5f777c79a3429cb2db358eef6751e8369"
+  integrity sha512-vwEppIphpFdvaMCaHfCEv9IgwcxMljMw2TnAQBB4VWPvzXQLTb82jwmdOKzlEVUL3gNFT4l4TPKO+Bn+sqcrVQ==
 
 electron-to-chromium@^1.4.17:
-  version "1.4.52"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.52.tgz#ce44c6d6cc449e7688a4356b8c261cfeafa26833"
-  integrity sha512-JGkh8HEh5PnVrhU4HbpyyO0O791dVY6k7AdqfDeqbcRMeoGxtNHWT77deR2nhvbLe4dKpxjlDEvdEwrvRLGu2Q==
+  version "1.4.54"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.54.tgz#69005d39ed11542e1bcb65ec1a98e44d39527ba8"
+  integrity sha512-jRAoneRdSxnpRHO0ANpnEUtQHXxlgfVjrLOnQSisw1ryjXJXvS0pJaR/v2B7S++/tRjgEDp4Sjn5nmgb6uTySw==
 
 end-of-stream@^1.1.0:
   version "1.4.4"
