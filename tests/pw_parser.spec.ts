@@ -6,6 +6,21 @@ type ParserFixture = {
   parsedResults: testRun;
 };
 
+const config =  {
+  enabled: true,
+  reportingServerHostname: 'https://default.zebrunner.com',
+  reportingProjectKey: 'DEF',
+  reportingRunDisplayName: 'PW-tests conf',
+  reportingRunBuild: 'alpha-1 conf',
+  reportingRunEnvironment: 'STAGE conf',
+  reportingNotificationSlackChannels: 'channel1,channel2',
+  reportingNotificationMsTeamsChannels: 'channel1,channel2',
+  reportingNotificationEmails: 'channel1,channel2',
+  reportingMilestoneId: '1',
+  reportingMilestoneName: 'test',
+  pwConcurrentTasks: 19
+}
+
 const projectObj = {
   define: [],
   expect: undefined,
@@ -128,7 +143,7 @@ const test = base.extend<ParserFixture>({
     tests: [],
   },
   parsedResults: async ({testData}, use) => {
-    let resultsParser = new ResultsParser(testData, null);
+    let resultsParser = new ResultsParser(testData, config);
     resultsParser.parse();
     let r = await resultsParser.getParsedResults();
     await use(r);

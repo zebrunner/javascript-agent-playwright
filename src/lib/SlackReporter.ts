@@ -57,7 +57,7 @@ export default class SlackReporter {
         .filter((t) => t.status === 'FAILED')
         .slice(0, this._config.slackDisplayNumberOfFailures)
         .map((failures) => ({
-          zebResult: `${this._config.reporterBaseUrl}/projects/${this._config.projectKey}/test-runs/${testRunId}/tests/${failures.testId}`,
+          zebResult: `${this._config.reportingServerHostname}/projects/${this._config.reportingProjectKey}/test-runs/${testRunId}/tests/${failures.testId}`,
           test: failures.name,
           message:
             failures.reason.length > maximumCharLength

@@ -153,7 +153,6 @@ test.describe('zebrunner upload', async () => {
         workers: 8,
         projects: [
           {
-            define: [],
             expect: undefined,
             metadata: undefined,
             name: 'webkit',
@@ -170,12 +169,12 @@ test.describe('zebrunner upload', async () => {
         ],
         reporter: [
           [
-            '/Users/it/repo/pw-zeb/src/build/src/lib/zebReporter.js',
+            '/Users/it/repo/pw-zeb/src/build/src/lib/zebReporter.ts',
             {
-              reporterBaseUrl: `${baseUrl}:${portNumber}`,
-              projectKey: projectKey,
+              reportingServerHostname: `${baseUrl}:${portNumber}`,
+              reportingProjectKey: projectKey,
               enabled: true,
-              concurrentTasks: 10,
+              pwConcurrentTasks: 10,
             },
           ],
         ],

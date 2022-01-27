@@ -2,7 +2,6 @@ import {AxiosResponse} from 'axios';
 import Logger from '../lib/Logger';
 import Api from './Api';
 import Urls from './Urls';
-import * as path from 'path';
 import * as fs from 'fs';
 import {randomUUID} from 'crypto';
 import {browserCapabilities, testStep} from './ResultsParser';
@@ -24,8 +23,8 @@ export default class ZebAgent {
 
   constructor(config: zebrunnerConfig) {
     this._accessToken = process.env.REPORTING_SERVER_ACCESS_TOKEN;
-    this._projectKey = config.projectKey;
-    this._reportBaseUrl = config.reporterBaseUrl;
+    this._projectKey = config.reportingProjectKey || 'DEF';
+    this._reportBaseUrl = config.reportingServerHostname;
 
     if (config.enabled) {
       this._enabled = true;
@@ -33,7 +32,7 @@ export default class ZebAgent {
       this._enabled = false;
     }
 
-    this._concurrentTasks = config.concurrentTasks || this._defaultConcurrentTask;
+    this._concurrentTasks = config.pwConcurrentTasks || this._defaultConcurrentTask;
 
     if (this._concurrentTasks > this._maximumConcurrentTask) {
       this._concurrentTasks = this._maximumConcurrentTask;
@@ -97,6 +96,13 @@ export default class ZebAgent {
     framework: string;
     config?: any;
     milestone?: any;
+    notifications: {
+      notifyOnEachFailure: boolean;
+      targets: {
+        type: string;
+        value: string;
+      }[];
+    }
   }): Promise<AxiosResponse> {
     let endpoint = this._urls.urlRegisterRun();
     let r = await this._api.post({

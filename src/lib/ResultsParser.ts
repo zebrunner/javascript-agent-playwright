@@ -100,15 +100,13 @@ export default class ResultsParser {
   private _environment: string;
 
   constructor(results, config: zebrunnerConfig) {
-    this._build = process.env.BUILD_INFO ? process.env.BUILD_INFO : new Date().toISOString();
-    this._environment = process.env.TEST_ENVIRONMENT ? process.env.TEST_ENVIRONMENT : '-';
+    this._build = config?.reportingRunBuild ? config?.reportingRunBuild  : '1.0 alpha(default)';
+    this._environment = config?.reportingRunEnvironment ? config?.reportingRunEnvironment : '-';
     this._result = {
       tests: [],
       testRunId: 0,
       title: '',
-      testRunName: `${process.env.BUILD_INFO ? process.env.BUILD_INFO : new Date().toISOString()} ${
-        process.env.TEST_ENVIRONMENT ? process.env.TEST_ENVIRONMENT : '-'
-      }`,
+      testRunName: config?.reportingRunDisplayName ? config?.reportingRunDisplayName : 'Default Suite',
       build: this._build,
       environment: this._environment,
     };
