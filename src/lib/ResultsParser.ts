@@ -106,7 +106,7 @@ export default class ResultsParser {
       tests: [],
       testRunId: 0,
       title: '',
-      testRunName: config?.reportingRunDisplayName ? config?.reportingRunDisplayName : 'unnamed test',
+      testRunName: config?.reportingRunDisplayName ? config?.reportingRunDisplayName : 'Default Suite',
       build: this._build,
       environment: this._environment,
     };

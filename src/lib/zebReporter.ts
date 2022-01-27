@@ -15,6 +15,7 @@ export type zebrunnerConfig = {
   reportingRunDisplayName?: string,
   reportingRunBuild?: string,
   reportingRunEnvironment?: string,
+  reportingNotifyOnEachFailure: boolean,
   reportingNotificationSlackChannels?: string,
   reportingNotificationMsTeamsChannels?: string,
   reportingNotificationEmails?: string,
@@ -183,7 +184,7 @@ class ZebRunnerReporter implements Reporter {
   async startTestRuns(runStartTime: number, testRunName: string): Promise<number> {
     const targets = parseNotifications(this.zebConfig);
     let r = await this.zebAgent.startTestRun({
-      name: this.zebConfig.reportingRunDisplayName || testRunName || 'anonymous',
+      name: this.zebConfig.reportingRunDisplayName || testRunName,
       startedAt: new Date(runStartTime).toISOString(),
       framework: 'playwright',
       config: {
@@ -195,6 +196,7 @@ class ZebRunnerReporter implements Reporter {
         name: this.zebConfig.reportingMilestoneName,
       },
       notifications: {
+        notifyOnEachFailure: this.zebConfig.reportingNotifyOnEachFailure,
         targets,
       },
     });

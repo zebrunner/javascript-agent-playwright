@@ -264,18 +264,19 @@ const parseTcmTestOptions = (data, tcmConfig) => {
 
 const parsePwConfig = (config) => {
   const pwConfig = {
-    enabled: false,
+    enabled: process.env.ENABLED ? JSON.parse(process.env.ENABLED) : false,
     reportingServerHostname: process.env.REPORTING_SERVER_HOSTNAME,
     reportingProjectKey: process.env.REPORTING_PROJECT_KEY,
     reportingRunDisplayName: process.env.REPORTING_RUN_DISPLAY_NAME,
     reportingRunBuild: process.env.REPORTING_RUN_BUILD,
     reportingRunEnvironment: process.env.REPORTING_RUN_ENVIRONMENT,
+    reportingNotifyOnEachFailure: process.env.REPORTING_NOTIFY_ON_EACH_FAILURE ? JSON.parse(process.env.REPORTING_NOTIFY_ON_EACH_FAILURE) : false, 
     reportingNotificationSlackChannels: process.env.REPORTING_NOTIFICATION_SLACK_CHANNELS,
     reportingNotificationMsTeamsChannels: process.env.REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS,
     reportingNotificationEmails: process.env.REPORTING_NOTIFICATION_EMAILS,
     reportingMilestoneId: process.env.REPORTING_MILESTONE_ID,
     reportingMilestoneName: process.env.REPORTING_MILESTONE_NAME,
-    pwConcurrentTasks: 10,
+    pwConcurrentTasks: process.env.PW_CONCURRENT_TASKS ? JSON.parse(process.env.PW_CONCURRENT_TASKS) : 10,
   };
   const configObject = config.reporter[0][1];
   Object.keys(configObject).forEach(key => {
@@ -316,10 +317,6 @@ const parsePwConfig = (config) => {
       pwConfig.pwConcurrentTasks = _getConfigVar('PW_CURRENT_TASKS', configObject[key]);
     }
   });
-
-  if (process.env.ENABLED) {
-    pwConfig.enabled = JSON.parse(process.env.ENABLED);
-  }
 
   Object.keys(pwConfig).forEach((key) => {
     if (!pwConfig[key]) {

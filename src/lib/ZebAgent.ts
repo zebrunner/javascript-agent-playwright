@@ -97,9 +97,10 @@ export default class ZebAgent {
     config?: any;
     milestone?: any;
     notifications: {
+      notifyOnEachFailure: boolean;
       targets: {
         type: string;
-        value: string
+        value: string;
       }[];
     }
   }): Promise<AxiosResponse> {
