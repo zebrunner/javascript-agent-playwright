@@ -13,6 +13,7 @@ const config =  {
   reportingRunDisplayName: 'PW-tests conf',
   reportingRunBuild: 'alpha-1 conf',
   reportingRunEnvironment: 'STAGE conf',
+  reportingNotifyOnEachFailure: true,
   reportingNotificationSlackChannels: 'channel1,channel2',
   reportingNotificationMsTeamsChannels: 'channel1,channel2',
   reportingNotificationEmails: 'channel1,channel2',
@@ -143,7 +144,7 @@ const test = base.extend<ParserFixture>({
     tests: [],
   },
   parsedResults: async ({testData}, use) => {
-    let resultsParser = new ResultsParser(testData, config);
+    let resultsParser = new ResultsParser(testData, config, null);
     resultsParser.parse();
     let r = await resultsParser.getParsedResults();
     await use(r);

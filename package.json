@@ -1,6 +1,6 @@
 {
-  "name": "zebrunner-playwright-agent",
-  "version": "0.0.20",
+  "name": "zebr_pw_npm",
+  "version": "0.0.1",
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {

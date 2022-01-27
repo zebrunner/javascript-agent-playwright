@@ -34,7 +34,7 @@ const config: PlaywrightTestConfig = {
         // reportingRunDisplayName: 'PW-tests conf',
         reportingRunBuild: 'alpha-1 conf',
         reportingRunEnvironment: 'STAGE conf',
-        // reportingNotificationNotifyOnEachFailure: true,
+        // reportingNotifyOnEachFailure: true,
         reportingNotificationSlackChannels: 'channel1,channel2',
         reportingNotificationMsTeamsChannels: 'channel1,channel2',
         reportingNotificationEmails: 'channel1,channel2',

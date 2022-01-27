@@ -182,7 +182,7 @@ test.describe('zebrunner upload', async () => {
       undefined
     );
 
-    let resultsParser = new ResultsParser(testData, null);
+    let resultsParser = new ResultsParser(testData, null, null);
     await resultsParser.parse();
     let parsedResults = await resultsParser.getParsedResults();
     let result = await zeb.postResultsToZebRunner(1000, parsedResults);

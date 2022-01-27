@@ -74,7 +74,7 @@ const sendEventToReporter = (type: string, data: any): void => {
   process.stdout.write(JSON.stringify({ type, data }));
 };
 
-const parseTcmRunOptions = (data): TcmConfig => {
+const parseTcmRunOptions = (data) => {
   const tcmConfig = {
     xray: {
       executionKey: {
@@ -278,7 +278,7 @@ const parsePwConfig = (config) => {
     reportingMilestoneName: process.env.REPORTING_MILESTONE_NAME,
     pwConcurrentTasks: process.env.PW_CONCURRENT_TASKS ? JSON.parse(process.env.PW_CONCURRENT_TASKS) : 10,
   };
-  const configObject = config.reporter[0][1];
+  const configObject = config.reporter.find((f) => f[0].includes('zeb') || f[1]?.includes('zeb'))[1];
   Object.keys(configObject).forEach(key => {
     if (key === 'enabled') {
       pwConfig.enabled = _getConfigVar('ENABLED', configObject[key]);
@@ -297,6 +297,9 @@ const parsePwConfig = (config) => {
     }
     if (key === 'reportingRunEnvironment') {
       pwConfig.reportingRunEnvironment = _getConfigVar('REPORTING_RUN_ENVIRONMENT', configObject[key]);
+    }
+    if (key === 'reportingNotifyOnEachFailure') {
+      pwConfig.reportingNotifyOnEachFailure = _getConfigVar('REPORTING_NOTIFY_ON_EACH_FAILURE', configObject[key]);
     }
     if (key === 'reportingNotificationSlackChannels') {
       pwConfig.reportingNotificationSlackChannels = _getConfigVar('REPORTING_NOTIFICATION_SLACK_CHANNELS', configObject[key]);

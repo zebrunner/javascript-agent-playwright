@@ -84,7 +84,14 @@ class ZebRunnerReporter implements Reporter {
             const suiteName = res.parent.title ? `${res.parent.title} > ${res.title}` : res.title;
             res.tests = res.tests.filter((el) => {
               const testName = `${suiteName} > ${el.title}`;
-              if (this.rerunConfig.testsToRun.some((item) => item.name === testName)) {
+              if (this.rerunConfig.testsToRun.some((item: {
+                id: number,
+                name: string;
+                correlationData: string;
+                status: string;
+                startedAt: string;
+                endedAt: string;
+              }) => item.name === testName)) {
                 return true;
               }
               return false;
