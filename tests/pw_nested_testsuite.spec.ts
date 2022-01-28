@@ -1,34 +1,34 @@
 import {test, expect, Page} from '@playwright/test';
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import {ZebEmitter} from '../src/lib/ZebEmitter';
 const {firefox} = require('playwright');
 
 test.beforeAll(async () => {
   const tcmRunOptions = [
     {
       xrayExecutionKey: 'execKey',
-      // xrayDisableSync: true,
-      // xrayEnableRealTimeSync: true
+      xrayDisableSync: true,
+      xrayEnableRealTimeSync: true,
     },
     {
       testRailSuiteId: 'testRailSuite',
-      // testRailRunId: '322',
-      // testRailRunName: 'testRailName',
-      // testRailMilestone: 'milestone',
-      // testRailAssignee: 'emarf',
-      // testRailDisableSync: true,
-      // testRailIncludeAll: true,
-      // testRailEnableRealTimeSync: true,
+      testRailRunId: '322',
+      testRailRunName: 'testRailName',
+      testRailMilestone: 'milestone',
+      testRailAssignee: 'emarf',
+      testRailDisableSync: true,
+      testRailIncludeAll: true,
+      testRailEnableRealTimeSync: true,
     },
     {
       zephyrTestCycleKey: 'zephyr123',
       zephyrJiraProjectKey: 'zephyr321',
-      // zephyrDisableSync: true,
-      // zephyrEnableRealTimeSync: true,
-    }
-  ]
+      zephyrDisableSync: true,
+      zephyrEnableRealTimeSync: true,
+    },
+  ];
 
   ZebEmitter.addTcmRunOptions(tcmRunOptions);
-})
+});
 
 test.describe('nested foo', () => {
   test('test runnin in Firery fox @ff @smoke_test @slow', async ({page}, testInfo) => {
@@ -71,7 +71,7 @@ test.describe('nested foo', () => {
 
     test('my test1', async ({page}) => {
       ZebEmitter.setMaintainer('emarf');
-      
+
       // Expect a title "to contain" a substring.
       await expect(page).toHaveTitle(/Playwright/);
 
