@@ -12,13 +12,12 @@
     "pretest": "npm run testprep",
     "test": "playwright test --workers=4 --grep @unit_test -c ./build/playwright_github.config.js",
     "prettier": "prettier --write --loglevel warn \"**/**/*.ts\"",
-    "debug": "playwright test --config ./playwright_github.config.ts --workers=1",
-    "t": "npx playwright test"
+    "debug": "playwright test --config ./playwright_github.config.ts --workers=1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.18.0",
+    "@playwright/test": "^1.18.1",
     "dotenv": "^14.3.2",
-    "playwright": "^1.18.0",
+    "playwright": "^1.18.1",
     "prettier": "^2.5.1",
     "typescript": "^4.5.5"
   },
