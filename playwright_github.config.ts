@@ -17,7 +17,7 @@ const config: PlaywrightTestConfig = {
   reporter: [
     ['line'],
     [
-      './src/lib/zebReporter.js',
+      './src/lib/ZebrunnerReporter.js',
       {
         reporterBaseUrl: 'https://default.zebrunner.com',
         projectKey: 'DEF',

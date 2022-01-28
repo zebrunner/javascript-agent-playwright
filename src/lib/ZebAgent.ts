@@ -5,7 +5,7 @@ import Urls from './Urls';
 import * as fs from 'fs';
 import {randomUUID} from 'crypto';
 import {browserCapabilities, testStep} from './ResultsParser';
-import {zebrunnerConfig} from './zebReporter';
+import {zebrunnerConfig} from './ZebrunnerReporter';
 const FormData = require('form-data');
 
 export default class ZebAgent {

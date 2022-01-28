@@ -1,6 +1,6 @@
 import {WebClient, LogLevel} from '@slack/web-api';
 import {testResult, testSummary} from './ResultsParser';
-import {zebrunnerConfig} from './zebReporter';
+import {zebrunnerConfig} from './ZebrunnerReporter';
 
 export default class SlackReporter {
   private _slackClient: WebClient;

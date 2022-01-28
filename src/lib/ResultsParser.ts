@@ -1,4 +1,4 @@
-import {RerunConfig, zebrunnerConfig} from './zebReporter';
+import {RerunConfig, zebrunnerConfig} from './ZebrunnerReporter';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);

@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 import ResultsParser from '../src/lib/ResultsParser';
-import ZebRunnerReporter from '../src/lib/zebReporter';
+import ZebRunnerReporter from '../src/lib/ZebrunnerReporter';
 
 const portNumber = 8181;
 const projectKey = 'TEST';

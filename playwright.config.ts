@@ -26,7 +26,7 @@ const config: PlaywrightTestConfig = {
   ],
   reporter: [
     [
-      './src/lib/zebReporter.ts',
+      './src/lib/ZebrunnerReporter.ts',
       {
         // enabled: true,
         reportingServerHostname: 'https://webdriver.zebrunner.com',

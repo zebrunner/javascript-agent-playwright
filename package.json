@@ -1,13 +1,14 @@
 {
   "name": "zebr_pw_npm",
-  "version": "0.0.1",
-  "main": "dist/index.js",
+  "version": "0.0.2",
+  "main": "build/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "tsc -p ./tsconfig.json",
+    "build": "npm run clean && tsc -p ./tsconfig.json",
+    "clean": "rimraf ./build",
     "testprep": "tsc --incremental -p ./tsconfig.json",
     "pretest:e2e": "npm run testprep",
-    "test:e2e": "playwright test -c ./src/build",
+    "test:e2e": "playwright test -c ./build",
     "pretest": "npm run testprep",
     "test": "playwright test --workers=4 --grep @unit_test -c ./src/build/playwright_github.config.js",
     "prettier": "prettier --write --loglevel warn \"**/**/*.ts\"",

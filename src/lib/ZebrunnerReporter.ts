@@ -45,7 +45,7 @@ export type RerunConfig = {
   id: string;
   testRunUuid: string;
 }
-class ZebRunnerReporter implements Reporter {
+class ZebrunnerReporter implements Reporter {
   private suite!: Suite;
   private zebConfig: zebrunnerConfig;
   private zebAgent: ZebAgent;
@@ -353,7 +353,6 @@ class ZebRunnerReporter implements Reporter {
           ...s,
         }))
       );
-      console.log('log', logEntries);
     }
     let r = await this.zebAgent.addTestLogs(testRunId, logEntries);
     return r;
@@ -482,4 +481,4 @@ class ZebRunnerReporter implements Reporter {
     return tags;
   }
 }
-export default ZebRunnerReporter;
+export default ZebrunnerReporter;
