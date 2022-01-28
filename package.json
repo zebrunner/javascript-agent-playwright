@@ -1,7 +1,7 @@
 {
   "name": "zebr_pw_npm",
-  "version": "0.0.3",
-  "main": "build/src/index.js",
+  "version": "0.0.4",
+  "main": "build/src/lib/index.js",
   "license": "MIT",
   "scripts": {
     "build": "npm run clean && tsc -p ./tsconfig.json",
