@@ -69,6 +69,7 @@ class ZebrunnerReporter implements Reporter {
       }
     
       const response = await this.zebAgent.rerunRequest(JSON.parse(process.env.REPORTING_RUN_CONTEXT));
+      console.log(response.data);
       this.rerunConfig = response.data;
       if (this.rerunConfig.mode === 'NEW' || !this.rerunConfig.runOnlySpecificTests) {
         return suite;
@@ -100,7 +101,7 @@ class ZebrunnerReporter implements Reporter {
           recursiveTestsTraversal(res);
         }
       };
-
+      
       recursiveTestsTraversal(suite);
   
       return suite;
