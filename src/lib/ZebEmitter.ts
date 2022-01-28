@@ -1,5 +1,5 @@
-import { tcmEvents } from "./constants";
-import { sendEventToReporter } from "./utils";
+import {tcmEvents} from './constants';
+import {sendEventToReporter} from './utils';
 
 export const ZebEmitter = {
   addTcmRunOptions: (options): void => {
@@ -8,7 +8,7 @@ export const ZebEmitter = {
   addTcmTestOptions: (options): void => {
     sendEventToReporter(tcmEvents.TCM_TEST_OPTIONS, options);
   },
-  setMaintainer: (maintainer):void => {
-    sendEventToReporter(tcmEvents.SET_MAINTAINER, maintainer)
+  setMaintainer: (maintainer): void => {
+    sendEventToReporter(tcmEvents.SET_MAINTAINER, maintainer);
   },
-}
+};

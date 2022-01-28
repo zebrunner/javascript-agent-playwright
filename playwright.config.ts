@@ -21,12 +21,12 @@ const config: PlaywrightTestConfig = {
     // },
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {...devices['Desktop Safari']},
     },
   ],
   reporter: [
     [
-      './src/lib/zebReporter.ts',
+      './src/lib/ZebrunnerReporter.ts',
       {
         // enabled: true,
         reportingServerHostname: 'https://webdriver.zebrunner.com',
@@ -34,7 +34,7 @@ const config: PlaywrightTestConfig = {
         // reportingRunDisplayName: 'PW-tests conf',
         reportingRunBuild: 'alpha-1 conf',
         reportingRunEnvironment: 'STAGE conf',
-        // reportingNotificationNotifyOnEachFailure: true,
+        // reportingNotifyOnEachFailure: true,
         reportingNotificationSlackChannels: 'channel1,channel2',
         reportingNotificationMsTeamsChannels: 'channel1,channel2',
         reportingNotificationEmails: 'channel1,channel2',
