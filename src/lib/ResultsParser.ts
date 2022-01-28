@@ -37,29 +37,29 @@ export type testStep = {
 };
 
 export type browserCapabilities = {
-    ua: string;
-    browser: {
-      name: string;
-      version: string;
-      major: string;
-    };
-    engine: { 
-      name: string;
-      version: string; 
-    };
-    os: { 
-      name: string;
-      version: string;
-    };
-    device: { 
-      vendor: string | undefined;
-      model: string | undefined;
-      type: string | undefined;
-      };
-    cpu: { 
-      architecture: string;
-    };
-}
+  ua: string;
+  browser: {
+    name: string;
+    version: string;
+    major: string;
+  };
+  engine: {
+    name: string;
+    version: string;
+  };
+  os: {
+    name: string;
+    version: string;
+  };
+  device: {
+    vendor: string | undefined;
+    model: string | undefined;
+    type: string | undefined;
+  };
+  cpu: {
+    architecture: string;
+  };
+};
 
 export type testSuite = {
   testSuite: {
@@ -100,13 +100,15 @@ export default class ResultsParser {
   private _environment: string;
   private _rerunConfig: RerunConfig;
   constructor(results, config: zebrunnerConfig, rerunConfig) {
-    this._build = config?.reportingRunBuild ? config?.reportingRunBuild  : '1.0 alpha(default)';
+    this._build = config?.reportingRunBuild ? config?.reportingRunBuild : '1.0 alpha(default)';
     this._environment = config?.reportingRunEnvironment ? config?.reportingRunEnvironment : '-';
     this._result = {
       tests: [],
       testRunId: 0,
       title: '',
-      testRunName: config?.reportingRunDisplayName ? config?.reportingRunDisplayName : 'Default Suite',
+      testRunName: config?.reportingRunDisplayName
+        ? config?.reportingRunDisplayName
+        : 'Default Suite',
       build: this._build,
       environment: this._environment,
     };
@@ -145,7 +147,7 @@ export default class ResultsParser {
       testResults = await this.parseTests(
         suite.parent.title ? `${suite.parent.title} > ${suite.title}` : suite.title,
         suite.tests,
-        launchInfo,
+        launchInfo
       );
       this.updateResults({
         tests: testResults,
@@ -197,7 +199,7 @@ export default class ResultsParser {
     return testResults;
   }
 
-  parseBrowserCapabilities (launchInfo) {
+  parseBrowserCapabilities(launchInfo) {
     parser.setUA(launchInfo.use.userAgent);
     return parser.getResult();
   }
@@ -221,13 +223,13 @@ export default class ResultsParser {
     if (tcmTestOptions) {
       tcmTestOptions.forEach((el) => {
         tags.push(el);
-      })
+      });
     }
-    
+
     if (tags.length !== 0) {
       return tags.map((c) => {
         if (typeof c === 'string') {
-          return {key: 'tag', value: c.replace('@', '')}
+          return {key: 'tag', value: c.replace('@', '')};
         }
         if (typeof c === 'object') {
           return c;
@@ -270,29 +272,15 @@ export default class ResultsParser {
     return null;
   }
 
-  async convertVideo (path, format) {
+  async convertVideo(path, format) {
     try {
       const fileName = path.replace('.webm', '');
       const convertedFilePath = `${fileName}.${format}`;
-        await ffmpeg(path)
-          .toFormat(format)
-          .outputOptions([
-            '-vsync 2'
-          ])
-          // .on("start", commandLine => {
-          //   console.log(`Spawned Ffmpeg with command: ${commandLine}`);
-          // })
-          // .on("error", (err, stdout, stderr) => {
-          //   console.log(err, stdout, stderr);
-          // })
-          // .on("end", (stdout, stderr) => {
-          //   console.log(stdout, stderr);
-          // })
-          .saveToFile(convertedFilePath);
+      await ffmpeg(path).toFormat(format).outputOptions(['-vsync 2']).saveToFile(convertedFilePath);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-  };
+  }
 
   determineStatus(status) {
     if (status === 'failed') return 'FAILED';
@@ -320,12 +308,12 @@ export default class ResultsParser {
         timestamp: new Date(steps[0].startTime).getTime() - 1,
         message: `RERUN START`,
         level: 'INFO',
-      })
+      });
       testSteps.push({
         timestamp: new Date(steps[steps.length - 1].startTime).getTime() + 1,
         message: `RERUN END`,
         level: 'INFO',
-      })
+      });
     }
 
     return testSteps;

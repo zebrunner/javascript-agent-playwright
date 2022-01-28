@@ -1,6 +1,6 @@
 {
   "name": "zebr_pw_npm",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "build/src/lib/index.js",
   "license": "MIT",
   "scripts": {
@@ -10,10 +10,10 @@
     "pretest:e2e": "npm run testprep",
     "test:e2e": "playwright test -c ./build",
     "pretest": "npm run testprep",
-    "test": "playwright test --workers=4 --grep @unit_test -c ./src/build/playwright_github.config.js",
+    "test": "playwright test --workers=4 --grep @unit_test -c ./build/playwright_github.config.js",
     "prettier": "prettier --write --loglevel warn \"**/**/*.ts\"",
-    "debug": "playwright test --config ./playwright.config.ts --workers=1",
-    "start": "node ./woka.js"
+    "debug": "playwright test --config ./playwright_github.config.ts --workers=1",
+    "t": "npx playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.18.0",
