@@ -1,8 +1,9 @@
 {
-  "name": "zebr_pw_npm",
-  "version": "0.0.6",
+  "name": "@zebrunner/javascript-agent-playwright",
+  "version": "1.0.0",
   "main": "build/src/lib/index.js",
   "license": "MIT",
+  "description": "Zebrunner Agent for Playwright",
   "scripts": {
     "build": "npm run clean && tsc -p ./tsconfig.json",
     "clean": "rimraf ./build",
@@ -30,12 +31,18 @@
     "form-data": "^4.0.0",
     "ua-parser-js": "^1.0.2"
   },
+  "homepage": "https://github.com/zebrunner/javascript-agent-playwright#readme",
   "bugs": {
-    "url": "https://github.com/ryanrosello-og/zebrunner-playwright-agent/issues"
+    "url": "https://github.com/zebrunner/javascript-agent-playwright/issues"
   },
-  "homepage": "https://github.com/ryanrosello-og/zebrunner-playwright-agent#readme",
+  "keywords": [
+    "zebrunner",
+    "reporting",
+    "playwright"
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ryanrosello-og/zebrunner-playwright-agent.git"
-  }
+    "url": "git+https://github.com/zebrunner/javascript-agent-playwright"
+  },
+  "author": "https://github.com/ryanrosello-og"
 }

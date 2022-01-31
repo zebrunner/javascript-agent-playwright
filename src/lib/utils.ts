@@ -287,9 +287,9 @@ const parsePwConfig = (config) => {
       ? JSON.parse(process.env.PW_CONCURRENT_TASKS)
       : 10,
   };
-  const configObject = config.reporter.find(
-    (f) => f[0].includes('zeb') || f[1]?.includes('zeb')
-  )[1];
+
+  const configObject = config.reporter.find((el) => el[0].includes('@zebrunner') || el[1]?.includes('@zebrunner'))[1];
+  
   Object.keys(configObject).forEach((key) => {
     if (key === 'enabled') {
       pwConfig.enabled = _getConfigVar('ENABLED', configObject[key]);

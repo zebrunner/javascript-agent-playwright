@@ -1,15 +1,14 @@
-<!-- # pw-zeb ![Biulds](https://github.com/ryanrosello-og/zebrunner-playwright-agent/actions/workflows/main.yml/badge.svg) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/ryanrosello-og/zebrunner-playwright-agent/blob/master/LICENSE)
-
-> Publish [Playwright](https://playwright.dev/) test results directly to [Zebrunner](https://zebrunner.com/) after the completion of all test suite execution. -->
-# Setup
+# Zebrunner agent for Playwright testing framework
+This agent was originally developed by [Ryan Rosello](https://github.com/ryanrosello-og)
+## Setup
 
 Run the following:
 
-`yarn add zebrunner-playwright-agent -D`
+`@zebrunner/javascript-agent-playwright -D`
 
 It is currently possible to provide the configuration via:
-- Environment variables
-- Playwright config
+- `Environment variables`
+- `Playwright config`
 
 Environment variables:
 - `REPORTING_ENABLED` - `mandatory`, enables or disables reporting. The default value is false. If disabled, the agent will use no op component implementations that will simply log output for tracing purposes with the trace level;
@@ -31,10 +30,12 @@ Environment variables:
 Playwright config(example):
 
 `playwright.config.ts`
-```
+```ts
+module.exports = {
+  testDir: '<tests directory>',
   reporter: [
     [
-      './node_modules/zebrunner-playwright-agent/src/build/src/lib/zebReporter.js',
+      '@zebrunner/javascript-agent-playwright',
       {
         enabled: true,
         reportingServerHostname: 'https://default.zebrunner.com',
@@ -52,6 +53,7 @@ Playwright config(example):
       },
     ],
   ],
+}
 ```
 
 Run your tests by providing your Zebrunner `REPORTING_SERVER_ACCESS_TOKEN` as an environment variable:
@@ -60,9 +62,7 @@ Run your tests by providing your Zebrunner `REPORTING_SERVER_ACCESS_TOKEN` as an
 
 or add environment variable to `.env` 
 
-```json
-REPORTING_SERVER_ACCESS_TOKEN=<your zebrunner api key>
-```
+`REPORTING_SERVER_ACCESS_TOKEN=<your zebrunner api key>`
 
 and 
 
@@ -71,7 +71,7 @@ and
 
 It is highly recommended that you enable the screenshot on failure feature, video and trace in your `playwright.config.ts` config file:
 
-```
+```ts
   use: {
     screenshot: 'only-on-failure',
     video: 'on',
@@ -83,7 +83,7 @@ This will allow the agent to include where possible screenshots of failures, vid
 
 Also highly recommended include to `playwright.config.ts` `project` option:
 
-```
+```ts
 projects: [
     ...
     {
@@ -96,7 +96,7 @@ projects: [
 
 This will help to get information about `browser` and `os` settings.
 
-#### Tracking test maintainer
+### Tracking test maintainer
 
 You may want to add transparency to the process of automation maintenance by having an engineer responsible for evolution of specific tests or test classes. Zebrunner comes with a concept of a maintainer - a person that can be assigned to maintain tests.
 
@@ -105,7 +105,7 @@ See a sample test class below:
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('foo - l2 ', () => {
   test.beforeEach(async ({page}) => {
@@ -142,6 +142,22 @@ In the example above, `simple` will be reported as a maintainer of `my test`, wh
 
 The maintainer username should be a valid Zebrunner username, otherwise it will be set to `anonymous`.
 
+### Attaching labels
+
+You can attach labels, by writing them in the name of the test through `@`
+
+Example: 
+
+```ts
+test('test runnin in Firery fox @ff @smoke_test @slow', async ({page}, testInfo) => {
+    const browser = await firefox.launch();
+    const page1 = await browser.newPage();
+    await page1.goto('https://example.com');
+    await browser.close();
+  });
+```
+
+After test execution you can see `ff`,`smoke_test`,`slow` on ui.
 ### Upload test results to external test case management systems
 
 Zebrunner provides an ability to upload test results to external TCMs on test run finish. For some TCMs it is possible to upload results in real-time during the test run execution.
@@ -176,7 +192,7 @@ Example:
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.beforeAll(async () => {
   const tcmRunOptions = [
@@ -233,7 +249,7 @@ Example:
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.beforeAll(async () => {
   const tcmRunOptions = [
@@ -283,7 +299,7 @@ By default, results will be uploaded to Zephyr on test run finish.
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.beforeAll(async () => {
   const tcmRunOptions = [
@@ -314,6 +330,3 @@ test.describe('nested foo', () => {
   });
 };
 ```
-<!-- # Contribution
-
-# License -->
