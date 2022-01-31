@@ -3,7 +3,7 @@ name: Publish package to NPM
 on:
   push:
     branches:
-    - main # Push events on main branch
+    - 'master' # Push events on main branch
 
 jobs:
   publish:
