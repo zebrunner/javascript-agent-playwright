@@ -20,4 +20,5 @@ jobs:
         run: npm run build
       - uses: JS-DevTools/npm-publish@v1
         with:
+          access: 'restricted'
           token: ${{ secrets.NPM_TOKEN }}
