@@ -288,7 +288,7 @@ const parsePwConfig = (config) => {
       : 10,
   };
 
-  const configObject = config.reporter.find((el) => el[0].includes('Zebrunner') || el[1]?.includes('Zebrunner'))[1];
+  const configObject = config.reporter.find((el) => el[0].includes('@zebrunner') || el[1]?.includes('@zebrunner'))[1];
   
   Object.keys(configObject).forEach((key) => {
     if (key === 'enabled') {
