@@ -1,12 +1,14 @@
-# Setup
+# Zebrunner agent for Playwright testing framework
+This agent was originally developed by [Ryan Rosello](https://github.com/ryanrosello-og)
+## Setup
 
 Run the following:
 
 `@zebrunner/javascript-agent-playwright -D`
 
 It is currently possible to provide the configuration via:
-- Environment variables
-- Playwright config
+- `Environment variables`
+- `Playwright config`
 
 Environment variables:
 - `REPORTING_ENABLED` - `mandatory`, enables or disables reporting. The default value is false. If disabled, the agent will use no op component implementations that will simply log output for tracing purposes with the trace level;
@@ -103,7 +105,7 @@ See a sample test class below:
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('foo - l2 ', () => {
   test.beforeEach(async ({page}) => {
@@ -190,7 +192,7 @@ Example:
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.beforeAll(async () => {
   const tcmRunOptions = [
@@ -247,7 +249,7 @@ Example:
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.beforeAll(async () => {
   const tcmRunOptions = [
@@ -297,7 +299,7 @@ By default, results will be uploaded to Zephyr on test run finish.
 ```ts
 import { test, expect, Page } from '@playwright/test';
 const { firefox } = require('playwright');
-import { ZebEmitter } from '../src/lib/ZebEmitter';
+import { ZebEmitter } from '@zebrunner/javascript-agent-playwright';
 
 test.beforeAll(async () => {
   const tcmRunOptions = [
@@ -328,7 +330,3 @@ test.describe('nested foo', () => {
   });
 };
 ```
-# Authors
-
-- [Ryan Rosello](https://github.com/ryanrosello-og)
-- [Roman Ivashkevich](https://github.com/emarf)
