@@ -216,18 +216,18 @@ class ZebrunnerReporter implements Reporter {
         this.testRunId,
         testsExecutions.results
       );
-
-      let testSessions = await this.sendTestSessions(
+      
+      let startTestSessions = await this.startTestSessions(
         this.testRunId,
-        runStartTime,
         testsExecutions.results
       );
 
       let videoArtifacts = await this.addVideoArtifacts(
         this.testRunId,
-        testSessions.sessionsWithVideoAttachments,
-        testsExecutions.results
+        startTestSessions.results,
       );
+
+      let finishTestSessions = await this.finishTestSessions(this.testRunId, startTestSessions.results)
       let stopTestRunsResult = await this.stopTestRuns(this.testRunId, new Date().toISOString());
 
       let summary = {
@@ -265,9 +265,13 @@ class ZebrunnerReporter implements Reporter {
           success: endTestExecutions.results.filter((f) => f && f.status === 200).length,
           errors: endTestExecutions.errors.length,
         },
-        testSessions: {
-          success: testSessions.results.filter((f) => f && f.status === 200).length,
-          errors: testSessions.errors.length,
+        startTestSessions: {
+          success: startTestSessions.results.length,
+          errors: startTestSessions.errors.length,
+        },
+        finishTestSessions: {
+          success: finishTestSessions.results.filter((f) => f && f.status === 200).length,
+          errors: finishTestSessions.errors.length,
         },
         stopTestRunsResult: {
           success: stopTestRunsResult.status === 200 ? 1 : 0,
@@ -484,6 +488,9 @@ class ZebrunnerReporter implements Reporter {
       const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
+          if (new Date(test.startedAt).getTime() === new Date(test.endedAt).getTime()) {
+            test.endedAt = new Date(new Date(test.endedAt).getTime() + 1);
+          }
           let r = await this.zebAgent.finishTestExecution(testRunId, test.testId, {
             result: test.status,
             reason: test.reason,
@@ -499,9 +506,8 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  async sendTestSessions(testRunId: number, runStartTime: number, tests: testResult[]) {
+  async startTestSessions(testRunId: number, tests: testResult[]) {
     try {
-      let sessionsWithVideoAttachments = [];
       const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
         .for(tests)
         .process(async (test, index, pool) => {
@@ -512,22 +518,28 @@ class ZebrunnerReporter implements Reporter {
             testIds: test.testId,
           });
 
-          const res = await this.zebAgent.finishTestSession(
-            sess.data.id,
+          const sessionId = sess.data.id;
+          return {sessionId, ...test};
+        });
+      return {results, errors};
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async finishTestSessions(testRunId: number, tests: testResult[]) {
+    try {
+      const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
+        .for(tests)
+        .process(async (test, index, pool) => {
+          return await this.zebAgent.finishTestSession(
+            test.sessionId,
             testRunId,
             test.endedAt,
             test.testId
           );
-
-          if (test.attachment.video.length > 0) {
-            sessionsWithVideoAttachments.push({
-              sessionId: sess.data.id,
-              testId: test.testId,
-            });
-          }
-          return res;
         });
-      return {sessionsWithVideoAttachments, results, errors};
+      return {results, errors};
     } catch (error) {
       console.log(error);
     }
@@ -535,26 +547,18 @@ class ZebrunnerReporter implements Reporter {
 
   async addVideoArtifacts(
     testRunId: number,
-    sessionsWithVideoAttachments: Record<string, number>[],
     tests: testResult[]
   ) {
     try {
       const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
         .for(tests)
         .process(async (test, index, pool) => {
-          let res;
-          const result = sessionsWithVideoAttachments.filter((el) => el.testId === test.testId);
-          if (result.length > 0) {
-            res = await this.zebAgent.sendVideoArtifacts(
+          return await this.zebAgent.sendVideoArtifacts(
               testRunId,
-              result[0].sessionId,
+              test.sessionId,
               test.attachment.video
-            );
-          }
-
-          return res;
+          );
         });
-
       return {results, errors};
     } catch (error) {
       console.log(error);

@@ -436,7 +436,7 @@ export default class ZebAgent {
   }
 
   async finishTestSession(
-    sessionId: string,
+    sessionId: number,
     testRunId: number,
     endedAt: Date,
     testIds: number[] | number

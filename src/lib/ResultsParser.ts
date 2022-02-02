@@ -27,6 +27,7 @@ export type testResult = {
   }[];
   steps?: testStep[];
   maintainer: string;
+  sessionId?: number;
 };
 
 export type testStep = {
