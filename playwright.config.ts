@@ -40,7 +40,7 @@ const config: PlaywrightTestConfig = {
         reportingNotificationEmails: 'channel1,channel2',
         reportingMilestoneId: '1',
         reportingMilestoneName: 'test',
-        pwConcurrentTasks: 19,
+        pwConcurrentTasks: 10,
       },
     ],
   ],

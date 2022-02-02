@@ -49,7 +49,7 @@ export default class Urls {
       status: 204,
     };
   }
-  urlFinishSession(testRunId: number, sessionId: string) {
+  urlFinishSession(testRunId: number, sessionId: number) {
     return {
       url: `${this._baseUrl}/api/reporting/v1/test-runs/${testRunId}/test-sessions/${sessionId}`,
       status: 200,
