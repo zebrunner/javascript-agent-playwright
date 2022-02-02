@@ -45,7 +45,7 @@ export default class Api {
       }
     } catch (e) {
       if (attempt === this._maxAttempts) {
-        console.log(`Payload: ${JSON.stringify(options.payload)} \n ${e.message} \n ${e.stack}`);
+        console.log(`Payload: ${JSON.stringify(options.payload)} \n ${e.message} \n ${e.stack} \n ${e}`);
         return;
       } else {
         await this.post(
@@ -96,7 +96,7 @@ export default class Api {
       }
     } catch (e) {
       if (attempt === this._maxAttempts) {
-        console.log(`Payload: ${JSON.stringify(options.payload)} \n ${e.message} \n ${e.stack}`);
+        console.log(`Payload: ${JSON.stringify(options.payload)} \n ${e.message} \n ${e.stack} \n ${e}`);
         return;
       } else {
         await this.put(
@@ -113,7 +113,7 @@ export default class Api {
   }
 
   private shortenUrl(url: string): string {
-    return url.replace(process.env.BASE_URL, '');
+    return url.replace(process.env.REPORTING_SERVER_HOSTNAME, '');
   }
 
   private wait(ms: number) {

@@ -5,6 +5,8 @@ import ZebAgent from './ZebAgent';
 import ResultsParser, {testResult, testRun} from './ResultsParser';
 import {tcmEvents} from './constants';
 import {parseNotifications, parsePwConfig, parseTcmRunOptions, parseTcmTestOptions} from './utils';
+let UAParser = require('ua-parser-js');
+let parser = new UAParser();
 // import SlackReporter from './SlackReporter';
 
 export type zebrunnerConfig = {
@@ -73,7 +75,7 @@ class ZebrunnerReporter implements Reporter {
       const response = await this.zebAgent.rerunRequest(
         JSON.parse(process.env.REPORTING_RUN_CONTEXT)
       );
-      console.log(response.data);
+      
       this.rerunConfig = response.data;
       if (this.rerunConfig.mode === 'NEW' || !this.rerunConfig.runOnlySpecificTests) {
         return suite;
@@ -87,26 +89,33 @@ class ZebrunnerReporter implements Reporter {
         for (const res of suite.suites) {
           if (res.tests.length > 0) {
             const suiteName = res.parent.title ? `${res.parent.title} > ${res.title}` : res.title;
+            const launchInfo = suite.project();
+            parser.setUA(launchInfo.use.userAgent);
+            const systemOptions = parser.getResult()
             res.tests = res.tests.filter((el) => {
               const testName = `${suiteName} > ${el.title}`;
-              if (
-                this.rerunConfig.testsToRun.some(
-                  (item: {
-                    id: number;
-                    name: string;
-                    correlationData: string;
-                    status: string;
-                    startedAt: string;
-                    endedAt: string;
-                  }) => item.name === testName
-                )
-              ) {
+              const isSuitableTest = this.rerunConfig.testsToRun.some(
+                (item: {
+                  id: number;
+                  name: string;
+                  correlationData: string;
+                  status: string;
+                  startedAt: string;
+                  endedAt: string;
+                }) => {
+                  const {browser, version, os} = JSON.parse(item.correlationData);
+                  if (item.name === testName && browser === systemOptions.browser.name && version === systemOptions.browser.version && os === systemOptions.os.name) {
+                    return true;
+                  }
+                  return false;
+                });
+              if (isSuitableTest) {
                 return true;
               }
               return false;
             });
           }
-          recursiveTestsTraversal(res);
+          recursiveTestsTraversal(res)
         }
       };
       recursiveTestsTraversal(suite);
@@ -409,7 +418,11 @@ class ZebrunnerReporter implements Reporter {
             methodName: test.name,
             maintainer: test.maintainer,
             startedAt: test.startedAt,
-            argumentsIndex: 1,
+            correlationData: JSON.stringify({
+              browser: test.browserCapabilities.browser.name,
+              version: test.browserCapabilities.browser.version,
+              os: test.browserCapabilities.os.name
+            })
           });
           let testId = testExecResponse.data.id;
           return {testId, ...test};
@@ -433,7 +446,13 @@ class ZebrunnerReporter implements Reporter {
               status: string;
               startedAt: string;
               endedAt: string;
-            }) => el.name === test.name
+            }) => {
+              const {browser, version, os } = JSON.parse(el.correlationData);
+              if (el.name === test.name && browser === test.browserCapabilities.browser.name && version === test.browserCapabilities.browser.version && os === test.browserCapabilities.os.name) {
+                return true
+              }
+              return false;
+            }
           )[0];
           let testExecResponse = await this.zebAgent.startRerunTestExecution(
             testRunId,
@@ -443,7 +462,11 @@ class ZebrunnerReporter implements Reporter {
               className: test.suiteName,
               methodName: test.name,
               startedAt: test.startedAt,
-              argumentsIndex: 1,
+              correlationData: JSON.stringify({
+                browser: test.browserCapabilities.browser.name,
+                version: test.browserCapabilities.browser.version,
+                os: test.browserCapabilities.os.name
+              })
             }
           );
           let testId = testExecResponse.data.id;
@@ -482,14 +505,14 @@ class ZebrunnerReporter implements Reporter {
       const {results, errors} = await PromisePool.withConcurrency(this.zebAgent.concurrency)
         .for(tests)
         .process(async (test, index, pool) => {
-          let sess = await this.zebAgent.startTestSession({
+          const sess = await this.zebAgent.startTestSession({
             browserCapabilities: test.browserCapabilities,
             startedAt: test.startedAt,
             testRunId: testRunId,
             testIds: test.testId,
           });
 
-          let res = await this.zebAgent.finishTestSession(
+          const res = await this.zebAgent.finishTestSession(
             sess.data.id,
             testRunId,
             test.endedAt,
@@ -504,7 +527,6 @@ class ZebrunnerReporter implements Reporter {
           }
           return res;
         });
-
       return {sessionsWithVideoAttachments, results, errors};
     } catch (error) {
       console.log(error);

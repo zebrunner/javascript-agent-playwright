@@ -269,7 +269,7 @@ const parseTcmTestOptions = (data, tcmConfig) => {
 
 const parsePwConfig = (config) => {
   const pwConfig = {
-    enabled: process.env.ENABLED ? JSON.parse(process.env.ENABLED) : false,
+    enabled: process.env.REPORTING_ENABLED ? JSON.parse(process.env.REPORTING_ENABLED) : false,
     reportingServerHostname: process.env.REPORTING_SERVER_HOSTNAME,
     reportingProjectKey: process.env.REPORTING_PROJECT_KEY,
     reportingRunDisplayName: process.env.REPORTING_RUN_DISPLAY_NAME,
@@ -288,7 +288,8 @@ const parsePwConfig = (config) => {
       : 10,
   };
 
-  const configObject = config.reporter.find((el) => el[0].includes('@zebrunner') || el[1]?.includes('@zebrunner'))[1];
+  const regExp = /zebr/i;
+  const configObject = config.reporter.find((el) => regExp.test(el[0]) || regExp.test(el[1]))[1];
   
   Object.keys(configObject).forEach((key) => {
     if (key === 'enabled') {

@@ -1,6 +1,6 @@
 import {AxiosResponse} from 'axios';
 import * as fs from 'fs';
-import {randomUUID} from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 import Logger from '../lib/Logger';
 import Api from './Api';
 import Urls from './Urls';
@@ -131,8 +131,11 @@ export default class ZebAgent {
       startedAt: Date;
       maintainer?: string;
       testCase?: string;
-      labels?: {key: string; value: string}[];
-      argumentsIndex: number;
+      labels?: {
+        key: string;
+        value: string;
+      }[];
+      correlationData?: string;
     }
   ): Promise<AxiosResponse> {
     try {
@@ -160,7 +163,7 @@ export default class ZebAgent {
       maintainer?: string;
       testCase?: string;
       labels?: {key: string; value: string}[];
-      argumentsIndex: number;
+      correlationData?: string;
     }
   ) {
     try {
@@ -394,7 +397,6 @@ export default class ZebAgent {
     }
   }
 
-  // this sends browser type to ZebRunner
   async startTestSession(options: {
     browserCapabilities: browserCapabilities;
     startedAt: Date;
@@ -402,7 +404,7 @@ export default class ZebAgent {
     testIds: number[] | number;
   }): Promise<AxiosResponse> {
     let payload = {
-      sessionId: randomUUID(),
+      sessionId: uuidv4(),
       initiatedAt: options.startedAt,
       startedAt: options.startedAt,
       desiredCapabilities: {
@@ -417,8 +419,8 @@ export default class ZebAgent {
       },
       testIds: [],
     };
-
     payload.testIds.push(options.testIds);
+
     try {
       const endpoint = this._urls.urlStartSession(options.testRunId);
       let r = await this._api.post({
@@ -439,14 +441,14 @@ export default class ZebAgent {
     endedAt: Date,
     testIds: number[] | number
   ): Promise<AxiosResponse> {
-    let payload = {
-      endedAt: endedAt,
-      testIds: [],
-    };
     try {
+      let payload = {
+        endedAt: endedAt,
+        testIds: [],
+      };
       payload.testIds.push(testIds);
-
       const endpoint = this._urls.urlFinishSession(testRunId, sessionId);
+      
       let r = await this._api.put({
         url: endpoint.url,
         payload: payload,
