@@ -45,8 +45,6 @@ export default class Api {
       }
     } catch (e) {
       if (attempt === this._maxAttempts) {
-        console.log(`Payload: ${JSON.stringify(options.payload)}`);
-        console.log(e.response.data);
       } else {
         await this.post(
           {
@@ -96,8 +94,6 @@ export default class Api {
       }
     } catch (e) {
       if (attempt === this._maxAttempts) {
-        console.log(`Payload: ${JSON.stringify(options.payload)}`);
-        console.log(e.response.data);
         return;
       } else {
         await this.put(
