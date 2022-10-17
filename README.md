@@ -4,7 +4,7 @@ This agent was originally developed by [Ryan Rosello](https://github.com/ryanros
 
 Run the following:
 
-`@zebrunner/javascript-agent-playwright -D`
+`npm i @zebrunner/javascript-agent-playwright -D`
 
 It is currently possible to provide the configuration via:
 - `Environment variables`

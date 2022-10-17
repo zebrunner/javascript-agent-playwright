@@ -29,6 +29,7 @@ const tcmEvents = {
   TCM_RUN_OPTIONS: 'TCM_RUN_OPTIONS',
   TCM_TEST_OPTIONS: 'TCM_TEST_OPTIONS',
   SET_MAINTAINER: 'SET_MAINTAINER',
+  LOG: 'LOG',
 };
 
 export {xrayLabels, testRailLabels, zephyrLabels, tcmEvents};

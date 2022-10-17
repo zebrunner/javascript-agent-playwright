@@ -11,4 +11,7 @@ export const ZebEmitter = {
   setMaintainer: (maintainer): void => {
     sendEventToReporter(tcmEvents.SET_MAINTAINER, maintainer);
   },
+  log: (logMessage): void => {
+    sendEventToReporter(tcmEvents.LOG, logMessage);
+  }
 };

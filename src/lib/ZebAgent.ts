@@ -332,7 +332,6 @@ export default class ZebAgent {
   _getFileSizeInBytes = (filename) => {
     const stats = fs.statSync(filename);
     const fileSizeInBytes = stats.size;
-    console.log('size', fileSizeInBytes);
     return fileSizeInBytes;
   };
 
