@@ -143,6 +143,13 @@ class ZebrunnerReporter implements Reporter {
     if (type === tcmEvents.SET_MAINTAINER) {
       test.maintainer = data;
     }
+
+    if (type === tcmEvents.LOG) {
+      result.steps.push({
+        title: data,
+        startTime: new Date().getTime(),
+      });
+    } 
   }
 
   async onEnd() {
