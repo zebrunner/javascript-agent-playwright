@@ -3,7 +3,7 @@ name: Publish package to NPM
 on:
   push:
     branches:
-    - 'master' # Push events on main branch
+    - master # Push events on master branch
 
 jobs:
   publish:
@@ -14,8 +14,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 16.13.1
-      - name: yarn install
-        run: yarn install
+      - name: npm install
+        run: npm install
       - name: build
         run: npm run build
       - uses: JS-DevTools/npm-publish@v1
