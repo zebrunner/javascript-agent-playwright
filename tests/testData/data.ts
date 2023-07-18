@@ -9,6 +9,7 @@ export type ParserFixture = {
 const config = {
   enabled: true,
   reportingServerHostname: 'https://webdriver.zebrunner.com',
+  reportingServerAccessToken: 'somesecrettokenhere',
   reportingProjectKey: 'DEF',
   reportingRunDisplayName: 'PW-tests conf',
   reportingRunBuild: 'alpha-1 conf',

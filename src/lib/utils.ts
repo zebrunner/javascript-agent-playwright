@@ -271,6 +271,7 @@ const parsePwConfig = (config) => {
   const pwConfig = {
     enabled: process.env.REPORTING_ENABLED ? JSON.parse(process.env.REPORTING_ENABLED) : false,
     reportingServerHostname: process.env.REPORTING_SERVER_HOSTNAME,
+    reportingServerAccessToken: process.env.REPORTING_SERVER_ACCESS_TOKEN,
     reportingProjectKey: process.env.REPORTING_PROJECT_KEY,
     reportingRunDisplayName: process.env.REPORTING_RUN_DISPLAY_NAME,
     reportingRunBuild: process.env.REPORTING_RUN_BUILD,
@@ -288,16 +289,23 @@ const parsePwConfig = (config) => {
       : 10,
   };
 
-  const regExp = /zebr/i;
-  const configObject = config.reporter.find((el) => regExp.test(el[0]) || regExp.test(el[1]))[1];
-  
+  const zbrName = 'javascript-agent-playwright';
+  const zbrReporter = config.reporter.find((el) => el[0].includes(zbrName));
+  const configObject = zbrReporter.length > 1 ? zbrReporter[1] : {};
+
   Object.keys(configObject).forEach((key) => {
     if (key === 'enabled') {
-      pwConfig.enabled = _getConfigVar('ENABLED', configObject[key]);
+      pwConfig.enabled = _getConfigVar('REPORTING_ENABLED', configObject[key]);
     }
     if (key === 'reportingServerHostname') {
       pwConfig.reportingServerHostname = _getConfigVar(
         'REPORTING_SERVER_HOSTNAME',
+        configObject[key]
+      );
+    }
+    if (key === 'reportingServerAccessToken') {
+      pwConfig.reportingServerAccessToken = _getConfigVar(
+        'REPORTING_SERVER_ACCESS_TOKEN',
         configObject[key]
       );
     }

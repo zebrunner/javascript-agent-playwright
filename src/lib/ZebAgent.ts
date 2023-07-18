@@ -22,7 +22,7 @@ export default class ZebAgent {
   private readonly _maximumConcurrentTask = 20;
 
   constructor(config: zebrunnerConfig) {
-    this._accessToken = process.env.REPORTING_SERVER_ACCESS_TOKEN;
+    this._accessToken = config.reportingServerAccessToken || process.env.REPORTING_SERVER_ACCESS_TOKEN;
     this._projectKey = config.reportingProjectKey || 'DEF';
     this._reportBaseUrl = config.reportingServerHostname;
 

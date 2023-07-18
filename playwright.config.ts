@@ -30,6 +30,7 @@ const config: PlaywrightTestConfig = {
       {
         enabled: true,
         reportingServerHostname: 'https://webdriver.zebrunner.com',
+        reportingServerAccessToken: 'somesecretaccesstoken',
         reportingProjectKey: 'DEF',
         reportingRunDisplayName: 'PW-tests',
         reportingRunBuild: 'alpha-1',

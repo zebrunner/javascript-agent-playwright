@@ -1,6 +1,6 @@
 {
   "name": "@zebrunner/javascript-agent-playwright",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "build/src/lib/index.js",
   "license": "MIT",
   "description": "Zebrunner Agent for Playwright",
@@ -10,9 +10,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.18.1",
-    "dotenv": "^14.3.2",
     "playwright": "^1.18.1",
     "prettier": "^2.5.1",
+    "rimraf": "^5.0.1",
     "typescript": "^4.5.5"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
     "@slack/web-api": "^6.6.0",
     "@supercharge/promise-pool": "^2.1.0",
     "axios": "^0.25.0",
+    "dotenv": "^16.3.1",
     "fluent-ffmpeg": "^2.1.2",
     "form-data": "^4.0.0",
     "ua-parser-js": "^1.0.2",

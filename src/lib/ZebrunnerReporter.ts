@@ -12,6 +12,7 @@ let parser = new UAParser();
 export type zebrunnerConfig = {
   enabled: boolean;
   reportingServerHostname: string;
+  reportingServerAccessToken: string;
   reportingProjectKey?: string;
   reportingRunDisplayName?: string;
   reportingRunBuild?: string;
