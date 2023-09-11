@@ -1,3 +1,8 @@
+import { ZebrunnerPaths } from './constant/zebrunner-paths';
+
+/**
+ * @deprecated Use {@link ZebrunnerPaths} instead
+ */
 export default class Urls {
   private _projectKey: string;
   private _baseUrl: string;

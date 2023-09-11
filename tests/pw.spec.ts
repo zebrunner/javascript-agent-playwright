@@ -1,21 +1,31 @@
-import {test, expect} from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { testRail, xray, zebrunner, zephyr } from '../src/lib/tcm';
+
 test.describe('feature foo', () => {
+
   test.beforeEach(async ({page}) => {
     // Go to the starting url before each test.
     await page.goto('https://playwright.dev/');
   });
 
   test('my test', async ({page}) => {
+    xray.testCaseKey("ZEB-1");
+    zebrunner.testCaseKey("ZEB-1");
     // Assertions use the expect API.
     await expect(page).toHaveURL('https://playwright.dev/');
   });
 
   test('basic test', async ({page}) => {
+    xray.testCaseKey("ZEB-1");
+    zebrunner.testCaseKey("ZEB-1");
     const title = page.locator('.navbar__inner .navbar__title');
     await expect(title).toHaveText('Playwright');
   });
 
   test('my test1', async ({page}) => {
+    xray.testCaseKey("ZEB-1");
+    testRail.testCaseId("ZEB-1");
+    zebrunner.testCaseKey("ZEB-1");
     // Expect a title "to contain" a substring.
     await expect(page).toHaveTitle(/Playwright/);
 
@@ -29,4 +39,5 @@ test.describe('feature foo', () => {
     // Expect some text to be visible on the page.
     await expect(page.locator('text=Introduction').first()).toBeVisible();
   });
+
 });
