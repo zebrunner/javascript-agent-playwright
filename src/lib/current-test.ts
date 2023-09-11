@@ -1,4 +1,4 @@
-import log = require("loglevel");
+import log from "loglevel";
 import { EventNames } from "./constant/custom-events";
 import { isNotBlankString } from "./type-utils";
 
