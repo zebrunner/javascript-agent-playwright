@@ -80,7 +80,9 @@ export default defineConfig({
             jiraProjectKey: 'ZEB',
             testCycleKey: 'ZEB-T1'
           }
-        }
+        },
+
+        pwConcurrentTasks: 10
       }
     ],
   ],

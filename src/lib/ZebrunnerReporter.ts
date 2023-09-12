@@ -18,6 +18,7 @@ let parser = new UAParser();
 class ZebrunnerReporter implements Reporter {
 
   private suite!: Suite;
+  private concurrencyLevel: number;
 
   private zebAgent: ZebAgent;
   private apiClient: ApiClient;
@@ -36,6 +37,7 @@ class ZebrunnerReporter implements Reporter {
     }
 
     this.apiClient = new ApiClient(this.reportingConfig);
+    this.concurrencyLevel = parseInt(process.env.PW_CONCURRENT_TASKS) || reporterConfig.pwConcurrentTasks || 10;
 
     this.suite = suite;
     this.zebAgent = new ZebAgent(this.reportingConfig);
@@ -109,9 +111,22 @@ class ZebrunnerReporter implements Reporter {
     const { eventType, payload } = JSON.parse(chunk);
 
     if (eventType === EventNames.ADD_TEST_CASE) {
-      test.testCases = test.testCases?.concat(payload) || [payload]
+      this.addTestTestCase(test, payload);
     } else if (eventType === EventNames.SET_MAINTAINER) {
       test.maintainer = payload;
+    }
+  }
+
+  private addTestTestCase(test: any, newTestCase: TestCase) {
+    if (isNotEmptyArray(test.testCases)) {
+      test.testCases = test.testCases.filter((testCase: TestCase) =>
+        // not the same test case
+        testCase.tcmType !== newTestCase.tcmType || testCase.testCaseId !== newTestCase.testCaseId
+      );
+
+      test.testCases.push(newTestCase)
+    } else {
+      test.testCases = [newTestCase];
     }
   }
 
@@ -177,7 +192,7 @@ class ZebrunnerReporter implements Reporter {
 
   async addTestTags(testRunId: number, tests) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
           let r = await this.zebAgent.addTestTags(testRunId, test.testId, test.tags);
@@ -192,7 +207,7 @@ class ZebrunnerReporter implements Reporter {
 
   async addScreenshots(testRunId: number, tests) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
           let r = await this.zebAgent.attachScreenshot(
@@ -211,7 +226,7 @@ class ZebrunnerReporter implements Reporter {
 
   async addTestArtifacts(testRunId: number, tests) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
           let r = await this.zebAgent.attachTestArtifacts(
@@ -248,7 +263,7 @@ class ZebrunnerReporter implements Reporter {
 
   async startTests(testRunId: number, tests) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
           let testExecResponse = await this.zebAgent.startTestExecution(testRunId, {
@@ -274,7 +289,7 @@ class ZebrunnerReporter implements Reporter {
 
   async restartTests(testRunId: number, tests) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
           const rerunTest = this.exchangedRunContext.testsToRun.filter(
@@ -320,7 +335,7 @@ class ZebrunnerReporter implements Reporter {
 
   async finishTestExecutions(testRunId: number, tests: testResult[]) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
           if (new Date(test.startedAt).getTime() === new Date(test.endedAt).getTime()) {
@@ -343,7 +358,7 @@ class ZebrunnerReporter implements Reporter {
 
   async startTestSessions(testRunId: number, tests: testResult[]) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test, index, pool) => {
           const sess = await this.zebAgent.startTestSession({
@@ -364,7 +379,7 @@ class ZebrunnerReporter implements Reporter {
 
   async finishTestSessions(testRunId: number, tests: testResult[]) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test, index, pool) => {
           return await this.zebAgent.finishTestSession(
@@ -385,7 +400,7 @@ class ZebrunnerReporter implements Reporter {
     tests: testResult[]
   ) {
     try {
-      const { results, errors } = await PromisePool.withConcurrency(this.zebAgent.concurrencyLevel)
+      const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test, index, pool) => {
           return await this.zebAgent.sendVideoArtifacts(

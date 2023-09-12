@@ -22,8 +22,6 @@ export default class ZebAgent {
   private _enabled: boolean;
   private _api: Api;
 
-  private readonly _concurrencyLevel = 20;
-
   constructor(config: ReportingConfig) {
     this._accessToken = config.server.accessToken;
     this._projectKey = config.projectKey;
@@ -65,10 +63,6 @@ export default class ZebAgent {
     } catch (error) {
       console.log(error);
     }
-  }
-
-  public get concurrencyLevel() {
-    return this._concurrencyLevel;
   }
 
   public get isEnabled() {
