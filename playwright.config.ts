@@ -31,8 +31,8 @@ export default defineConfig({
         enabled: true,
         projectKey: 'DEF',
         server: {
-          hostname: 'https://dkazaktest.zebrunner.org',
-          accessToken: '7wkj2ZxyhN2s78e25cez6ZLWpId4Kza2ql1dYboObH0ugJDJo4'
+          hostname: 'https://test.zebrunner.com',
+          accessToken: 'yourAccessToken'
         },
         launch: {
           displayName: "Playwright launch",
@@ -47,7 +47,7 @@ export default defineConfig({
           notifyOnEachFailure: false,
           slackChannels: 'dev, qa',
           teamsChannels: 'dev-channel, management',
-          emails: 'dkazak@zebrunner.com'
+          emails: 'yourEmail@gmail.com'
         },
         tcm: {
           testCaseStatus: {
