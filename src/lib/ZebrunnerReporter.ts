@@ -27,7 +27,7 @@ class ZebrunnerReporter implements Reporter {
 
   async onBegin(config: FullConfig, suite: Suite) {
     const reporters: ReporterDescription[] = config.reporter;
-    const zebrunnerReporter: ReporterDescription = reporters.find((reporterAndConfig) => reporterAndConfig[0].includes("ZebrunnerReporter.ts"));
+    const zebrunnerReporter: ReporterDescription = reporters.find((reporterAndConfig) => reporterAndConfig[0].includes("javascript-agent-playwright"));
 
     const reporterConfig: any = zebrunnerReporter[1]
     this.reportingConfig = new ReportingConfig(reporterConfig);
