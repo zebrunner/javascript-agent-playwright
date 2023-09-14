@@ -1,4 +1,5 @@
-import {RerunConfig, zebrunnerConfig} from './ZebrunnerReporter';
+import { ReportingConfig } from './reporting-config';
+import { TestCase } from './types/upsert-test-test-cases';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -28,6 +29,7 @@ export type testResult = {
   steps?: testStep[];
   maintainer: string;
   sessionId?: number;
+  testCases: TestCase[];
 };
 
 export type testStep = {
@@ -62,14 +64,6 @@ export type browserCapabilities = {
   };
 };
 
-export type testSuite = {
-  testSuite: {
-    title: string;
-    tests: testResult[];
-    testRunId?: number;
-  };
-};
-
 export type testRun = {
   tests: testResult[];
   testRunId?: number;
@@ -79,42 +73,25 @@ export type testRun = {
   environment: string;
 };
 
-export type testSummary = {
-  build: string;
-  environment: string;
-  passed: number;
-  failed: number;
-  skipped: number;
-  aborted: number;
-  duration: number;
-  failures: {
-    zebResult: string;
-    test: string;
-    message: string;
-  }[];
-};
-
 export default class ResultsParser {
   private _resultsData: any;
   private _result: testRun;
   private _build: string;
   private _environment: string;
-  private _rerunConfig: RerunConfig;
-  constructor(results, config: zebrunnerConfig, rerunConfig) {
-    this._build = config?.reportingRunBuild ? config?.reportingRunBuild : '1.0 alpha(default)';
-    this._environment = config?.reportingRunEnvironment ? config?.reportingRunEnvironment : '-';
+  constructor(results, config: ReportingConfig) {
+    this._build = config?.launch?.build ? config?.launch?.build : '1.0 alpha(default)';
+    this._environment = config?.launch?.environment ? config?.launch?.environment : '-';
     this._result = {
       tests: [],
       testRunId: 0,
       title: '',
-      testRunName: config?.reportingRunDisplayName
-        ? config?.reportingRunDisplayName
+      testRunName: config?.launch?.displayName
+        ? config?.launch?.displayName
         : 'Default Suite',
       build: this._build,
       environment: this._environment,
     };
     this._resultsData = results;
-    this._rerunConfig = rerunConfig;
   }
 
   public get build() {
@@ -129,8 +106,8 @@ export default class ResultsParser {
     return this._result;
   }
 
-  getRunStartTime(): number {
-    return new Date(this._result.tests[0].startedAt).getTime() - 1000;
+  getRunStartTime(): Date {
+    return this._result.tests[0]?.startedAt || new Date();
   }
 
   async parse() {
@@ -187,13 +164,13 @@ export default class ResultsParser {
           startedAt: new Date(result.startTime),
           endedAt: new Date(new Date(result.startTime).getTime() + result.duration),
           browserCapabilities: browserCapabilities,
-          // testCase: `${result.location.file?}${result.location.line?}:${result.location.column?}`,
           reason: `${this.cleanseReason(result.error?.message)} \n ${this.cleanseReason(
             result.error?.stack
           )}`,
           attachment: this.processAttachment(result.attachments),
           steps: this.getTestSteps(result.steps),
           maintainer: test.maintainer || 'anonymous',
+          testCases: test.testCases
         });
       }
     }
@@ -301,19 +278,6 @@ export default class ResultsParser {
             )}`
           : testStep.title,
         level: testStep.error ? 'ERROR' : 'INFO',
-      });
-    }
-
-    if (this._rerunConfig?.mode === 'RERUN') {
-      testSteps.push({
-        timestamp: new Date(steps[0].startTime).getTime() - 1,
-        message: `RERUN START`,
-        level: 'INFO',
-      });
-      testSteps.push({
-        timestamp: new Date(steps[steps.length - 1].startTime).getTime() + 1,
-        message: `RERUN END`,
-        level: 'INFO',
       });
     }
 
