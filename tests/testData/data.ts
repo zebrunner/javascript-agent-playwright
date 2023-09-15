@@ -1,26 +1,66 @@
 import {testRun} from '../../src/lib/ResultsParser';
 import ResultsParser from '../../src/lib/ResultsParser';
+import { ReportingConfig } from '../../src/lib/reporting-config';
 
 export type ParserFixture = {
   testData: any;
   parsedResults: testRun;
 };
 
-const config = {
+const config: ReportingConfig = {
   enabled: true,
-  reportingServerHostname: 'https://webdriver.zebrunner.com',
-  reportingServerAccessToken: 'somesecrettokenhere',
-  reportingProjectKey: 'DEF',
-  reportingRunDisplayName: 'PW-tests conf',
-  reportingRunBuild: 'alpha-1 conf',
-  reportingRunEnvironment: 'STAGE conf',
-  reportingNotifyOnEachFailure: true,
-  reportingNotificationSlackChannels: 'channel1,channel2',
-  reportingNotificationMsTeamsChannels: 'channel1,channel2',
-  reportingNotificationEmails: 'channel1,channel2',
-  reportingMilestoneId: '1',
-  reportingMilestoneName: 'test',
-  pwConcurrentTasks: 19,
+  projectKey: 'DEF',
+  server: {
+    hostname: 'https://dkazaktest.zebrunner.org',
+    accessToken: '7wkj2ZxyhN2s78e25cez6ZLWpId4Kza2ql1dYboObH0ugJDJo4'
+  },
+  launch: {
+    displayName: "Playwright launch",
+    build: '1.0.0',
+    environment: 'Local'
+  },
+  milestone: {
+    id: null,
+    name: null
+  },
+  notifications: {
+    notifyOnEachFailure: false,
+    slackChannels: 'dev, qa',
+    teamsChannels: 'dev-channel, management',
+    emails: 'dkazak@zebrunner.com'
+  },
+  tcm: {
+    testCaseStatus: {
+      onPass: 'SUCCESS',
+      onFail: 'FAILED',
+    },
+    zebrunner: {
+      pushResults: false,
+      pushInRealTime: false,
+      testRunId: 42
+    },
+    testRail: {
+      pushResults: false,
+      pushInRealTime: false,
+      suiteId: 100,
+      runId: 500,
+      includeAllTestCasesInNewRun: true,
+      runName: 'New Demo Run',
+      milestoneName: 'Demo Milestone',
+      assignee: 'tester@mycompany.com'
+    },
+    xray: {
+      pushResults: false,
+      pushInRealTime: false,
+      executionKey: 'QT-100'
+    },
+    zephyr: {
+      pushResults: false,
+      pushInRealTime: false,
+      jiraProjectKey: 'ZEB',
+      testCycleKey: 'ZEB-T1'
+    }
+  }
 };
 
 const projectObj = {
@@ -146,7 +186,7 @@ const testObj = {
     tests: [],
   },
   parsedResults: async ({testData}, use) => {
-    let resultsParser = new ResultsParser(testData, config, null);
+    let resultsParser = new ResultsParser(testData, config);
     resultsParser.parse();
     let r = await resultsParser.getParsedResults();
     await use(r);

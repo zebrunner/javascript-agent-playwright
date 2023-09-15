@@ -1,41 +1,36 @@
-import {AxiosResponse} from 'axios';
+import { AxiosResponse } from 'axios';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import Logger from '../lib/Logger';
 import Api from './Api';
+import { browserCapabilities, testStep } from './ResultsParser';
 import Urls from './Urls';
-import {browserCapabilities, testStep} from './ResultsParser';
-import {zebrunnerConfig} from './ZebrunnerReporter';
+import ApiClient from './api-client';
+import { ReportingConfig } from './reporting-config';
 const FormData = require('form-data');
 
+/**
+ * @deprecated Use {@link ApiClient} instead
+ */
 export default class ZebAgent {
+
   private _refreshToken: string;
   private _header: any;
   private _urls: Urls;
   private _accessToken: string;
   private _projectKey: string;
   private _reportBaseUrl: string;
-  private _concurrentTasks: number;
   private _enabled: boolean;
   private _api: Api;
-  private readonly _defaultConcurrentTask = 10;
-  private readonly _maximumConcurrentTask = 20;
 
-  constructor(config: zebrunnerConfig) {
-    this._accessToken = config.reportingServerAccessToken || process.env.REPORTING_SERVER_ACCESS_TOKEN;
-    this._projectKey = config.reportingProjectKey || 'DEF';
-    this._reportBaseUrl = config.reportingServerHostname;
+  constructor(config: ReportingConfig) {
+    this._accessToken = config.server.accessToken;
+    this._projectKey = config.projectKey;
+    this._reportBaseUrl = config.server.hostname;
 
     if (config.enabled) {
       this._enabled = true;
     } else {
       this._enabled = false;
-    }
-
-    this._concurrentTasks = config.pwConcurrentTasks || this._defaultConcurrentTask;
-
-    if (this._concurrentTasks > this._maximumConcurrentTask) {
-      this._concurrentTasks = this._maximumConcurrentTask;
     }
 
     this._urls = new Urls(this._projectKey, this._reportBaseUrl);
@@ -65,19 +60,9 @@ export default class ZebAgent {
           Authorization: this._refreshToken,
         },
       };
-      Logger.log(
-        `initialize complete: obtained refreshToken ${this._refreshToken.substring(0, 10)}*****}`
-      );
-      Logger.log(`BASE_URL => ${this._reportBaseUrl}`);
-      Logger.log(`ACCESS_TOKEN => ${this._accessToken.substring(0, 4)}*****`);
-      Logger.log(`PROJECT_KEY => ${this._projectKey}`);
     } catch (error) {
       console.log(error);
     }
-  }
-
-  public get concurrency() {
-    return this._concurrentTasks;
   }
 
   public get isEnabled() {

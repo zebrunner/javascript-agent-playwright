@@ -1,50 +1,89 @@
-// playwright.config.ts
-import {PlaywrightTestConfig, devices} from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
 require('dotenv').config();
 
-const config: PlaywrightTestConfig = {
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  use: {
-    video: 'on',
-    trace: 'on',
-    screenshot: 'only-on-failure',
-  },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+export default defineConfig({
+    forbidOnly: !!process.env.CI,
+    retries: process.env.CI ? 2 : 0,
+    use: {
+        video: 'on',
+        trace: 'on',
+        screenshot: 'only-on-failure',
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: {...devices['Desktop Safari']},
-    },
-  ],
-  reporter: [
-    [
-      './src/lib/ZebrunnerReporter.ts',
-      {
-        enabled: true,
-        reportingServerHostname: 'https://webdriver.zebrunner.com',
-        reportingServerAccessToken: 'somesecretaccesstoken',
-        reportingProjectKey: 'DEF',
-        reportingRunDisplayName: 'PW-tests',
-        reportingRunBuild: 'alpha-1',
-        reportingRunEnvironment: 'STAGE',
-        reportingNotifyOnEachFailure: true,
-        reportingNotificationSlackChannels: 'channel1,channel2',
-        reportingNotificationMsTeamsChannels: 'channel1,channel2',
-        reportingNotificationEmails: 'channel1,channel2',
-        reportingMilestoneId: '1',
-        reportingMilestoneName: 'test',
-        pwConcurrentTasks: 10,
-      },
+    projects: [
+        {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'] },
+        },
+        {
+            name: 'firefox',
+            use: { ...devices['Desktop Firefox'] },
+        },
+        {
+            name: 'webkit',
+            use: { ...devices['Desktop Safari'] },
+        },
     ],
-  ],
-};
+    reporter: [
+        [
+            '../javascript-agent-playwright',
+            {
+                enabled: true,
+                projectKey: 'DEF',
+                server: {
+                    hostname: 'https://test.zebrunner.com',
+                    accessToken: 'yourAccessToken',
+                },
+                launch: {
+                    displayName: 'Playwright launch',
+                    build: '1.0.0',
+                    environment: 'Local',
+                },
+                milestone: {
+                    id: null,
+                    name: null,
+                },
+                notifications: {
+                    notifyOnEachFailure: false,
+                    slackChannels: 'dev, qa',
+                    teamsChannels: 'dev-channel, management',
+                    emails: 'yourEmail@gmail.com',
+                },
+                tcm: {
+                    testCaseStatus: {
+                        onPass: 'SUCCESS',
+                        onFail: 'FAILED',
+                    },
+                    zebrunner: {
+                        pushResults: false,
+                        pushInRealTime: false,
+                        testRunId: 42,
+                    },
+                    testRail: {
+                        pushResults: false,
+                        pushInRealTime: false,
+                        suiteId: 100,
+                        runId: 500,
+                        includeAllTestCasesInNewRun: true,
+                        runName: 'New Demo Run',
+                        milestoneName: 'Demo Milestone',
+                        assignee: 'tester@mycompany.com',
+                    },
+                    xray: {
+                        pushResults: false,
+                        pushInRealTime: false,
+                        executionKey: 'QT-100',
+                    },
+                    zephyr: {
+                        pushResults: false,
+                        pushInRealTime: false,
+                        jiraProjectKey: 'ZEB',
+                        testCycleKey: 'ZEB-T1',
+                    },
+                },
 
-export default config;
+                pwConcurrentTasks: 10,
+            },
+        ],
+    ],
+});

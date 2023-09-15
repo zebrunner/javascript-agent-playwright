@@ -1,50 +1,10 @@
-import {test, expect, Page} from '@playwright/test';
-import {ZebEmitter} from '../src/lib/ZebEmitter';
+import { expect, test } from '@playwright/test';
+import { CurrentTest } from '../src/lib/current-test';
 const {firefox} = require('playwright');
-
-test.beforeAll(async () => {
-  const tcmRunOptions = [
-    {
-      xrayExecutionKey: 'execKey',
-      xrayDisableSync: true,
-      xrayEnableRealTimeSync: true,
-    },
-    {
-      testRailSuiteId: 'testRailSuite',
-      testRailRunId: '322',
-      testRailRunName: 'testRailName',
-      testRailMilestone: 'milestone',
-      testRailAssignee: 'emarf',
-      testRailDisableSync: true,
-      testRailIncludeAll: true,
-      testRailEnableRealTimeSync: true,
-    },
-    {
-      zephyrTestCycleKey: 'zephyr123',
-      zephyrJiraProjectKey: 'zephyr321',
-      zephyrDisableSync: true,
-      zephyrEnableRealTimeSync: true,
-    },
-  ];
-
-  ZebEmitter.addTcmRunOptions(tcmRunOptions);
-});
 
 test.describe('nested foo', () => {
   test('test runnin in Firery fox @ff @smoke_test @slow', async ({page}, testInfo) => {
-    const tcmTestOptions = [
-      {
-        xrayTestKey: ['testKey', 'testKey1'],
-      },
-      {
-        testRailCaseId: ['caseId', 'caseId1'],
-      },
-      {
-        zephyrTestCaseKey: ['zephyr', 'zephyr1'],
-      },
-    ];
-    ZebEmitter.setMaintainer('emarf');
-    ZebEmitter.addTcmTestOptions(tcmTestOptions);
+    CurrentTest.setMaintainer('emarf');
 
     const browser = await firefox.launch();
     const page1 = await browser.newPage();
@@ -70,7 +30,7 @@ test.describe('nested foo', () => {
     });
 
     test('my test1', async ({page}) => {
-      ZebEmitter.setMaintainer('emarf');
+      CurrentTest.setMaintainer('emarf');
 
       // Expect a title "to contain" a substring.
       await expect(page).toHaveTitle(/Playwright/);

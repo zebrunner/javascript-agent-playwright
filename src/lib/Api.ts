@@ -1,6 +1,9 @@
-import Logger from './Logger';
-import axios, {AxiosResponse} from 'axios';
+import axios, { AxiosResponse } from 'axios';
+import ApiClient from './api-client';
 
+/**
+ * @deprecated Use {@link ApiClient} instead
+ */
 export default class Api {
   private _maxAttempts: number;
   private _delayPerAttempt: number;
@@ -19,11 +22,6 @@ export default class Api {
     },
     attempt?: number
   ): Promise<AxiosResponse> {
-    Logger.log(
-      attempt
-        ? `POST *attempt[${attempt}] ${this.shortenUrl(options.url)}`
-        : `POST ${this.shortenUrl(options.url)}`
-    );
     if (attempt >= 0) {
       await this.wait(this._delayPerAttempt);
     }
@@ -70,11 +68,6 @@ export default class Api {
     },
     attempt?: number
   ): Promise<AxiosResponse> {
-    Logger.log(
-      attempt
-        ? `PUT *attempt[${attempt}] ${this.shortenUrl(options.url)}`
-        : `PUT ${this.shortenUrl(options.url)}`
-    );
     if (attempt > 0) {
       await this.wait(this._delayPerAttempt);
     }
