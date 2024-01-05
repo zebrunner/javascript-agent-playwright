@@ -1,6 +1,7 @@
 import {testRun} from '../../src/lib/ResultsParser';
 import ResultsParser from '../../src/lib/ResultsParser';
 import { ReportingConfig } from '../../src/lib/reporting-config';
+import { SummarySendingPolicy } from '../../src/lib/types/summary-sending-policy';
 
 export type ParserFixture = {
   testData: any;
@@ -25,6 +26,7 @@ const config: ReportingConfig = {
   },
   notifications: {
     notifyOnEachFailure: false,
+    summarySendingPolicy: SummarySendingPolicy.NEVER,
     slackChannels: 'dev, qa',
     teamsChannels: 'dev-channel, management',
     emails: 'dkazak@zebrunner.com'

@@ -45,6 +45,7 @@ export default defineConfig({
                 },
                 notifications: {
                     notifyOnEachFailure: false,
+                    summarySendingPolicy: 'NEVER',
                     slackChannels: 'dev, qa',
                     teamsChannels: 'dev-channel, management',
                     emails: 'yourEmail@gmail.com',

@@ -1,4 +1,5 @@
 import { ReportingConfig } from '../reporting-config';
+import { SummarySendingPolicy } from './summary-sending-policy';
 
 export type NotificationTargetType = 'SLACK_CHANNELS' | 'MS_TEAMS_CHANNELS' | 'EMAIL_RECIPIENTS'
 export type TestRunStartStatus = 'IN_PROGRESS' | 'QUEUED'
@@ -28,7 +29,8 @@ export class StartTestRunRequest {
         name?: string
     };
     notifications?: {
-        notifyOnEachFailure?: boolean
+        notifyOnEachFailure?: boolean,
+        summarySendingPolicy?: SummarySendingPolicy,
         targets: NotificationTarget[]
     };
 
@@ -48,6 +50,7 @@ export class StartTestRunRequest {
         };
         this.notifications = {
             notifyOnEachFailure: reportingConfig.notifications.notifyOnEachFailure,
+            summarySendingPolicy: reportingConfig.notifications.summarySendingPolicy,
             targets: [
                 {
                     type: 'SLACK_CHANNELS',
