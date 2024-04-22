@@ -1,25 +1,31 @@
 import { AxiosResponse } from 'axios';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import FormData from 'form-data';
 import Api from './Api';
 import { browserCapabilities, testStep } from './ResultsParser';
 import Urls from './Urls';
 import ApiClient from './api-client';
 import { ReportingConfig } from './reporting-config';
-const FormData = require('form-data');
 
 /**
  * @deprecated Use {@link ApiClient} instead
  */
 export default class ZebAgent {
-
   private _refreshToken: string;
+
   private _header: any;
+
   private _urls: Urls;
+
   private _accessToken: string;
+
   private _projectKey: string;
+
   private _reportBaseUrl: string;
+
   private _enabled: boolean;
+
   private _api: Api;
 
   constructor(config: ReportingConfig) {
@@ -43,10 +49,10 @@ export default class ZebAgent {
         refreshToken: this._accessToken,
       };
 
-      let endpoint = this._urls.urlRefresh();
-      let r = await this._api.post({
+      const endpoint = this._urls.urlRefresh();
+      const r = await this._api.post({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
       });
 
@@ -94,10 +100,10 @@ export default class ZebAgent {
     };
   }): Promise<AxiosResponse> {
     try {
-      let endpoint = this._urls.urlRegisterRun();
-      let r = await this._api.post({
+      const endpoint = this._urls.urlRegisterRun();
+      const r = await this._api.post({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -121,13 +127,13 @@ export default class ZebAgent {
         value: string;
       }[];
       correlationData?: string;
-    }
+    },
   ): Promise<AxiosResponse> {
     try {
-      let endpoint = this._urls.urlStartTest(testRunId);
-      let r = await this._api.post({
+      const endpoint = this._urls.urlStartTest(testRunId);
+      const r = await this._api.post({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -147,15 +153,15 @@ export default class ZebAgent {
       startedAt: Date;
       maintainer?: string;
       testCase?: string;
-      labels?: {key: string; value: string}[];
+      labels?: { key: string; value: string }[];
       correlationData?: string;
-    }
+    },
   ) {
     try {
-      let endpoint = this._urls.urlRerunTestStart(testRunId, testId);
-      let r = await this._api.post({
+      const endpoint = this._urls.urlRerunTestStart(testRunId, testId);
+      const r = await this._api.post({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -172,13 +178,13 @@ export default class ZebAgent {
       result: 'PASSED' | 'FAILED' | 'ABORTED' | 'SKIPPED';
       reason?: string;
       endedAt?: Date;
-    }
+    },
   ): Promise<AxiosResponse> {
     try {
-      let endpoint = this._urls.urlFinishTest(testRunId, testId);
-      let r = await this._api.put({
+      const endpoint = this._urls.urlFinishTest(testRunId, testId);
+      const r = await this._api.put({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -192,13 +198,13 @@ export default class ZebAgent {
     testRunId: number,
     payload: {
       endedAt: string;
-    }
+    },
   ): Promise<AxiosResponse> {
     try {
       const endpoint = this._urls.urlFinishRun(testRunId);
-      let r = await this._api.put({
+      const r = await this._api.put({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -211,7 +217,7 @@ export default class ZebAgent {
   async attachScreenshot(
     testRunId?: number,
     testId?: number,
-    screenshotsArray?: Record<string, number>[]
+    screenshotsArray?: Record<string, number>[],
   ): Promise<AxiosResponse> {
     try {
       if (screenshotsArray.length === 0) return;
@@ -244,7 +250,7 @@ export default class ZebAgent {
   async attachTestArtifacts(
     testRunId?: number,
     testId?: number,
-    artifactsAttachments?: Record<string, string>[]
+    artifactsAttachments?: Record<string, string>[],
   ): Promise<AxiosResponse> {
     if (artifactsAttachments.length === 0) {
       return;
@@ -278,7 +284,7 @@ export default class ZebAgent {
   async sendVideoArtifacts(
     testRunId: number,
     testSessionId: number,
-    videoPathsArray: Record<string, string>[]
+    videoPathsArray: Record<string, string>[],
   ) {
     try {
       if (videoPathsArray.length === 0) {
@@ -325,7 +331,7 @@ export default class ZebAgent {
     try {
       if (logs.length <= 0) return;
       const endpoint = this._urls.urlSendLogs(testRunId);
-      let r = await this._api.post({
+      const r = await this._api.post({
         url: endpoint.url,
         payload: logs,
         expectedStatusCode: endpoint.status,
@@ -341,14 +347,14 @@ export default class ZebAgent {
     try {
       if (!items) return;
 
-      let payload = {
+      const payload = {
         items,
       };
 
       const endpoint = this._urls.urlTestExecutionLabel(testRunId, testId);
-      let r = await this._api.put({
+      const r = await this._api.put({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -362,19 +368,19 @@ export default class ZebAgent {
     try {
       if (items.length === 0) return;
 
-      let payload = {
+      const payload = {
         items,
       };
 
       const endpoint = this._urls.urlTestRunLabel(testRunId);
-      let r = await this._api.put(
+      const r = await this._api.put(
         {
           url: endpoint.url,
-          payload: payload,
+          payload,
           expectedStatusCode: endpoint.status,
           config: this._header,
         },
-        0
+        0,
       );
       return r;
     } catch (error) {
@@ -388,7 +394,7 @@ export default class ZebAgent {
     testRunId: number;
     testIds: number[] | number;
   }): Promise<AxiosResponse> {
-    let payload = {
+    const payload = {
       sessionId: uuidv4(),
       initiatedAt: options.startedAt,
       startedAt: options.startedAt,
@@ -408,9 +414,9 @@ export default class ZebAgent {
 
     try {
       const endpoint = this._urls.urlStartSession(options.testRunId);
-      let r = await this._api.post({
+      const r = await this._api.post({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -424,19 +430,19 @@ export default class ZebAgent {
     sessionId: number,
     testRunId: number,
     endedAt: Date,
-    testIds: number[] | number
+    testIds: number[] | number,
   ): Promise<AxiosResponse> {
     try {
-      let payload = {
-        endedAt: endedAt,
+      const payload = {
+        endedAt,
         testIds: [],
       };
       payload.testIds.push(testIds);
       const endpoint = this._urls.urlFinishSession(testRunId, sessionId);
-      
-      let r = await this._api.put({
+
+      const r = await this._api.put({
         url: endpoint.url,
-        payload: payload,
+        payload,
         expectedStatusCode: endpoint.status,
         config: this._header,
       });
@@ -449,7 +455,7 @@ export default class ZebAgent {
   async rerunRequest(payload) {
     try {
       const endpoint = this._urls.urlRerunRequest();
-      let r = await this._api.post({
+      const r = await this._api.post({
         url: endpoint.url,
         payload,
         expectedStatusCode: endpoint.status,

@@ -1,6 +1,7 @@
 import { ReporterDescription } from '@playwright/test';
 import { FullConfig, Reporter, Suite } from '@playwright/test/reporter';
 import { PromisePool } from '@supercharge/promise-pool';
+import UAParser from 'ua-parser-js';
 import ResultsParser, { testResult, testRun } from './ResultsParser';
 import ZebAgent from './ZebAgent';
 import ApiClient from './api-client';
@@ -12,24 +13,30 @@ import { StartTestRunRequest } from './types/start-test-run';
 import { UpdateTcmConfigsRequest } from './types/update-tcm-configs';
 import { TestCase, UpsertTestTestCases } from './types/upsert-test-test-cases';
 import { isNotEmptyArray } from './type-utils';
-let UAParser = require('ua-parser-js');
-let parser = new UAParser();
+
+const parser = new UAParser();
 
 class ZebrunnerReporter implements Reporter {
-
   private suite!: Suite;
+
   private concurrencyLevel: number;
 
   private zebAgent: ZebAgent;
+
   private apiClient: ApiClient;
+
   private reportingConfig: ReportingConfig;
+
   private exchangedRunContext: ExchangedRunContext;
 
   async onBegin(config: FullConfig, suite: Suite) {
+    console.log('onBegin'); // to remove
     const reporters: ReporterDescription[] = config.reporter;
-    const zebrunnerReporter: ReporterDescription = reporters.find((reporterAndConfig) => reporterAndConfig[0].includes("javascript-agent-playwright"));
+    const zebrunnerReporter: ReporterDescription = reporters.find((reporterAndConfig) =>
+      reporterAndConfig[0].includes('javascript-agent-playwright'),
+    );
 
-    const reporterConfig: any = zebrunnerReporter[1]
+    const reporterConfig: any = zebrunnerReporter[1];
     this.reportingConfig = new ReportingConfig(reporterConfig);
 
     if (!this.reportingConfig.enabled) {
@@ -37,7 +44,8 @@ class ZebrunnerReporter implements Reporter {
     }
 
     this.apiClient = new ApiClient(this.reportingConfig);
-    this.concurrencyLevel = parseInt(process.env.PW_CONCURRENT_TASKS) || reporterConfig.pwConcurrentTasks || 10;
+    this.concurrencyLevel =
+      parseInt(process.env.PW_CONCURRENT_TASKS) || reporterConfig.pwConcurrentTasks || 10;
 
     this.suite = suite;
     this.zebAgent = new ZebAgent(this.reportingConfig);
@@ -48,13 +56,17 @@ class ZebrunnerReporter implements Reporter {
   async rerunResolver(suite: Suite) {
     try {
       if (!process.env.REPORTING_RUN_CONTEXT) {
+        console.log('no rerunResolver needed'); // to remove
         return suite;
       }
 
-      const runContext = JSON.parse(process.env.REPORTING_RUN_CONTEXT)
+      const runContext = JSON.parse(process.env.REPORTING_RUN_CONTEXT);
       this.exchangedRunContext = await this.apiClient.exchangeRunContext(runContext);
 
-      if (this.exchangedRunContext.mode === 'NEW' || !this.exchangedRunContext.runOnlySpecificTests) {
+      if (
+        this.exchangedRunContext.mode === 'NEW' ||
+        !this.exchangedRunContext.runOnlySpecificTests
+      ) {
         return suite;
       }
 
@@ -62,13 +74,14 @@ class ZebrunnerReporter implements Reporter {
         throw new Error(`${this.exchangedRunContext.reason}`);
       }
 
-      const recursiveTestsTraversal = (suite) => {
+      const recursiveTestsTraversal = (suite: Suite) => {
+        // eslint-disable-next-line no-restricted-syntax
         for (const res of suite.suites) {
           if (res.tests.length > 0) {
             const suiteName = res.parent.title ? `${res.parent.title} > ${res.title}` : res.title;
             const launchInfo = suite.project();
             parser.setUA(launchInfo.use.userAgent);
-            const systemOptions = parser.getResult()
+            const systemOptions = parser.getResult();
             res.tests = res.tests.filter((el) => {
               const testName = `${suiteName} > ${el.title}`;
               const isSuitableTest = this.exchangedRunContext.testsToRun.some(
@@ -81,18 +94,24 @@ class ZebrunnerReporter implements Reporter {
                   endedAt: string;
                 }) => {
                   const { browser, version, os } = JSON.parse(item.correlationData);
-                  if (item.name === testName && browser === systemOptions.browser.name && version === systemOptions.browser.version && os === systemOptions.os.name) {
+                  if (
+                    item.name === testName &&
+                    browser === systemOptions.browser.name &&
+                    version === systemOptions.browser.version &&
+                    os === systemOptions.os.name
+                  ) {
                     return true;
                   }
                   return false;
-                });
+                },
+              );
               if (isSuitableTest) {
                 return true;
               }
               return false;
             });
           }
-          recursiveTestsTraversal(res)
+          recursiveTestsTraversal(res);
         }
       };
       recursiveTestsTraversal(suite);
@@ -119,15 +138,25 @@ class ZebrunnerReporter implements Reporter {
 
   private addTestTestCase(test: any, newTestCase: TestCase) {
     if (isNotEmptyArray(test.testCases)) {
-      test.testCases = test.testCases.filter((testCase: TestCase) =>
-        // not the same test case
-        testCase.tcmType !== newTestCase.tcmType || testCase.testCaseId !== newTestCase.testCaseId
+      test.testCases = test.testCases.filter(
+        (testCase: TestCase) =>
+          // not the same test case
+          testCase.tcmType !== newTestCase.tcmType ||
+          testCase.testCaseId !== newTestCase.testCaseId,
       );
 
-      test.testCases.push(newTestCase)
+      test.testCases.push(newTestCase);
     } else {
       test.testCases = [newTestCase];
     }
+  }
+
+  onTestBegin(test) {
+    console.log(`Starting test ${test.title}`);
+  }
+
+  onTestEnd(test, result) {
+    console.log(`Finished test ${test.title}: ${result.status}`);
   }
 
   async onEnd() {
@@ -137,12 +166,12 @@ class ZebrunnerReporter implements Reporter {
     }
 
     try {
-      let resultsParser = new ResultsParser(this.suite, this.reportingConfig);
+      console.log('onEnd'); // to remove
+      const resultsParser = new ResultsParser(this.suite, this.reportingConfig);
       await resultsParser.parse();
-      let parsedResults = await resultsParser.getParsedResults();
+      const parsedResults = await resultsParser.getParsedResults();
 
       await this.postResultsToZebrunner(resultsParser.getRunStartTime(), parsedResults);
-
     } catch (error) {
       console.log('onEnd', error);
     }
@@ -150,27 +179,41 @@ class ZebrunnerReporter implements Reporter {
 
   async postResultsToZebrunner(runStartedAt: Date, testRun: testRun) {
     try {
+      console.log('postResultsToZebrunner'); // to remove
       const testRunId = await this.startTestRun(runStartedAt);
 
-      await this.saveTcmConfigs(testRunId)
+      await this.saveTcmConfigs(testRunId);
 
-      let tests = this.exchangedRunContext?.mode == 'RERUN'
-        ? await this.restartTests(testRunId, testRun.tests)
-        : await this.startTests(testRunId, testRun.tests);
+      const tests =
+        this.exchangedRunContext?.mode === 'RERUN'
+          ? await this.restartTests(testRunId, testRun.tests)
+          : await this.startTests(testRunId, testRun.tests);
 
-      tests.results.forEach(test => this.saveTestTestCases(testRunId, test.testId, test.testCases));
+      tests.results.forEach((test) =>
+        this.saveTestTestCases(testRunId, test.testId, test.testCases),
+      );
 
+      console.log(tests.results[0]);
+
+      console.log('//addTestTags'); // to remove
       await this.addTestTags(testRunId, tests.results);
+      console.log('//addScreenshots'); // to remove
       await this.addScreenshots(testRunId, tests.results);
+      console.log('//addTestArtifacts'); // to remove
       await this.addTestArtifacts(testRunId, tests.results);
+      console.log('//sendTestSteps'); // to remove
       await this.sendTestSteps(testRunId, tests.results);
+      console.log('//finishTestExecutions'); // to remove
       await this.finishTestExecutions(testRunId, tests.results);
 
-      let startTestSessions = await this.startTestSessions(testRunId, tests.results);
+      console.log('//startTestSessions'); // to remove
+      const startTestSessions = await this.startTestSessions(testRunId, tests.results);
 
+      console.log('//addVideoArtifacts'); // to remove
       await this.addVideoArtifacts(testRunId, startTestSessions.results);
 
-      await this.finishTestSessions(testRunId, startTestSessions.results)
+      console.log('//finishTestSessions'); // to remove
+      await this.finishTestSessions(testRunId, startTestSessions.results);
       await this.finishTestRun(testRunId);
     } catch (error) {
       console.log(error);
@@ -178,14 +221,15 @@ class ZebrunnerReporter implements Reporter {
   }
 
   private async startTestRun(startedAt: Date): Promise<number> {
+    console.log('startTestRun'); // to remove
     const runUuid = this.exchangedRunContext ? this.exchangedRunContext.testRunUuid : null;
     const request = new StartTestRunRequest(runUuid, startedAt, this.reportingConfig);
 
-    return await this.apiClient.startTestRun(this.reportingConfig.projectKey, request);
+    return this.apiClient.startTestRun(this.reportingConfig.projectKey, request);
   }
 
   private async finishTestRun(testRunId: number): Promise<void> {
-    const request = new FinishTestRunRequest()
+    const request = new FinishTestRunRequest();
 
     await this.apiClient.finishTestRun(testRunId, request);
   }
@@ -195,7 +239,7 @@ class ZebrunnerReporter implements Reporter {
       const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
-          let r = await this.zebAgent.addTestTags(testRunId, test.testId, test.tags);
+          const r = await this.zebAgent.addTestTags(testRunId, test.testId, test.tags);
           return r;
         });
 
@@ -210,10 +254,10 @@ class ZebrunnerReporter implements Reporter {
       const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
-          let r = await this.zebAgent.attachScreenshot(
+          const r = await this.zebAgent.attachScreenshot(
             testRunId,
             test.testId,
-            test.attachment.screenshots
+            test.attachment.screenshots,
           );
           return r;
         });
@@ -229,10 +273,10 @@ class ZebrunnerReporter implements Reporter {
       const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
-          let r = await this.zebAgent.attachTestArtifacts(
+          const r = await this.zebAgent.attachTestArtifacts(
             testRunId,
             test.testId,
-            test.attachment.files
+            test.attachment.files,
           );
           return r;
         });
@@ -251,10 +295,10 @@ class ZebrunnerReporter implements Reporter {
           result.steps.map((s) => ({
             testId: result.testId,
             ...s,
-          }))
+          })),
         );
       }
-      let r = await this.zebAgent.addTestLogs(testRunId, logEntries);
+      const r = await this.zebAgent.addTestLogs(testRunId, logEntries);
       return r;
     } catch (error) {
       console.log(error);
@@ -263,10 +307,11 @@ class ZebrunnerReporter implements Reporter {
 
   async startTests(testRunId: number, tests) {
     try {
+      console.log('startTests'); // to remove
       const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
-          let testExecResponse = await this.zebAgent.startTestExecution(testRunId, {
+          const testExecResponse = await this.zebAgent.startTestExecution(testRunId, {
             name: test.name,
             className: test.suiteName,
             methodName: test.name,
@@ -275,10 +320,10 @@ class ZebrunnerReporter implements Reporter {
             correlationData: JSON.stringify({
               browser: test.browserCapabilities.browser.name,
               version: test.browserCapabilities.browser.version,
-              os: test.browserCapabilities.os.name
-            })
+              os: test.browserCapabilities.os.name,
+            }),
           });
-          let testId = testExecResponse.data.id;
+          const testId = testExecResponse.data.id;
           return { testId, ...test };
         });
       return { results, errors };
@@ -289,6 +334,7 @@ class ZebrunnerReporter implements Reporter {
 
   async restartTests(testRunId: number, tests) {
     try {
+      console.log('restartTests'); // to remove
       const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
         .process(async (test: testResult, index, pool) => {
@@ -302,13 +348,18 @@ class ZebrunnerReporter implements Reporter {
               endedAt: string;
             }) => {
               const { browser, version, os } = JSON.parse(el.correlationData);
-              if (el.name === test.name && browser === test.browserCapabilities.browser.name && version === test.browserCapabilities.browser.version && os === test.browserCapabilities.os.name) {
-                return true
+              if (
+                el.name === test.name &&
+                browser === test.browserCapabilities.browser.name &&
+                version === test.browserCapabilities.browser.version &&
+                os === test.browserCapabilities.os.name
+              ) {
+                return true;
               }
               return false;
-            }
+            },
           )[0];
-          let testExecResponse = await this.zebAgent.startRerunTestExecution(
+          const testExecResponse = await this.zebAgent.startRerunTestExecution(
             testRunId,
             rerunTest.id,
             {
@@ -319,11 +370,11 @@ class ZebrunnerReporter implements Reporter {
               correlationData: JSON.stringify({
                 browser: test.browserCapabilities.browser.name,
                 version: test.browserCapabilities.browser.version,
-                os: test.browserCapabilities.os.name
-              })
-            }
+                os: test.browserCapabilities.os.name,
+              }),
+            },
           );
-          let testId = testExecResponse.data.id;
+          const testId = testExecResponse.data.id;
           return { testId, ...test };
         });
 
@@ -341,7 +392,7 @@ class ZebrunnerReporter implements Reporter {
           if (new Date(test.startedAt).getTime() === new Date(test.endedAt).getTime()) {
             test.endedAt = new Date(new Date(test.endedAt).getTime() + 1);
           }
-          let r = await this.zebAgent.finishTestExecution(testRunId, test.testId, {
+          const r = await this.zebAgent.finishTestExecution(testRunId, test.testId, {
             result: test.status,
             reason: test.reason,
             endedAt: test.endedAt,
@@ -364,7 +415,7 @@ class ZebrunnerReporter implements Reporter {
           const sess = await this.zebAgent.startTestSession({
             browserCapabilities: test.browserCapabilities,
             startedAt: test.startedAt,
-            testRunId: testRunId,
+            testRunId,
             testIds: test.testId,
           });
 
@@ -381,34 +432,22 @@ class ZebrunnerReporter implements Reporter {
     try {
       const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
-        .process(async (test, index, pool) => {
-          return await this.zebAgent.finishTestSession(
-            test.sessionId,
-            testRunId,
-            test.endedAt,
-            test.testId
-          );
-        });
+        .process(async (test, index, pool) =>
+          this.zebAgent.finishTestSession(test.sessionId, testRunId, test.endedAt, test.testId),
+        );
       return { results, errors };
     } catch (error) {
       console.log(error);
     }
   }
 
-  async addVideoArtifacts(
-    testRunId: number,
-    tests: testResult[]
-  ) {
+  async addVideoArtifacts(testRunId: number, tests: testResult[]) {
     try {
       const { results, errors } = await PromisePool.withConcurrency(this.concurrencyLevel)
         .for(tests)
-        .process(async (test, index, pool) => {
-          return await this.zebAgent.sendVideoArtifacts(
-            testRunId,
-            test.sessionId,
-            test.attachment.video
-          );
-        });
+        .process(async (test, index, pool) =>
+          this.zebAgent.sendVideoArtifacts(testRunId, test.sessionId, test.attachment.video),
+        );
       return { results, errors };
     } catch (error) {
       console.log(error);
@@ -423,14 +462,17 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async saveTestTestCases(testRunId: number, testId: number, testCases: TestCase[]): Promise<void> {
+  private async saveTestTestCases(
+    testRunId: number,
+    testId: number,
+    testCases: TestCase[],
+  ): Promise<void> {
     if (isNotEmptyArray(testCases)) {
       const request: UpsertTestTestCases = { items: testCases };
 
       this.apiClient.upsertTestTestCases(testRunId, testId, request);
     }
   }
-
 }
 
 export default ZebrunnerReporter;

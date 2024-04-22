@@ -6,6 +6,7 @@ import ApiClient from './api-client';
  */
 export default class Api {
   private _maxAttempts: number;
+  
   private _delayPerAttempt: number;
 
   constructor(maxAttempts: number, delayPerAttempt: number) {
@@ -20,8 +21,9 @@ export default class Api {
       expectedStatusCode: number;
       config?: any;
     },
-    attempt?: number
+    attempt?: number,
   ): Promise<AxiosResponse> {
+    console.log('class Api post'); // to remove
     if (attempt >= 0) {
       await this.wait(this._delayPerAttempt);
     }
@@ -38,13 +40,13 @@ export default class Api {
             config: options.config,
             expectedStatusCode: options.expectedStatusCode,
           },
-          isNaN(attempt) ? 0 : attempt + 1
+          isNaN(attempt) ? 0 : attempt + 1,
         );
       }
     } catch (e) {
       if (attempt === this._maxAttempts) {
-        console.log(`Payload: ${JSON.stringify(options.payload)}`);
-        console.log(e.response.data);
+        // console.log(`Payload: ${JSON.stringify(options.payload)}`);
+        // console.log(e.response.data);
       } else {
         await this.post(
           {
@@ -53,7 +55,7 @@ export default class Api {
             config: options.config,
             expectedStatusCode: options.expectedStatusCode,
           },
-          isNaN(attempt) ? 0 : attempt + 1
+          isNaN(attempt) ? 0 : attempt + 1,
         );
       }
     }
@@ -66,7 +68,7 @@ export default class Api {
       expectedStatusCode: number;
       config?: any;
     },
-    attempt?: number
+    attempt?: number,
   ): Promise<AxiosResponse> {
     if (attempt > 0) {
       await this.wait(this._delayPerAttempt);
@@ -84,13 +86,13 @@ export default class Api {
             config: options.config,
             expectedStatusCode: options.expectedStatusCode,
           },
-          isNaN(attempt) ? 0 : attempt + 1
+          isNaN(attempt) ? 0 : attempt + 1,
         );
       }
     } catch (e) {
       if (attempt === this._maxAttempts) {
-        console.log(`Payload: ${JSON.stringify(options.payload)}`);
-        console.log(e.response.data);
+        // console.log(`Payload: ${JSON.stringify(options.payload)}`);
+        // console.log(e.response.data);
         return;
       } else {
         await this.put(
@@ -100,7 +102,7 @@ export default class Api {
             config: options.config,
             expectedStatusCode: options.expectedStatusCode,
           },
-          isNaN(attempt) ? 0 : attempt + 1
+          isNaN(attempt) ? 0 : attempt + 1,
         );
       }
     }
@@ -111,6 +113,7 @@ export default class Api {
   }
 
   private wait(ms: number) {
+    console.log('shit wait??!?!'); // to remove
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

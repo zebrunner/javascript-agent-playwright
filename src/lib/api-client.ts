@@ -10,10 +10,10 @@ import { UpdateTcmConfigsRequest } from './types/update-tcm-configs';
 import { UpsertTestTestCases } from './types/upsert-test-test-cases';
 
 export default class ApiClient {
-
   private readonly logger = log.getLogger('zebrunner.api-client');
 
   private readonly accessToken: string;
+
   private readonly axiosInstance: AxiosInstance;
 
   constructor(reportingConfig: ReportingConfig) {
@@ -26,39 +26,45 @@ export default class ApiClient {
       },
     });
 
-    this.axiosInstance.interceptors.request.use((config) => {
-      // don't log the logs sending because it can produce infinite stream of logs
-      if (config.url.indexOf('logs') === -1) {
-        let message = `Sending Request\n${config.method.toUpperCase()} ${config.baseURL}${config.url}\n\n`;
-        if (!Buffer.isBuffer(config.data)) {
-          message += `Body\n${JSON.stringify(config.data)}`;
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        // don't log the logs sending because it can produce infinite stream of logs
+        if (config.url.indexOf('logs') === -1) {
+          let message = `Sending Request\n${config.method.toUpperCase()} ${config.baseURL}${
+            config.url
+          }\n\n`;
+          if (!Buffer.isBuffer(config.data)) {
+            message += `Body\n${JSON.stringify(config.data)}`;
+          }
+
+          this.logger.debug(message);
         }
+        return config;
+      },
+      (error) => error,
+    );
+    this.axiosInstance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const { request, response } = error;
 
-        this.logger.debug(message);
-      }
-      return config;
-    }, (error) => error);
-    this.axiosInstance.interceptors.response.use((response) => response, (error) => {
-      const {
-        request,
-        response
-      } = error;
+        let errorMessage = '';
+        if (request) {
+          errorMessage += `Could not sent request ${request.method} ${request.protocol}//${request.host}${request.path}\n\n`;
+        }
+        if (response) {
+          errorMessage += `Raw response\n${JSON.stringify(response?.data)}\n\n`;
+        }
+        errorMessage += error.stack;
 
-      let errorMessage = '';
-      if (request) {
-        errorMessage += `Could not sent request ${request.method} ${request.protocol}//${request.host}${request.path}\n\n`;
-      }
-      if (response) {
-        errorMessage += `Raw response\n${JSON.stringify(response?.data)}\n\n`;
-      }
-      errorMessage += error.stack;
-
-      this.logger.warn(errorMessage);
-      throw error;
-    });
+        this.logger.warn(errorMessage);
+        throw error;
+      },
+    );
   }
 
   private async authenticateIfRequired() {
+    console.log('authenticateIfRequired'); // to remove
     if (!this.axiosInstance.defaults.headers.common.Authorization) {
       const request = new RefreshTokenRequest(this.accessToken);
       const response = await this.axiosInstance.post(ZebrunnerPaths.REFRESH_TOKEN(), request);
@@ -70,7 +76,10 @@ export default class ApiClient {
   async startTestRun(projectKey: string, request: StartTestRunRequest): Promise<number> {
     await this.authenticateIfRequired();
 
-    const response = await this.axiosInstance.post(ZebrunnerPaths.START_TEST_RUN(), request, { params: { projectKey } });
+    console.log('startTestRun API call'); // to remove
+    const response = await this.axiosInstance.post(ZebrunnerPaths.START_TEST_RUN(), request, {
+      params: { projectKey },
+    });
     return response.data.id as number;
   }
 
@@ -81,7 +90,11 @@ export default class ApiClient {
   async exchangeRunContext(runContext: string): Promise<ExchangedRunContext> {
     await this.authenticateIfRequired();
 
-    const response = await this.axiosInstance.post(ZebrunnerPaths.EXCHANGE_RUN_CONTEXT(), runContext);
+    console.log('exchangeRunContext'); // to remove
+    const response = await this.axiosInstance.post(
+      ZebrunnerPaths.EXCHANGE_RUN_CONTEXT(),
+      runContext,
+    );
     return new ExchangedRunContext(response.data);
   }
 
@@ -89,8 +102,14 @@ export default class ApiClient {
     return this.axiosInstance.patch(ZebrunnerPaths.UPDATE_TCM_CONFIGS(testRunId), request);
   }
 
-  async upsertTestTestCases(testRunId: number, testId: number, request: UpsertTestTestCases): Promise<void> {
-    return this.axiosInstance.post(ZebrunnerPaths.UPSERT_TEST_TEST_CASES(testRunId, testId), request);
+  async upsertTestTestCases(
+    testRunId: number,
+    testId: number,
+    request: UpsertTestTestCases,
+  ): Promise<void> {
+    return this.axiosInstance.post(
+      ZebrunnerPaths.UPSERT_TEST_TEST_CASES(testRunId, testId),
+      request,
+    );
   }
-
 }
