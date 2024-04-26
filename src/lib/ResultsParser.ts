@@ -85,9 +85,7 @@ export default class ResultsParser {
       tests: [],
       testRunId: 0,
       title: '',
-      testRunName: config?.launch?.displayName
-        ? config?.launch?.displayName
-        : 'Default Suite',
+      testRunName: config?.launch?.displayName ? config?.launch?.displayName : 'Default Suite',
       build: this._build,
       environment: this._environment,
     };
@@ -125,7 +123,7 @@ export default class ResultsParser {
       testResults = await this.parseTests(
         suite.parent.title ? `${suite.parent.title} > ${suite.title}` : suite.title,
         suite.tests,
-        launchInfo
+        launchInfo,
       );
       this.updateResults({
         tests: testResults,
@@ -135,7 +133,7 @@ export default class ResultsParser {
       testResults = await this.parseTests(
         suite.parent.title ? `${suite.parent.title} > ${suite.title}` : suite.title,
         suite.tests,
-        launchInfo
+        launchInfo,
       );
       this.updateResults({
         tests: testResults,
@@ -153,7 +151,9 @@ export default class ResultsParser {
   async parseTests(suiteName, tests, launchInfo) {
     const browserCapabilities = this.parseBrowserCapabilities(launchInfo);
     let testResults: testResult[] = [];
+    // eslint-disable-next-line no-restricted-syntax
     for (const test of tests) {
+      // eslint-disable-next-line no-restricted-syntax
       for (const result of test.results) {
         testResults.push({
           suiteName: suiteName,
@@ -165,12 +165,12 @@ export default class ResultsParser {
           endedAt: new Date(new Date(result.startTime).getTime() + result.duration),
           browserCapabilities: browserCapabilities,
           reason: `${this.cleanseReason(result.error?.message)} \n ${this.cleanseReason(
-            result.error?.stack
+            result.error?.stack,
           )}`,
           attachment: this.processAttachment(result.attachments),
           steps: this.getTestSteps(result.steps),
           maintainer: test.maintainer || 'anonymous',
-          testCases: test.testCases
+          testCases: test.testCases,
         });
       }
     }
@@ -196,7 +196,7 @@ export default class ResultsParser {
   }
 
   getTestTags(testTitle, tcmTestOptions) {
-    let tags = testTitle.match(/@\w*/g) || [];
+    const tags = testTitle.match(/@\w*/g) || [];
 
     if (tcmTestOptions) {
       tcmTestOptions.forEach((el) => {
@@ -207,7 +207,7 @@ export default class ResultsParser {
     if (tags.length !== 0) {
       return tags.map((c) => {
         if (typeof c === 'string') {
-          return {key: 'tag', value: c.replace('@', '')};
+          return { key: 'tag', value: c.replace('@', '') };
         }
         if (typeof c === 'object') {
           return c;
@@ -274,7 +274,7 @@ export default class ResultsParser {
         timestamp: new Date(testStep.startTime).getTime(),
         message: testStep.error
           ? `${this.cleanseReason(testStep.error?.message)} \n ${this.cleanseReason(
-              testStep.error?.stack
+              testStep.error?.stack,
             )}`
           : testStep.title,
         level: testStep.error ? 'ERROR' : 'INFO',

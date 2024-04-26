@@ -8,7 +8,7 @@ export default defineConfig({
   use: {
     video: 'on',
     trace: 'on',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
   },
   projects: [
     {
@@ -82,7 +82,7 @@ export default defineConfig({
           },
         },
 
-        pwConcurrentTasks: 1000,
+        pwConcurrentTasks: 10,
       },
     ],
   ],

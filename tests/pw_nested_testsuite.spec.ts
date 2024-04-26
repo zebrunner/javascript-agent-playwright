@@ -9,6 +9,7 @@ test.describe('nested foo', () => {
     const browser = await firefox.launch();
     const page1 = await browser.newPage();
     await page1.goto('https://example.com');
+    // await page1.screenshot({ path: 'screenshot.png' });
     await browser.close();
   });
 

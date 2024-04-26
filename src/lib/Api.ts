@@ -23,7 +23,7 @@ export default class Api {
     },
     attempt?: number,
   ): Promise<AxiosResponse> {
-    console.log('class Api post'); // to remove
+    // console.log('class Api post'); // to remove
     if (attempt >= 0) {
       await this.wait(this._delayPerAttempt);
     }
@@ -113,7 +113,6 @@ export default class Api {
   }
 
   private wait(ms: number) {
-    console.log('shit wait??!?!'); // to remove
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
