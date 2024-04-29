@@ -76,11 +76,7 @@ interface ZephyrTcm {
 function getString(envVar: string, configValue: any, defaultValue: string = null): string {
   const value = process.env[envVar] as string;
 
-  return isNotBlankString(value)
-    ? value
-    : isNotBlankString(configValue)
-    ? configValue
-    : defaultValue;
+  return isNotBlankString(value) ? value : isNotBlankString(configValue) ? configValue : defaultValue;
 }
 
 function getBoolean(envVar: string, configValue: any, defaultValue = false): boolean {
@@ -120,9 +116,7 @@ export class ReportingConfig {
     };
 
     if (this.enabled === true && !this.server.hostname && !this.server.accessToken) {
-      throw new Error(
-        'When reporting is enabled, you must provide Zebrunner hostname and accessToken',
-      );
+      throw new Error('When reporting is enabled, you must provide Zebrunner hostname and accessToken');
     }
 
     this.launch = {
@@ -145,51 +139,24 @@ export class ReportingConfig {
         'REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE',
         config?.notifications?.notifyOnEachFailure,
       ),
-      slackChannels: getString(
-        'REPORTING_NOTIFICATION_SLACK_CHANNELS',
-        config?.notifications?.slackChannels,
-      ),
-      teamsChannels: getString(
-        'REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS',
-        config?.notifications?.teamsChannels,
-      ),
+      slackChannels: getString('REPORTING_NOTIFICATION_SLACK_CHANNELS', config?.notifications?.slackChannels),
+      teamsChannels: getString('REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS', config?.notifications?.teamsChannels),
       emails: getString('REPORTING_NOTIFICATION_EMAILS', config?.notifications?.emails),
     };
 
     this.tcm = {
       testCaseStatus: {
-        onPass: getString(
-          'REPORTING_TCM_TEST_CASE_STATUS_ON_PASS',
-          config?.tcm?.testCaseStatus?.onPass,
-        ),
-        onFail: getString(
-          'REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL',
-          config?.tcm?.testCaseStatus?.onFail,
-        ),
+        onPass: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_PASS', config?.tcm?.testCaseStatus?.onPass),
+        onFail: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL', config?.tcm?.testCaseStatus?.onFail),
       },
       zebrunner: {
-        pushResults: getBoolean(
-          'REPORTING_TCM_ZEBRUNNER_PUSH_RESULTS',
-          config?.tcm?.zebrunner?.pushResults,
-        ),
-        pushInRealTime: getBoolean(
-          'REPORTING_TCM_ZEBRUNNER_PUSH_IN_REAL_TIME',
-          config?.tcm?.zebrunner?.pushInRealTime,
-        ),
-        testRunId: getNumber(
-          'REPORTING_TCM_ZEBRUNNER_TEST_RUN_ID',
-          config?.tcm?.zebrunner?.testRunId,
-        ),
+        pushResults: getBoolean('REPORTING_TCM_ZEBRUNNER_PUSH_RESULTS', config?.tcm?.zebrunner?.pushResults),
+        pushInRealTime: getBoolean('REPORTING_TCM_ZEBRUNNER_PUSH_IN_REAL_TIME', config?.tcm?.zebrunner?.pushInRealTime),
+        testRunId: getNumber('REPORTING_TCM_ZEBRUNNER_TEST_RUN_ID', config?.tcm?.zebrunner?.testRunId),
       },
       testRail: {
-        pushResults: getBoolean(
-          'REPORTING_TCM_TESTRAIL_PUSH_RESULTS',
-          config?.tcm?.testRail?.pushResults,
-        ),
-        pushInRealTime: getBoolean(
-          'REPORTING_TCM_TESTRAIL_PUSH_IN_REAL_TIME',
-          config?.tcm?.testRail?.pushInRealTime,
-        ),
+        pushResults: getBoolean('REPORTING_TCM_TESTRAIL_PUSH_RESULTS', config?.tcm?.testRail?.pushResults),
+        pushInRealTime: getBoolean('REPORTING_TCM_TESTRAIL_PUSH_IN_REAL_TIME', config?.tcm?.testRail?.pushInRealTime),
         suiteId: getNumber('REPORTING_TCM_TESTRAIL_SUITE_ID', config?.tcm?.testRail?.suiteId),
         runId: getNumber('REPORTING_TCM_TESTRAIL_RUN_ID', config?.tcm?.testRail?.runId),
         includeAllTestCasesInNewRun: getBoolean(
@@ -197,40 +164,19 @@ export class ReportingConfig {
           config?.tcm?.testRail?.includeAllTestCasesInNewRun,
         ),
         runName: getString('REPORTING_TCM_TESTRAIL_RUN_NAME', config?.tcm?.testRail?.runName),
-        milestoneName: getString(
-          'REPORTING_TCM_TESTRAIL_MILESTONE_NAME',
-          config?.tcm?.testRail?.milestoneName,
-        ),
+        milestoneName: getString('REPORTING_TCM_TESTRAIL_MILESTONE_NAME', config?.tcm?.testRail?.milestoneName),
         assignee: getString('REPORTING_TCM_TESTRAIL_ASSIGNEE', config?.tcm?.testRail?.assignee),
       },
       xray: {
         pushResults: getBoolean('REPORTING_TCM_XRAY_PUSH_RESULTS', config?.tcm?.xray?.pushResults),
-        pushInRealTime: getBoolean(
-          'REPORTING_TCM_XRAY_PUSH_IN_REAL_TIME',
-          config?.tcm?.xray?.pushInRealTime,
-        ),
-        executionKey: getString(
-          'REPORTING_TCM_XRAY_EXECUTION_KEY',
-          config?.tcm?.xray?.executionKey,
-        ),
+        pushInRealTime: getBoolean('REPORTING_TCM_XRAY_PUSH_IN_REAL_TIME', config?.tcm?.xray?.pushInRealTime),
+        executionKey: getString('REPORTING_TCM_XRAY_EXECUTION_KEY', config?.tcm?.xray?.executionKey),
       },
       zephyr: {
-        pushResults: getBoolean(
-          'REPORTING_TCM_ZEPHYR_PUSH_RESULTS',
-          config?.tcm?.zephyr?.pushResults,
-        ),
-        pushInRealTime: getBoolean(
-          'REPORTING_TCM_ZEPHYR_PUSH_IN_REAL_TIME',
-          config?.tcm?.zephyr?.pushInRealTime,
-        ),
-        jiraProjectKey: getString(
-          'REPORTING_TCM_ZEPHYR_JIRA_PROJECT_KEY',
-          config?.tcm?.zephyr?.jiraProjectKey,
-        ),
-        testCycleKey: getString(
-          'REPORTING_TCM_ZEPHYR_TEST_CYCLE_KEY',
-          config?.tcm?.zephyr?.testCycleKey,
-        ),
+        pushResults: getBoolean('REPORTING_TCM_ZEPHYR_PUSH_RESULTS', config?.tcm?.zephyr?.pushResults),
+        pushInRealTime: getBoolean('REPORTING_TCM_ZEPHYR_PUSH_IN_REAL_TIME', config?.tcm?.zephyr?.pushInRealTime),
+        jiraProjectKey: getString('REPORTING_TCM_ZEPHYR_JIRA_PROJECT_KEY', config?.tcm?.zephyr?.jiraProjectKey),
+        testCycleKey: getString('REPORTING_TCM_ZEPHYR_TEST_CYCLE_KEY', config?.tcm?.zephyr?.testCycleKey),
       },
     };
   }

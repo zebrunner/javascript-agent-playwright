@@ -151,11 +151,6 @@
     "p-queue" "^6.6.1"
     "p-retry" "^4.0.0"
 
-"@supercharge/promise-pool@^2.1.0":
-  "integrity" "sha512-O9CMipBlq5OObdt1uKJGIzm9cdjpPWfj+a+Zw9EgWKxaMNHKC7EU7X9taj3H0EGQNLOSq2jAcOa3EzxlfHsD6w=="
-  "resolved" "https://registry.npmjs.org/@supercharge/promise-pool/-/promise-pool-2.4.0.tgz"
-  "version" "2.4.0"
-
 "@types/is-stream@^1.1.0":
   "integrity" "sha512-jkZatu4QVbR60mpIzjINmtS1ZF4a/FqdTUTBeQDVOQ2PYyidtwFKr0B5G6ERukKwliq+7mIXvxyppwzG5EgRYg=="
   "resolved" "https://registry.npmjs.org/@types/is-stream/-/is-stream-1.1.0.tgz"

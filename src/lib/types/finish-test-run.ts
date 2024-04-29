@@ -1,9 +1,7 @@
 export class FinishTestRunRequest {
+  endedAt: Date;
 
-    endedAt: Date;
-
-    constructor() {
-        this.endedAt = new Date();
-    }
-
+  constructor() {
+    this.endedAt = new Date();
+  }
 }

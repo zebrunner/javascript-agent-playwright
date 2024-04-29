@@ -1,6 +1,3 @@
 export class RefreshTokenRequest {
-
-    constructor(private refreshToken: string) {
-    }
-
+  constructor(private refreshToken: string) {}
 }

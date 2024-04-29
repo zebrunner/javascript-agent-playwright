@@ -1,5 +1,5 @@
-import { ReportingConfig } from './reporting-config';
-import { TestCase } from './types/upsert-test-test-cases';
+import { ReportingConfig } from '../../src/lib/ReportingConfig';
+import { ZbrTestCase } from '../../src/lib/types/upsert-test-test-cases';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -29,7 +29,7 @@ export type testResult = {
   steps?: testStep[];
   maintainer: string;
   sessionId?: number;
-  testCases: TestCase[];
+  testCases: ZbrTestCase[];
 };
 
 export type testStep = {

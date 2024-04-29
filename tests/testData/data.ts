@@ -1,6 +1,6 @@
-import {testRun} from '../../src/lib/ResultsParser';
-import ResultsParser from '../../src/lib/ResultsParser';
-import { ReportingConfig } from '../../src/lib/reporting-config';
+import {testRun} from './ResultsParser';
+import ResultsParser from './ResultsParser';
+import { ReportingConfig } from '../../src/lib/ReportingConfig';
 
 export type ParserFixture = {
   testData: any;

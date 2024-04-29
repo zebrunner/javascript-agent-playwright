@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { CurrentTest } from '../src/lib/current-test';
+import { CurrentTest } from '../src/lib/CurrentTest';
 const {firefox} = require('playwright');
 
 test.describe('nested foo', () => {
