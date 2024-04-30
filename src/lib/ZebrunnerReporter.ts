@@ -12,7 +12,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import { AxiosResponse } from 'axios';
 import FormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
-import ApiClient from './ApiClient';
+import ZebrunnerApiClient from './ZebrunnerApiClient';
 import { EventNames } from './constant/custom-events';
 import { ReportingConfig } from './ReportingConfig';
 import { ExchangedRunContext } from './types/exchanged-run-context';
@@ -37,25 +37,19 @@ interface ExtendedPwTestCase extends PwTestCase {
 }
 
 class ZebrunnerReporter implements Reporter {
+  private reportingConfig: ReportingConfig;
   private suite!: Suite;
+  private apiClient: ZebrunnerApiClient;
 
   private zbrTestRunId: number;
+  private zbrLogEntries: TestStep[];
 
   private mapPwTestIdToZbrTestId: Map<string, number>;
-
   private mapPwTestIdToZbrSessionId: Map<string, number>;
-
   private mapPwTestIdToStatus: Map<string, 'started' | 'finished'>;
 
   private areAllTestsStarted: boolean;
-
   private areAllTestsFinished: boolean;
-
-  private zbrLogEntries: TestStep[];
-
-  private apiClient: ApiClient;
-
-  private reportingConfig: ReportingConfig;
 
   private exchangedRunContext: ExchangedRunContext;
 
@@ -75,20 +69,19 @@ class ZebrunnerReporter implements Reporter {
     this.mapPwTestIdToStatus = new Map();
 
     this.suite = await this.rerunResolver(suite);
-    this.apiClient = new ApiClient(this.reportingConfig);
+    this.apiClient = new ZebrunnerApiClient(this.reportingConfig);
 
     if (!this.reportingConfig.enabled) {
       return;
     }
 
     this.zbrTestRunId = await this.startTestRunAndGetId(runStartTime);
-    await this.saveTcmConfigs(this.zbrTestRunId);
+    await this.saveTestRunTcmConfigs(this.zbrTestRunId);
   }
 
   private async rerunResolver(suite: Suite) {
     try {
       if (!process.env.REPORTING_RUN_CONTEXT) {
-        console.log('no rerunResolver needed'); // to remove
         return suite;
       }
 
@@ -147,7 +140,7 @@ class ZebrunnerReporter implements Reporter {
 
       return suite;
     } catch (error) {
-      console.log(error);
+      console.log('Error during rerunResolver:', error);
     }
   }
 
@@ -183,10 +176,8 @@ class ZebrunnerReporter implements Reporter {
     const { eventType, payload } = JSON.parse(chunk);
 
     if (eventType === EventNames.ADD_TEST_CASE) {
-      console.log('//addTestTestCase');
       this.addZbrTestCase(pwTest, payload);
     } else if (eventType === EventNames.SET_MAINTAINER) {
-      console.log('//SetMaintainer');
       pwTest.maintainer = payload;
     }
   }
@@ -230,24 +221,36 @@ class ZebrunnerReporter implements Reporter {
       return;
     }
 
-    try {
-      await this.waitUntil(() => this.areAllTestsFinished);
+    await this.waitUntil(() => this.areAllTestsFinished);
 
-      await this.sendTestsSteps(this.zbrTestRunId, this.zbrLogEntries);
-      const testRunEndedAt = new Date();
+    await this.sendTestsSteps(this.zbrTestRunId, this.zbrLogEntries);
+    const testRunEndedAt = new Date();
 
-      await this.finishTestRun(this.zbrTestRunId, testRunEndedAt);
-    } catch (error) {
-      console.log('onEnd', error);
-    }
+    await this.finishTestRun(this.zbrTestRunId, testRunEndedAt);
   }
 
   private async startTestRunAndGetId(startedAt: Date): Promise<number> {
-    const runUuid = this.exchangedRunContext ? this.exchangedRunContext.testRunUuid : null;
-    const request = new StartTestRunRequest(runUuid, startedAt, this.reportingConfig);
-    const zbrTestRunId = await this.apiClient.startTestRun(this.reportingConfig.projectKey, request);
+    try {
+      const runUuid = this.exchangedRunContext ? this.exchangedRunContext.testRunUuid : null;
+      const request = new StartTestRunRequest(runUuid, startedAt, this.reportingConfig);
+      const zbrTestRunId = await this.apiClient.startTestRun(this.reportingConfig.projectKey, request);
 
-    return zbrTestRunId;
+      return zbrTestRunId;
+    } catch (error) {
+      console.log('Error during startTestRunAndGetId:', error);
+    }
+  }
+
+  private async saveTestRunTcmConfigs(testRunId: number): Promise<void> {
+    try {
+      const request = new UpdateTcmConfigsRequest(this.reportingConfig);
+
+      if (request.hasAnyValue) {
+        this.apiClient.updateTcmConfigs(testRunId, request);
+      }
+    } catch (error) {
+      console.log('Error during saveTcmConfigs:', error);
+    }
   }
 
   private async startTestAndGetId(zbrTestRunId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
@@ -270,7 +273,7 @@ class ZebrunnerReporter implements Reporter {
 
       return zbrTestId;
     } catch (error) {
-      console.log(error);
+      console.log('Error during startTestAndGetId:', error);
     }
   }
 
@@ -315,7 +318,7 @@ class ZebrunnerReporter implements Reporter {
 
       return zbrTestId;
     } catch (error) {
-      console.log(error);
+      console.log('Error during restartTestAndGetId:', error);
     }
   }
 
@@ -360,15 +363,17 @@ class ZebrunnerReporter implements Reporter {
 
       return sessionId;
     } catch (error) {
-      console.log(error);
+      console.log('Error during startTestSessionAndGetId:', error);
     }
   }
 
   private async saveZbrTestCases(zbrTestRunId: number, zbrTestId: number, testCases: ZbrTestCase[]): Promise<void> {
-    if (isNotEmptyArray(testCases)) {
-      const request: UpsertTestTestCases = { items: testCases };
-
-      this.apiClient.upsertTestTestCases(zbrTestRunId, zbrTestId, request);
+    try {
+      if (isNotEmptyArray(testCases)) {
+        this.apiClient.upsertTestTestCases(zbrTestRunId, zbrTestId, { items: testCases });
+      }
+    } catch (error) {
+      console.log('Error during saveZbrTestCases:', error);
     }
   }
 
@@ -379,7 +384,7 @@ class ZebrunnerReporter implements Reporter {
       });
       return r;
     } catch (error) {
-      console.log(error);
+      console.log('Error during addTestTags:', error);
     }
   }
 
@@ -394,7 +399,7 @@ class ZebrunnerReporter implements Reporter {
 
       await Promise.all(screenshotsPromises);
     } catch (error) {
-      console.log(error);
+      console.log('Error during addTestScreenshots:', error);
     }
   }
 
@@ -421,7 +426,7 @@ class ZebrunnerReporter implements Reporter {
 
       await Promise.all(artifactsPromises);
     } catch (error) {
-      console.log(error);
+      console.log('Error during addTestFiles:', error);
     }
   }
 
@@ -450,7 +455,7 @@ class ZebrunnerReporter implements Reporter {
 
       await Promise.all(videoPromises);
     } catch (error) {
-      console.log(error);
+      console.log('Error during addSessionVideos:', error);
     }
   }
 
@@ -466,7 +471,7 @@ class ZebrunnerReporter implements Reporter {
         testIds: [zbrTestId],
       });
     } catch (error) {
-      console.log(error);
+      console.log('Error during finishTestSession:', error);
     }
   }
 
@@ -489,7 +494,7 @@ class ZebrunnerReporter implements Reporter {
 
       return response;
     } catch (error) {
-      console.log(error);
+      console.log('Error during finishTest:', error);
     }
   }
 
@@ -497,14 +502,16 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.sendLogs(zbrTestRunId, zbrLogEntries);
     } catch (error) {
-      console.log(error);
+      console.log('Error during sendTestsSteps:', error);
     }
   }
 
   private async finishTestRun(testRunId: number, testRunEndedAt: Date): Promise<void> {
-    console.log('//finishTestRun');
-
-    await this.apiClient.finishTestRun(testRunId, { endedAt: testRunEndedAt });
+    try {
+      await this.apiClient.finishTestRun(testRunId, { endedAt: testRunEndedAt });
+    } catch (error) {
+      console.log('Error during finishTestRun:', error);
+    }
   }
 
   private parseBrowserCapabilities(launchInfo) {
@@ -598,7 +605,7 @@ class ZebrunnerReporter implements Reporter {
       const convertedFilePath = `${fileName}.${format}`;
       await ffmpeg(path).toFormat(format).outputOptions(['-vsync 2']).saveToFile(convertedFilePath);
     } catch (error) {
-      console.log(error);
+      console.log('Error during convertVideo:', error);
     }
   }
 
@@ -628,14 +635,6 @@ class ZebrunnerReporter implements Reporter {
     const poll = (resolve) => (predFn() ? resolve() : setTimeout(() => poll(resolve), 500));
     return new Promise(poll);
   };
-
-  private async saveTcmConfigs(testRunId: number): Promise<void> {
-    const request = new UpdateTcmConfigsRequest(this.reportingConfig);
-
-    if (request.hasAnyValue) {
-      this.apiClient.updateTcmConfigs(testRunId, request);
-    }
-  }
 }
 
 export default ZebrunnerReporter;

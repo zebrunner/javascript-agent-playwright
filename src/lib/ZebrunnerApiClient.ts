@@ -10,11 +10,9 @@ import { UpdateTcmConfigsRequest } from './types/update-tcm-configs';
 import { UpsertTestTestCases } from './types/upsert-test-test-cases';
 import { TestStep } from './ZebrunnerReporter';
 
-export default class ApiClient {
+export default class ZebrunnerApiClient {
   private readonly logger = log.getLogger('zebrunner.api-client');
-
   private readonly accessToken: string;
-
   private readonly axiosInstance: AxiosInstance;
 
   constructor(reportingConfig: ReportingConfig) {
@@ -118,6 +116,7 @@ export default class ApiClient {
         'x-zbr-video-content-length': fileSize,
       },
     };
+
     return this.axiosInstance.post(ZebrunnerPaths.UPLOAD_TEST_SESSION_ARTIFACT(testRunId, testSessionId), file, config);
   }
 
