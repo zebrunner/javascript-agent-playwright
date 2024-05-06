@@ -29,10 +29,10 @@ export default defineConfig({
       '../javascript-agent-playwright',
       {
         enabled: true,
-        projectKey: 'DEFFF',
+        projectKey: 'DEF',
         server: {
-          hostname: 'https://react.zebrunner.org',
-          accessToken: 'tnd9IQq1qArDi85ZtvM5DGsGG0CpvH6Vyo7CkIc3L95L6qVfss',
+          hostname: 'https://integration.zebrunner.org',
+          accessToken: 'mBVuiz1D7C9YWwYm1IElnCe8SRLQPNyzsQa9GEaQbjgQ0Bawo8',
         },
         launch: {
           displayName: 'Playwright dev-purposes launch',
