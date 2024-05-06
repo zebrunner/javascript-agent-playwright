@@ -1,4 +1,4 @@
-import { ReportingConfig } from '../ReportingConfig';
+import { ReportingConfig } from '../../ReportingConfig';
 
 export type NotificationTargetType = 'SLACK_CHANNELS' | 'MS_TEAMS_CHANNELS' | 'EMAIL_RECIPIENTS';
 export type TestRunStartStatus = 'IN_PROGRESS' | 'QUEUED';

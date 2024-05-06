@@ -1,4 +1,4 @@
-import { isNotBlankString } from './type-utils';
+import { isNotBlankString } from '../helpers';
 
 interface ServerConfig {
   readonly hostname: string;

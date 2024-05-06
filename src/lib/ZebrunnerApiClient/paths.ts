@@ -1,4 +1,4 @@
-export const ZebrunnerPaths = {
+export const ZEBRUNNER_PATHS = {
   REFRESH_TOKEN: () => '/api/iam/v1/auth/refresh',
   EXCHANGE_RUN_CONTEXT: () => '/api/reporting/v1/run-context-exchanges',
 

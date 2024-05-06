@@ -1,7 +1,7 @@
 import log from 'loglevel';
-import { EventNames } from './constant/custom-events';
-import { isNotBlankString, isNotEmptyArray } from './type-utils';
-import { TcmType, ZbrTestCase } from './types/upsert-test-test-cases';
+import { EVENT_NAMES } from './constants/events';
+import { isNotBlankString, isNotEmptyArray } from './helpers';
+import { TcmType, ZbrTestCase } from './types';
 
 const logger = log.getLogger('zebrunner');
 
@@ -13,7 +13,7 @@ const emitAddTestCaseEvent = (tcmType: TcmType, testCaseKey: string, resultStatu
       resultStatus: resultStatus,
     };
 
-    const eventType = EventNames.ADD_TEST_CASE;
+    const eventType = EVENT_NAMES.ADD_TEST_CASE;
     const payload = JSON.stringify({ eventType, payload: testCase });
 
     process.stdout.write(payload);

@@ -1,5 +1,5 @@
 import { ReportingConfig } from '../../src/lib/ReportingConfig';
-import { ZbrTestCase } from '../../src/lib/types/upsert-test-test-cases';
+import { ZbrTestCase } from '../../src/lib/types';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -164,9 +164,7 @@ export default class ResultsParser {
           startedAt: new Date(result.startTime),
           endedAt: new Date(new Date(result.startTime).getTime() + result.duration),
           browserCapabilities: browserCapabilities,
-          reason: `${this.cleanseReason(result.error?.message)} \n ${this.cleanseReason(
-            result.error?.stack,
-          )}`,
+          reason: `${this.cleanseReason(result.error?.message)} \n ${this.cleanseReason(result.error?.stack)}`,
           attachment: this.processAttachment(result.attachments),
           steps: this.getTestSteps(result.steps),
           maintainer: test.maintainer || 'anonymous',
@@ -273,9 +271,7 @@ export default class ResultsParser {
       testSteps.push({
         timestamp: new Date(testStep.startTime).getTime(),
         message: testStep.error
-          ? `${this.cleanseReason(testStep.error?.message)} \n ${this.cleanseReason(
-              testStep.error?.stack,
-            )}`
+          ? `${this.cleanseReason(testStep.error?.message)} \n ${this.cleanseReason(testStep.error?.stack)}`
           : testStep.title,
         level: testStep.error ? 'ERROR' : 'INFO',
       });

@@ -1,13 +1,13 @@
 import log from 'loglevel';
-import { EventNames } from './constant/custom-events';
-import { isNotBlankString } from './type-utils';
+import { EVENT_NAMES } from './constants/events';
+import { isNotBlankString } from './helpers';
 
 const logger = log.getLogger('zebrunner');
 
 export const CurrentTest = {
   setMaintainer: (maintainer: string): void => {
     if (isNotBlankString(maintainer)) {
-      const eventType = EventNames.SET_MAINTAINER;
+      const eventType = EVENT_NAMES.SET_MAINTAINER;
       const payload = JSON.stringify({ eventType, payload: maintainer });
 
       process.stdout.write(payload);

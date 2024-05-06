@@ -1,4 +1,4 @@
-import { ReportingConfig } from '../ReportingConfig';
+import { ReportingConfig } from '../../ReportingConfig';
 
 export class UpdateTcmConfigsRequest {
   private _hasAnyValue = false;

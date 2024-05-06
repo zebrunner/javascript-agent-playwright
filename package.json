@@ -1,7 +1,7 @@
 {
   "name": "@zebrunner/javascript-agent-playwright",
-  "version": "0.1.0",
-  "main": "build/src/lib/index.js",
+  "version": "0.2.0",
+  "main": "build/index.js",
   "license": "MIT",
   "description": "Zebrunner Agent for Playwright",
   "scripts": {

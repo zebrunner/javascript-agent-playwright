@@ -1,40 +1,29 @@
 import { ReporterDescription } from '@playwright/test';
-import {
-  FullConfig,
-  Reporter,
-  Suite,
-  TestCase as PwTestCase,
-  TestResult as PwTestResult,
-} from '@playwright/test/reporter';
+import { FullConfig, Reporter, Suite, TestResult as PwTestResult } from '@playwright/test/reporter';
 import * as fs from 'fs';
-import UAParser from 'ua-parser-js';
-import ffmpeg from 'fluent-ffmpeg';
 import { AxiosResponse } from 'axios';
 import FormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
-import ZebrunnerApiClient from './ZebrunnerApiClient';
-import { EventNames } from './constant/custom-events';
+import { ZebrunnerApiClient } from './ZebrunnerApiClient';
+import { EVENT_NAMES } from './constants/events';
 import { ReportingConfig } from './ReportingConfig';
-import { ExchangedRunContext } from './types/exchanged-run-context';
-import { StartTestRunRequest } from './types/start-test-run';
-import { UpdateTcmConfigsRequest } from './types/update-tcm-configs';
-import { ZbrTestCase, UpsertTestTestCases } from './types/upsert-test-test-cases';
-import { isNotEmptyArray } from './type-utils';
-
-const parser = new UAParser();
-
-export type TestStep = {
-  // refactor
-  level: 'INFO' | 'ERROR';
-  timestamp: string;
-  message: string;
-  testId?: number;
-};
-
-interface ExtendedPwTestCase extends PwTestCase {
-  maintainer: string;
-  testCases: ZbrTestCase[];
-}
+import { ExchangedRunContext } from './ZebrunnerApiClient/types/ExchangedRunContext';
+import { StartTestRunRequest } from './ZebrunnerApiClient/types/StartTestRunRequest';
+import { UpdateTcmConfigsRequest } from './ZebrunnerApiClient/types/UpdateTcmConfigsRequest';
+import { ZbrTestCase, TestStep, ExtendedPwTestCase } from './types';
+import {
+  cleanseReason,
+  determineStatus,
+  getFileSizeInBytes,
+  getFullSuiteName,
+  getTestSteps,
+  getTestTags,
+  parseBrowserCapabilities,
+  processAttachments,
+  waitUntil,
+  isNotEmptyArray,
+  recursiveTestsTraversal,
+} from './helpers';
 
 class ZebrunnerReporter implements Reporter {
   private reportingConfig: ReportingConfig;
@@ -63,6 +52,11 @@ class ZebrunnerReporter implements Reporter {
 
     this.reportingConfig = new ReportingConfig(zebrunnerReporter[1]);
 
+    if (!this.reportingConfig.enabled) {
+      console.log('Zebrunner agent disabled - skipping results upload');
+      return;
+    }
+
     this.zbrLogEntries = [];
     this.mapPwTestIdToZbrTestId = new Map();
     this.mapPwTestIdToZbrSessionId = new Map();
@@ -70,10 +64,6 @@ class ZebrunnerReporter implements Reporter {
 
     this.suite = await this.rerunResolver(suite);
     this.apiClient = new ZebrunnerApiClient(this.reportingConfig);
-
-    if (!this.reportingConfig.enabled) {
-      return;
-    }
 
     this.zbrTestRunId = await this.startTestRunAndGetId(runStartTime);
     await this.saveTestRunTcmConfigs(this.zbrTestRunId);
@@ -96,47 +86,7 @@ class ZebrunnerReporter implements Reporter {
         throw new Error(`${this.exchangedRunContext.reason}`);
       }
 
-      const recursiveTestsTraversal = (suite: Suite) => {
-        // eslint-disable-next-line no-restricted-syntax
-        for (const res of suite.suites) {
-          if (res.tests.length > 0) {
-            const suiteName = res.parent.title ? `${res.parent.title} > ${res.title}` : res.title;
-            const launchInfo = suite.project();
-            parser.setUA(launchInfo.use.userAgent);
-            const systemOptions = parser.getResult();
-            res.tests = res.tests.filter((el) => {
-              const testName = `${suiteName} > ${el.title}`;
-              const isSuitableTest = this.exchangedRunContext.testsToRun.some(
-                (item: {
-                  id: number;
-                  name: string;
-                  correlationData: string;
-                  status: string;
-                  startedAt: string;
-                  endedAt: string;
-                }) => {
-                  const { browser, version, os } = JSON.parse(item.correlationData);
-                  if (
-                    item.name === testName &&
-                    browser === systemOptions.browser.name &&
-                    version === systemOptions.browser.version &&
-                    os === systemOptions.os.name
-                  ) {
-                    return true;
-                  }
-                  return false;
-                },
-              );
-              if (isSuitableTest) {
-                return true;
-              }
-              return false;
-            });
-          }
-          recursiveTestsTraversal(res);
-        }
-      };
-      recursiveTestsTraversal(suite);
+      recursiveTestsTraversal(suite, this.exchangedRunContext);
 
       return suite;
     } catch (error) {
@@ -145,10 +95,14 @@ class ZebrunnerReporter implements Reporter {
   }
 
   async onTestBegin(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
-    const fullTestName = `${this.getFullSuiteName(pwTest)} > ${pwTest.title}`;
+    const fullTestName = `${getFullSuiteName(pwTest)} > ${pwTest.title}`;
     console.log(`Started test "${fullTestName}"`);
 
-    await this.waitUntil(() => !!this.zbrTestRunId); // zebrunner run initialized
+    if (!this.reportingConfig.enabled) {
+      return;
+    }
+
+    await waitUntil(() => !!this.zbrTestRunId); // zebrunner run initialized
 
     const testStartedAt = new Date(pwTestResult.startTime);
 
@@ -169,37 +123,41 @@ class ZebrunnerReporter implements Reporter {
   }
 
   onStdOut(chunk: string, pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
-    if (chunk.includes('connect') || chunk.includes('POST')) {
+    if (chunk.includes('connect') || chunk.includes('POST') || !this.reportingConfig.enabled) {
       return;
     }
 
     const { eventType, payload } = JSON.parse(chunk);
 
-    if (eventType === EventNames.ADD_TEST_CASE) {
+    if (eventType === EVENT_NAMES.ADD_TEST_CASE) {
       this.addZbrTestCase(pwTest, payload);
-    } else if (eventType === EventNames.SET_MAINTAINER) {
+    } else if (eventType === EVENT_NAMES.SET_MAINTAINER) {
       pwTest.maintainer = payload;
     }
   }
 
   async onTestEnd(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
-    const fullTestName = `${this.getFullSuiteName(pwTest)} > ${pwTest.title}`;
+    const fullTestName = `${getFullSuiteName(pwTest)} > ${pwTest.title}`;
     console.log(`Finished test "${fullTestName}": ${pwTestResult.status}`);
 
-    await this.waitUntil(() => this.mapPwTestIdToStatus.has(pwTest.id)); // zebrunner test initialized
+    if (!this.reportingConfig.enabled) {
+      return;
+    }
+
+    await waitUntil(() => this.mapPwTestIdToStatus.has(pwTest.id)); // zebrunner test initialized
 
     const zbrTestId = this.mapPwTestIdToZbrTestId.get(pwTest.id);
     const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
 
     await this.saveZbrTestCases(this.zbrTestRunId, zbrTestId, pwTest.testCases);
     await this.addTestTags(this.zbrTestRunId, zbrTestId, pwTest);
-    const testAttachments = this.processAttachments(pwTestResult.attachments);
+    const testAttachments = processAttachments(pwTestResult.attachments);
     await this.addTestScreenshots(this.zbrTestRunId, zbrTestId, testAttachments.screenshots);
     await this.addTestFiles(this.zbrTestRunId, zbrTestId, testAttachments.files);
-    await this.addSessionVideos(this.zbrTestRunId, zbrSessionId, testAttachments.videos);
-    this.zbrLogEntries.push(...this.getTestSteps(pwTestResult.steps, zbrTestId));
+    this.zbrLogEntries.push(...getTestSteps(pwTestResult.steps, zbrTestId));
     const testSessionEndedAt = new Date();
     await this.finishTestSession(this.zbrTestRunId, zbrSessionId, zbrTestId, testSessionEndedAt);
+    await this.addSessionVideos(this.zbrTestRunId, zbrSessionId, testAttachments.videos);
 
     await this.finishTest(this.zbrTestRunId, zbrTestId, pwTestResult);
 
@@ -207,7 +165,7 @@ class ZebrunnerReporter implements Reporter {
 
     this.mapPwTestIdToStatus.set(pwTest.id, 'finished');
 
-    await this.waitUntil(() => this.areAllTestsStarted);
+    await waitUntil(() => this.areAllTestsStarted);
 
     if (Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished')) {
       this.areAllTestsFinished = true;
@@ -215,18 +173,19 @@ class ZebrunnerReporter implements Reporter {
   }
 
   async onEnd() {
+    console.log("Test run finished")
+    
     if (!this.reportingConfig.enabled) {
-      // refactor
-      console.log('Zebrunner agent disabled - skipped results upload');
       return;
     }
 
-    await this.waitUntil(() => this.areAllTestsFinished);
+    await waitUntil(() => this.areAllTestsFinished);
 
     await this.sendTestsSteps(this.zbrTestRunId, this.zbrLogEntries);
     const testRunEndedAt = new Date();
 
     await this.finishTestRun(this.zbrTestRunId, testRunEndedAt);
+    console.log('Zebrunner agent finished work');
   }
 
   private async startTestRunAndGetId(startedAt: Date): Promise<number> {
@@ -255,8 +214,8 @@ class ZebrunnerReporter implements Reporter {
 
   private async startTestAndGetId(zbrTestRunId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
     try {
-      const fullSuiteName = this.getFullSuiteName(pwTest);
-      const browserCapabilities = this.parseBrowserCapabilities(pwTest.parent.project());
+      const fullSuiteName = getFullSuiteName(pwTest);
+      const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
       const zbrTestId = await this.apiClient.startTest(zbrTestRunId, {
         name: `${fullSuiteName} > ${pwTest.title}`,
@@ -280,8 +239,8 @@ class ZebrunnerReporter implements Reporter {
   private async restartTestAndGetId(zbrTestRunId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
     try {
       console.log('restartTest'); // to remove
-      const fullSuiteName = this.getFullSuiteName(pwTest);
-      const browserCapabilities = this.parseBrowserCapabilities(pwTest.parent.project());
+      const fullSuiteName = getFullSuiteName(pwTest);
+      const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
       const rerunTest = this.exchangedRunContext.testsToRun.filter(
         (el: {
@@ -343,7 +302,7 @@ class ZebrunnerReporter implements Reporter {
     testStartedAt: Date,
   ) {
     try {
-      const browserCapabilities = this.parseBrowserCapabilities(pwTest.parent.project());
+      const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
       const sessionId = await this.apiClient.startTestSession(zbrTestRunId, {
         sessionId: uuidv4(),
         initiatedAt: testStartedAt,
@@ -380,7 +339,7 @@ class ZebrunnerReporter implements Reporter {
   private async addTestTags(zbrTestRunId: number, zbrTestId: number, pwTest: ExtendedPwTestCase) {
     try {
       const r = await this.apiClient.attachTestLabels(zbrTestRunId, zbrTestId, {
-        items: this.getTestTags(pwTest.title, pwTest.tcmTestOptions),
+        items: getTestTags(pwTest.title, pwTest.tcmTestOptions),
       });
       return r;
     } catch (error) {
@@ -448,7 +407,7 @@ class ZebrunnerReporter implements Reporter {
           zbrTestRunId,
           zbrSessionId,
           formData.getHeaders()['content-type'],
-          this.getFileSizeInBytes(video.path),
+          getFileSizeInBytes(video.path),
           formData,
         );
       });
@@ -485,10 +444,8 @@ class ZebrunnerReporter implements Reporter {
       }
 
       const response = await this.apiClient.finishTest(zbrTestRunId, zbrTestId, {
-        result: this.determineStatus(pwTestResult.status),
-        reason: `${this.cleanseReason(pwTestResult.error?.message)} \n ${this.cleanseReason(
-          pwTestResult.error?.stack,
-        )}`,
+        result: determineStatus(pwTestResult.status),
+        reason: `${cleanseReason(pwTestResult.error?.message)} \n ${cleanseReason(pwTestResult.error?.stack)}`,
         endedAt,
       });
 
@@ -513,128 +470,6 @@ class ZebrunnerReporter implements Reporter {
       console.log('Error during finishTestRun:', error);
     }
   }
-
-  private parseBrowserCapabilities(launchInfo) {
-    parser.setUA(launchInfo.use.userAgent);
-    return parser.getResult();
-  }
-
-  private determineStatus(status) {
-    if (status === 'failed') return 'FAILED';
-    if (status === 'passed') return 'PASSED';
-    if (status === 'skipped') return 'SKIPPED';
-    return 'ABORTED';
-  }
-
-  private cleanseReason(rawReason) {
-    return rawReason
-      ? rawReason
-          .replace(/\u001b\[2m/g, '')
-          .replace(/\u001b\[22m/g, '')
-          .replace(/\u001b\[31m/g, '')
-          .replace(/\u001b\[39m/g, '')
-          .replace(/\u001b\[32m/g, '')
-          .replace(/\u001b\[27m/g, '')
-          .replace(/\u001b\[7m/g, '')
-      : '';
-  }
-
-  private getTestTags(testTitle, tcmTestOptions) {
-    const tags = testTitle.match(/@\w*/g) || [];
-
-    if (tcmTestOptions) {
-      tcmTestOptions.forEach((el) => {
-        tags.push(el);
-      });
-    }
-
-    if (tags.length !== 0) {
-      return tags.map((c) => {
-        if (typeof c === 'string') {
-          return { key: 'tag', value: c.replace('@', '') };
-        }
-        if (typeof c === 'object') {
-          return c;
-        }
-      });
-    }
-    return null;
-  }
-
-  private processAttachments(attachment) {
-    if (attachment) {
-      const attachmentObj = {
-        videos: [],
-        files: [],
-        screenshots: [],
-      };
-      attachment.forEach(async (el) => {
-        if (el.contentType === 'video/webm') {
-          await this.convertVideo(el.path, 'mp4');
-          attachmentObj.videos.push({
-            path: el.path.replace('.webm', '.mp4'),
-            timestamp: Date.now(),
-          });
-        }
-        if (el.contentType === 'application/zip') {
-          attachmentObj.files.push({
-            path: el.path,
-            timestamp: Date.now(),
-          });
-        }
-        if (el.contentType === 'image/png') {
-          attachmentObj.screenshots.push({
-            path: el.path,
-            timestamp: Date.now(),
-          });
-        }
-      });
-      return attachmentObj;
-    }
-    return null;
-  }
-
-  private getFileSizeInBytes = (filename: string) => {
-    const stats = fs.statSync(filename);
-    return stats.size;
-  };
-
-  private async convertVideo(path: string, format: string) {
-    try {
-      const fileName = path.replace('.webm', '');
-      const convertedFilePath = `${fileName}.${format}`;
-      await ffmpeg(path).toFormat(format).outputOptions(['-vsync 2']).saveToFile(convertedFilePath);
-    } catch (error) {
-      console.log('Error during convertVideo:', error);
-    }
-  }
-
-  private getTestSteps(steps, zbrTestId: number): TestStep[] {
-    const testSteps = [];
-    for (const testStep of steps) {
-      testSteps.push({
-        timestamp: new Date(testStep.startTime).getTime(),
-        message: testStep.error
-          ? `${this.cleanseReason(testStep.error?.message)} \n ${this.cleanseReason(testStep.error?.stack)}`
-          : testStep.title,
-        level: testStep.error ? 'ERROR' : 'INFO',
-        testId: zbrTestId,
-      });
-    }
-
-    return testSteps;
-  }
-
-  private getFullSuiteName(pwTest: ExtendedPwTestCase) {
-    const suiteTitle = pwTest.parent.title;
-    const suiteParentTitle = pwTest.parent.parent.title;
-    return suiteParentTitle ? `${suiteParentTitle} > ${suiteTitle}` : suiteTitle;
-  }
-
-  private waitUntil = (predFn: () => boolean) => {
-    const poll = (resolve) => (predFn() ? resolve() : setTimeout(() => poll(resolve), 500));
-    return new Promise(poll);
-  };
 }
 
 export default ZebrunnerReporter;
