@@ -1,36 +1,37 @@
 import { expect, test } from '@playwright/test';
 import { CurrentTest } from '../src/lib/CurrentTest';
-const {firefox} = require('playwright');
+const { firefox } = require('playwright');
 
 test.describe('nested foo', () => {
-  test('test runnin in Firery fox @ff @smoke_test @slow', async ({page}, testInfo) => {
-    CurrentTest.setMaintainer('emarf');
+  test('test running in Firefox @ff @smoke_test @slow', async ({ page }, testInfo) => {
+    CurrentTest.setMaintainer('edovnar');
 
     const browser = await firefox.launch();
     const page1 = await browser.newPage();
+    CurrentTest.addLog('custom log message after opening browser page');
     await page1.goto('https://example.com');
     // await page1.screenshot({ path: 'screenshot.png' });
     await browser.close();
   });
 
   test.describe('foo - l2 ', () => {
-    test.beforeEach(async ({page}) => {
+    test.beforeEach(async ({ page }) => {
       // Go to the starting url before each test.
       await page.goto('https://playwright.dev/');
     });
 
-    test('my test', async ({page}) => {
+    test('my test', async ({ page }) => {
       // Assertions use the expect API.
       await expect(page).toHaveURL('https://playwright.dev/');
     });
 
-    test('basic test @broke', async ({page}, testInfo) => {
+    test('basic test @broke', async ({ page }, testInfo) => {
       // testInfo.annotations.push({type: 'maintainer', description: 'emarf'});
       const title = page.locator('.navbar__inner .navbar__title');
       await expect(title).toHaveText('Playwright_broke');
     });
 
-    test('my test1', async ({page}) => {
+    test('my test1', async ({ page }) => {
       CurrentTest.setMaintainer('emarf');
 
       // Expect a title "to contain" a substring.

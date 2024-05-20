@@ -1,11 +1,5 @@
-export const getTestTags = (testTitle, tcmTestOptions) => {
+export const getTestLabels = (testTitle: string) => {
   const tags = testTitle.match(/@\w*/g) || [];
-
-  if (tcmTestOptions) {
-    tcmTestOptions.forEach((el) => {
-      tags.push(el);
-    });
-  }
 
   if (tags.length !== 0) {
     return tags.map((c) => {

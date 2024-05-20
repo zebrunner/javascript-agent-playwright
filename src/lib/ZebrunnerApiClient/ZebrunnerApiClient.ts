@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig } from 'axios';
 import log from 'loglevel';
+// remove later: 
+//import * as http from 'http'
 import { ZEBRUNNER_PATHS } from './paths';
 import { ReportingConfig } from '../ReportingConfig';
 import { ExchangedRunContext } from './types/ExchangedRunContext';
@@ -18,6 +20,8 @@ export class ZebrunnerApiClient {
     this.accessToken = reportingConfig.server.accessToken;
     this.axiosInstance = axios.create({
       baseURL: reportingConfig.server.hostname,
+      // remove later: 
+      // httpAgent: new http.Agent({ keepAlive: true }), // to avoid ECONNRESET errors with Promise.all() API calls
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',

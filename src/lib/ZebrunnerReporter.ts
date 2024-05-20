@@ -17,7 +17,7 @@ import {
   getFileSizeInBytes,
   getFullSuiteName,
   getTestSteps,
-  getTestTags,
+  getTestLabels,
   parseBrowserCapabilities,
   processAttachments,
   waitUntil,
@@ -133,6 +133,13 @@ class ZebrunnerReporter implements Reporter {
       this.addZbrTestCase(pwTest, payload);
     } else if (eventType === EVENT_NAMES.SET_MAINTAINER) {
       pwTest.maintainer = payload;
+    } else if (eventType === EVENT_NAMES.ADD_TEST_LOG) {
+      this.zbrLogEntries.push({
+        timestamp: new Date().getTime(),
+        message: payload,
+        level: 'INFO',
+        testId: this.mapPwTestIdToZbrTestId.get(pwTest.id),
+      });
     }
   }
 
@@ -173,8 +180,8 @@ class ZebrunnerReporter implements Reporter {
   }
 
   async onEnd() {
-    console.log("Test run finished")
-    
+    console.log('Playwright test run finished');
+
     if (!this.reportingConfig.enabled) {
       return;
     }
@@ -182,8 +189,8 @@ class ZebrunnerReporter implements Reporter {
     await waitUntil(() => this.areAllTestsFinished);
 
     await this.sendTestsSteps(this.zbrTestRunId, this.zbrLogEntries);
-    const testRunEndedAt = new Date();
 
+    const testRunEndedAt = new Date();
     await this.finishTestRun(this.zbrTestRunId, testRunEndedAt);
     console.log('Zebrunner agent finished work');
   }
@@ -339,7 +346,7 @@ class ZebrunnerReporter implements Reporter {
   private async addTestTags(zbrTestRunId: number, zbrTestId: number, pwTest: ExtendedPwTestCase) {
     try {
       const r = await this.apiClient.attachTestLabels(zbrTestRunId, zbrTestId, {
-        items: getTestTags(pwTest.title, pwTest.tcmTestOptions),
+        items: getTestLabels(pwTest.title),
       });
       return r;
     } catch (error) {

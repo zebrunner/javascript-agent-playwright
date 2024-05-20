@@ -4,7 +4,7 @@ export { determineStatus } from './determineStatus';
 export { getFileSizeInBytes } from './getFileSizeInBytes';
 export { getFullSuiteName } from './getFullSuiteName';
 export { getTestSteps } from './getTestSteps';
-export { getTestTags } from './getTestTags';
+export { getTestLabels } from './getTestLabels';
 export { parseBrowserCapabilities } from './parseBrowserCapabilities';
 export { processAttachments } from './processAttachments';
 export { waitUntil } from './waitUntil';

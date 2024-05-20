@@ -3,7 +3,7 @@ import { TestCase as PwTestCase} from '@playwright/test/reporter';
 export type TestStep = {
   // refactor
   level: 'INFO' | 'ERROR';
-  timestamp: string;
+  timestamp: number;
   message: string;
   testId?: number;
 };
