@@ -1,4 +1,4 @@
-export const getTestLabels = (testTitle: string) => {
+export const getTestLabelsFromTitle = (testTitle: string) => {
   const tags = testTitle.match(/@\w*/g) || [];
 
   if (tags.length !== 0) {

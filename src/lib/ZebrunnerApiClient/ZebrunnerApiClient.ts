@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig } from 'axios';
 import log from 'loglevel';
-// remove later: 
+// remove later:
 //import * as http from 'http'
 import { ZEBRUNNER_PATHS } from './paths';
 import { ReportingConfig } from '../ReportingConfig';
@@ -10,6 +10,8 @@ import { RefreshTokenRequest } from './types/RefreshTokenRequest';
 import { StartTestRunRequest } from './types/StartTestRunRequest';
 import { UpdateTcmConfigsRequest } from './types/UpdateTcmConfigsRequest';
 import { TestStep, ZbrTestCase } from '../types';
+import { AttachLabelsRequest } from './types/AttachLabelsRequest';
+import { AttachArtifactReferencesRequest } from './types/AttachArtifactReferencesRequest';
 
 export class ZebrunnerApiClient {
   private readonly logger = log.getLogger('zebrunner.api-client');
@@ -20,7 +22,7 @@ export class ZebrunnerApiClient {
     this.accessToken = reportingConfig.server.accessToken;
     this.axiosInstance = axios.create({
       baseURL: reportingConfig.server.hostname,
-      // remove later: 
+      // remove later:
       // httpAgent: new http.Agent({ keepAlive: true }), // to avoid ECONNRESET errors with Promise.all() API calls
       headers: {
         Accept: 'application/json',
@@ -199,5 +201,27 @@ export class ZebrunnerApiClient {
 
   async upsertTestTestCases(testRunId: number, testId: number, request: { items: ZbrTestCase[] }): Promise<void> {
     return this.axiosInstance.post(ZEBRUNNER_PATHS.UPSERT_TEST_TEST_CASES(testRunId, testId), request);
+  }
+
+  async attachTestRunLabels(testRunId: number, request: AttachLabelsRequest): Promise<void> {
+    if (request?.items?.length) {
+      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_RUN_LABELS(testRunId), request);
+    }
+  }
+
+  async attachTestRunArtifactReferences(testRunId: number, request: AttachArtifactReferencesRequest): Promise<void> {
+    if (request?.items?.length) {
+      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_RUN_ARTIFACT_REFERENCES(testRunId), request);
+    }
+  }
+
+  async attachTestArtifactReferences(
+    testRunId: number,
+    testId: number,
+    request: AttachArtifactReferencesRequest,
+  ): Promise<void> {
+    if (request?.items?.length) {
+      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_ARTIFACT_REFERENCES(testRunId, testId), request);
+    }
   }
 }

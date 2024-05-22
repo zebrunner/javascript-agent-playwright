@@ -17,7 +17,7 @@ import {
   getFileSizeInBytes,
   getFullSuiteName,
   getTestSteps,
-  getTestLabels,
+  getTestLabelsFromTitle,
   parseBrowserCapabilities,
   processAttachments,
   waitUntil,
@@ -102,6 +102,8 @@ class ZebrunnerReporter implements Reporter {
       return;
     }
 
+    pwTest.labels = getTestLabelsFromTitle(pwTest.title) || [];
+
     await waitUntil(() => !!this.zbrTestRunId); // zebrunner run initialized
 
     const testStartedAt = new Date(pwTestResult.startTime);
@@ -122,7 +124,7 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  onStdOut(chunk: string, pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
+  onStdOut(chunk: string, pwTest: ExtendedPwTestCase) {
     if (chunk.includes('connect') || chunk.includes('POST') || !this.reportingConfig.enabled) {
       return;
     }
@@ -140,6 +142,14 @@ class ZebrunnerReporter implements Reporter {
         level: 'INFO',
         testId: this.mapPwTestIdToZbrTestId.get(pwTest.id),
       });
+    } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_LABELS) {
+      this.attachRunLabels(payload.key, payload.values);
+    } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES) {
+      this.attachRunArtifactReference(payload.name, payload.value);
+    } else if (eventType === EVENT_NAMES.ATTACH_TEST_LABELS) {
+      pwTest.labels.push(...payload.values.map((value: string) => ({ key: payload.key, value })));
+    } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES) {
+      this.attachTestArtifactReference(payload.name, payload.value, pwTest.id);
     }
   }
 
@@ -157,7 +167,7 @@ class ZebrunnerReporter implements Reporter {
     const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
 
     await this.saveZbrTestCases(this.zbrTestRunId, zbrTestId, pwTest.testCases);
-    await this.addTestTags(this.zbrTestRunId, zbrTestId, pwTest);
+    await this.addTestLabels(this.zbrTestRunId, zbrTestId, pwTest);
     const testAttachments = processAttachments(pwTestResult.attachments);
     await this.addTestScreenshots(this.zbrTestRunId, zbrTestId, testAttachments.screenshots);
     await this.addTestFiles(this.zbrTestRunId, zbrTestId, testAttachments.files);
@@ -343,10 +353,10 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async addTestTags(zbrTestRunId: number, zbrTestId: number, pwTest: ExtendedPwTestCase) {
+  private async addTestLabels(zbrTestRunId: number, zbrTestId: number, pwTest: ExtendedPwTestCase) {
     try {
       const r = await this.apiClient.attachTestLabels(zbrTestRunId, zbrTestId, {
-        items: getTestLabels(pwTest.title),
+        items: pwTest.labels,
       });
       return r;
     } catch (error) {
@@ -475,6 +485,35 @@ class ZebrunnerReporter implements Reporter {
       await this.apiClient.finishTestRun(testRunId, { endedAt: testRunEndedAt });
     } catch (error) {
       console.log('Error during finishTestRun:', error);
+    }
+  }
+
+  private async attachRunLabels(key: string, values: string[]) {
+    try {
+      await waitUntil(() => !!this.zbrTestRunId); // zebrunner run initialized
+      await this.apiClient.attachTestRunLabels(this.zbrTestRunId, { items: values.map((value) => ({ key, value })) });
+    } catch (error) {
+      console.log('Error during attachRunLabels:', error);
+    }
+  }
+
+  private async attachRunArtifactReference(name: string, value: string) {
+    try {
+      await waitUntil(() => !!this.zbrTestRunId); // zebrunner run initialized
+      return this.apiClient.attachTestRunArtifactReferences(this.zbrTestRunId, { items: [{ name, value }] });
+    } catch (error) {
+      console.log('Error during attachRunArtifactReference:', error);
+    }
+  }
+
+  private async attachTestArtifactReference(name: string, value: string, pwTestId: string) {
+    try {
+      await waitUntil(() => !!this.zbrTestRunId && this.mapPwTestIdToStatus.has(pwTestId)); // zebrunner run and test initialized
+      return this.apiClient.attachTestArtifactReferences(this.zbrTestRunId, this.mapPwTestIdToZbrTestId.get(pwTestId), {
+        items: [{ name, value }],
+      });
+    } catch (error) {
+      console.log('Error during attachTestArtifactReference:', error);
     }
   }
 }
