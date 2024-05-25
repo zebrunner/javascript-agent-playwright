@@ -70,4 +70,9 @@ export const CurrentTest = {
 
     process.stdout.write(payload);
   },
+
+  revertRegistration: () => {
+    const eventType = EVENT_NAMES.REVERT_TEST_REGISTRATION;
+    process.stdout.write(JSON.stringify({ eventType }));
+  },
 };

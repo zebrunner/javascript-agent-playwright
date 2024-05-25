@@ -224,4 +224,8 @@ export class ZebrunnerApiClient {
       return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_ARTIFACT_REFERENCES(testRunId, testId), request);
     }
   }
+
+  async revertTestRegistration(testRunId: number, testId: number): Promise<void> {
+    return this.axiosInstance.delete(ZEBRUNNER_PATHS.REVERT_TEST_REGISTRATION(testRunId, testId));
+  }
 }

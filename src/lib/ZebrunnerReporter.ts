@@ -35,7 +35,7 @@ class ZebrunnerReporter implements Reporter {
 
   private mapPwTestIdToZbrTestId: Map<string, number>;
   private mapPwTestIdToZbrSessionId: Map<string, number>;
-  private mapPwTestIdToStatus: Map<string, 'started' | 'finished'>;
+  private mapPwTestIdToStatus: Map<string, 'started' | 'toRevert' | 'reverted' | 'finished'>;
 
   private areAllTestsStarted: boolean;
   private areAllTestsFinished: boolean;
@@ -140,7 +140,7 @@ class ZebrunnerReporter implements Reporter {
         timestamp: new Date().getTime(),
         message: payload,
         level: 'INFO',
-        testId: this.mapPwTestIdToZbrTestId.get(pwTest.id),
+        testId: this.mapPwTestIdToZbrTestId.get(pwTest.id), // refactor: testId could be undefined it zbrTestId not yet loaded
       });
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_LABELS) {
       this.attachRunLabels(payload.key, payload.values);
@@ -150,6 +150,8 @@ class ZebrunnerReporter implements Reporter {
       pwTest.labels.push(...payload.values.map((value: string) => ({ key: payload.key, value })));
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES) {
       this.attachTestArtifactReference(payload.name, payload.value, pwTest.id);
+    } else if (eventType === EVENT_NAMES.REVERT_TEST_REGISTRATION) {
+      this.mapPwTestIdToStatus.set(pwTest.id, 'toRevert');
     }
   }
 
@@ -162,29 +164,36 @@ class ZebrunnerReporter implements Reporter {
     }
 
     await waitUntil(() => this.mapPwTestIdToStatus.has(pwTest.id)); // zebrunner test initialized
-
     const zbrTestId = this.mapPwTestIdToZbrTestId.get(pwTest.id);
-    const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
 
-    await this.saveZbrTestCases(this.zbrTestRunId, zbrTestId, pwTest.testCases);
-    await this.addTestLabels(this.zbrTestRunId, zbrTestId, pwTest);
-    const testAttachments = processAttachments(pwTestResult.attachments);
-    await this.addTestScreenshots(this.zbrTestRunId, zbrTestId, testAttachments.screenshots);
-    await this.addTestFiles(this.zbrTestRunId, zbrTestId, testAttachments.files);
-    this.zbrLogEntries.push(...getTestSteps(pwTestResult.steps, zbrTestId));
-    const testSessionEndedAt = new Date();
-    await this.finishTestSession(this.zbrTestRunId, zbrSessionId, zbrTestId, testSessionEndedAt);
-    await this.addSessionVideos(this.zbrTestRunId, zbrSessionId, testAttachments.videos);
+    if (this.mapPwTestIdToStatus.get(pwTest.id) === 'toRevert') { // refactor: recheck if "toRevert" status actually needed (add pwTest field instead?)
+      await this.revertTestRegistration(this.zbrTestRunId, zbrTestId);
+      this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
+    } else {
+      const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
 
-    await this.finishTest(this.zbrTestRunId, zbrTestId, pwTestResult);
+      await this.saveZbrTestCases(this.zbrTestRunId, zbrTestId, pwTest.testCases);
+      await this.addTestLabels(this.zbrTestRunId, zbrTestId, pwTest);
+      const testAttachments = processAttachments(pwTestResult.attachments);
+      await this.addTestScreenshots(this.zbrTestRunId, zbrTestId, testAttachments.screenshots);
+      await this.addTestFiles(this.zbrTestRunId, zbrTestId, testAttachments.files);
+      this.zbrLogEntries.push(...getTestSteps(pwTestResult.steps, zbrTestId));
+      const testSessionEndedAt = new Date();
+      await this.finishTestSession(this.zbrTestRunId, zbrSessionId, zbrTestId, testSessionEndedAt);
+      await this.addSessionVideos(this.zbrTestRunId, zbrSessionId, testAttachments.videos);
 
-    console.log(`Finished uploading test "${fullTestName}" data to Zebrunner`);
+      await this.finishTest(this.zbrTestRunId, zbrTestId, pwTestResult);
 
-    this.mapPwTestIdToStatus.set(pwTest.id, 'finished');
+      console.log(`Finished uploading test "${fullTestName}" data to Zebrunner`);
+
+      this.mapPwTestIdToStatus.set(pwTest.id, 'finished');
+    }
 
     await waitUntil(() => this.areAllTestsStarted);
 
-    if (Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished')) {
+    if (
+      Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished' || status === 'reverted')
+    ) {
       this.areAllTestsFinished = true;
     }
   }
@@ -222,7 +231,7 @@ class ZebrunnerReporter implements Reporter {
       const request = new UpdateTcmConfigsRequest(this.reportingConfig);
 
       if (request.hasAnyValue) {
-        this.apiClient.updateTcmConfigs(testRunId, request);
+        await this.apiClient.updateTcmConfigs(testRunId, request);
       }
     } catch (error) {
       console.log('Error during saveTcmConfigs:', error);
@@ -346,7 +355,7 @@ class ZebrunnerReporter implements Reporter {
   private async saveZbrTestCases(zbrTestRunId: number, zbrTestId: number, testCases: ZbrTestCase[]): Promise<void> {
     try {
       if (isNotEmptyArray(testCases)) {
-        this.apiClient.upsertTestTestCases(zbrTestRunId, zbrTestId, { items: testCases });
+        await this.apiClient.upsertTestTestCases(zbrTestRunId, zbrTestId, { items: testCases });
       }
     } catch (error) {
       console.log('Error during saveZbrTestCases:', error);
@@ -355,10 +364,9 @@ class ZebrunnerReporter implements Reporter {
 
   private async addTestLabels(zbrTestRunId: number, zbrTestId: number, pwTest: ExtendedPwTestCase) {
     try {
-      const r = await this.apiClient.attachTestLabels(zbrTestRunId, zbrTestId, {
+      await this.apiClient.attachTestLabels(zbrTestRunId, zbrTestId, {
         items: pwTest.labels,
       });
-      return r;
     } catch (error) {
       console.log('Error during addTestTags:', error);
     }
@@ -460,13 +468,11 @@ class ZebrunnerReporter implements Reporter {
         endedAt = new Date(endedAt.getTime() + 1);
       }
 
-      const response = await this.apiClient.finishTest(zbrTestRunId, zbrTestId, {
+      await this.apiClient.finishTest(zbrTestRunId, zbrTestId, {
         result: determineStatus(pwTestResult.status),
         reason: `${cleanseReason(pwTestResult.error?.message)} \n ${cleanseReason(pwTestResult.error?.stack)}`,
         endedAt,
       });
-
-      return response;
     } catch (error) {
       console.log('Error during finishTest:', error);
     }
@@ -500,7 +506,7 @@ class ZebrunnerReporter implements Reporter {
   private async attachRunArtifactReference(name: string, value: string) {
     try {
       await waitUntil(() => !!this.zbrTestRunId); // zebrunner run initialized
-      return this.apiClient.attachTestRunArtifactReferences(this.zbrTestRunId, { items: [{ name, value }] });
+      await this.apiClient.attachTestRunArtifactReferences(this.zbrTestRunId, { items: [{ name, value }] });
     } catch (error) {
       console.log('Error during attachRunArtifactReference:', error);
     }
@@ -509,11 +515,19 @@ class ZebrunnerReporter implements Reporter {
   private async attachTestArtifactReference(name: string, value: string, pwTestId: string) {
     try {
       await waitUntil(() => !!this.zbrTestRunId && this.mapPwTestIdToStatus.has(pwTestId)); // zebrunner run and test initialized
-      return this.apiClient.attachTestArtifactReferences(this.zbrTestRunId, this.mapPwTestIdToZbrTestId.get(pwTestId), {
+      await this.apiClient.attachTestArtifactReferences(this.zbrTestRunId, this.mapPwTestIdToZbrTestId.get(pwTestId), {
         items: [{ name, value }],
       });
     } catch (error) {
       console.log('Error during attachTestArtifactReference:', error);
+    }
+  }
+
+  private async revertTestRegistration(zbrTestRunId: number, zbrTestId: number) {
+    try {
+      await this.apiClient.revertTestRegistration(zbrTestRunId, zbrTestId);
+    } catch (error) {
+      console.log('Error during revertTestRegistration:', error);
     }
   }
 }

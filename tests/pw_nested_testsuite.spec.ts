@@ -8,7 +8,6 @@ test.describe('nested foo', () => {
     CurrentTest.setMaintainer('edovnar');
     CurrentLaunch.attachLabel('test_run', 'run_one_label', 'run_two_label');
     CurrentLaunch.attachArtifactReference('someRunArtifactName', 'google.com/2');
-
     const browser = await firefox.launch();
     const page1 = await browser.newPage();
     CurrentTest.addLog('custom log message after opening browser page');
@@ -30,8 +29,9 @@ test.describe('nested foo', () => {
       await expect(page).toHaveURL('https://playwright.dev/');
     });
 
-    test('basic test @broke', async ({ page }, testInfo) => {
+    test('basic test with revert @broke', async ({ page }, testInfo) => {
       // testInfo.annotations.push({type: 'maintainer', description: 'emarf'});
+      CurrentTest.revertRegistration();
       const title = page.locator('.navbar__inner .navbar__title');
       await expect(title).toHaveText('Playwright_broke');
     });

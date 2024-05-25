@@ -32,10 +32,10 @@ export default defineConfig({
         projectKey: 'DEF',
         server: {
           hostname: 'https://integration.zebrunner.org',
-          accessToken: 'mBVuiz1D7C9YWwYm1IElnCe8SRLQPNyzsQa9GEaQbjgQ0Bawo8',
+          accessToken: 'TCIryaD5kZiTXQquHnptPLev4C1VyF2rZZ8cvGpnYdOibDvjbl',
         },
         launch: {
-          displayName: 'Playwright dev-purposes launch',
+          displayName: 'Playwright dev launch',
           build: '1.0.0',
           environment: 'Local',
         },
