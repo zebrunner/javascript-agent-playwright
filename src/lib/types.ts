@@ -19,4 +19,7 @@ export interface ExtendedPwTestCase extends PwTestCase {
   maintainer: string;
   testCases: ZbrTestCase[];
   labels: { key: string; value: string }[];
+  shouldBeReverted: boolean;
+  artifactReferences: { name: string; value: string }[];
+  customLogs: TestStep[];
 }
