@@ -1,7 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig } from 'axios';
 import log from 'loglevel';
-// remove later:
-//import * as http from 'http'
 import { ZEBRUNNER_PATHS } from './paths';
 import { ReportingConfig } from '../ReportingConfig';
 import { ExchangedRunContext } from './types/ExchangedRunContext';
@@ -12,6 +10,10 @@ import { UpdateTcmConfigsRequest } from './types/UpdateTcmConfigsRequest';
 import { TestStep, ZbrTestCase } from '../types';
 import { AttachLabelsRequest } from './types/AttachLabelsRequest';
 import { AttachArtifactReferencesRequest } from './types/AttachArtifactReferencesRequest';
+import { StartTestRequest } from './types/StartTestRequest';
+import { StartTestSessionRequest } from './types/StartTestSessionRequest';
+import { FinishTestSessionRequest } from './types/FinishTestSessionRequest';
+import { FinishTestRequest } from './types/FinishTestRequest';
 
 export class ZebrunnerApiClient {
   private readonly logger = log.getLogger('zebrunner.api-client');
@@ -22,8 +24,6 @@ export class ZebrunnerApiClient {
     this.accessToken = reportingConfig.server.accessToken;
     this.axiosInstance = axios.create({
       baseURL: reportingConfig.server.hostname,
-      // remove later:
-      // httpAgent: new http.Agent({ keepAlive: true }), // to avoid ECONNRESET errors with Promise.all() API calls
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -83,23 +83,21 @@ export class ZebrunnerApiClient {
     return response.data.id as number;
   }
 
-  async startTest(testRunId: number, request): Promise<number> {
-    // type
+  async startTest(testRunId: number, request: StartTestRequest): Promise<number> {
     await this.authenticateIfRequired();
     const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST(testRunId), request);
 
     return response.data.id as number;
   }
 
-  async restartTest(testRunId: number, testId: number, request): Promise<number> {
-    // type
+  async restartTest(testRunId: number, testId: number, request: StartTestRequest): Promise<number> {
     await this.authenticateIfRequired();
     const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.RESTART_TEST(testRunId, testId), request);
 
     return response.data.id as number;
   }
 
-  async startTestSession(testRunId: number, request /* type */): Promise<number> {
+  async startTestSession(testRunId: number, request: StartTestSessionRequest): Promise<number> {
     await this.authenticateIfRequired();
     const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST_SESSION(testRunId), request);
 
@@ -111,7 +109,7 @@ export class ZebrunnerApiClient {
     testSessionId: number,
     contentTypeHeader: string,
     fileSize: number,
-    file, // type
+    file: import('form-data'),
   ): Promise<void> {
     const config: AxiosRequestConfig = {
       headers: {
@@ -128,24 +126,15 @@ export class ZebrunnerApiClient {
     );
   }
 
-  async finishTestSession(
-    testRunId: number,
-    testSessionId: number,
-    request, // type
-  ): Promise<void> {
+  async finishTestSession(testRunId: number, testSessionId: number, request: FinishTestSessionRequest): Promise<void> {
     return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST_SESSION(testRunId, testSessionId), request);
   }
 
-  async finishTest(testRunId: number, testId: number, request): Promise<void> {
-    // type
+  async finishTest(testRunId: number, testId: number, request: FinishTestRequest): Promise<void> {
     return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST(testRunId, testId), request);
   }
 
-  async attachTestLabels(
-    testRunId: number,
-    testId: number,
-    request, // type
-  ): Promise<void> {
+  async attachTestLabels(testRunId: number, testId: number, request: AttachLabelsRequest): Promise<void> {
     if (request?.items?.length) {
       return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(testRunId, testId), request);
     }
@@ -166,7 +155,7 @@ export class ZebrunnerApiClient {
     testRunId: number,
     testId: number,
     contentTypeHeader: string,
-    file, // type
+    file: import('form-data'),
   ): Promise<void> {
     const config: AxiosRequestConfig = {
       headers: {

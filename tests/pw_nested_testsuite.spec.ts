@@ -1,20 +1,23 @@
 import { expect, test } from '@playwright/test';
 import { CurrentTest } from '../src/lib/CurrentTest';
 import { CurrentLaunch } from '../src/lib/CurrentLaunch';
-const { firefox } = require('playwright');
+const { chromium } = require('playwright');
 
 test.describe('nested foo', () => {
-  test('test running in Firefox @ff @smoke_test @slow', async ({ page }, testInfo) => {
+  test.beforeAll(async () => {
+    CurrentLaunch.attachLabel('test_run_label_key', 'run_label_value_one', 'run_label_value_two');
+    CurrentLaunch.attachArtifactReference('someRunArtifactName', 'https://zebrunner.com');
+  });
+
+  test('test running in Chrome @ff @smoke_test @slow', async ({ page }, testInfo) => {
     CurrentTest.setMaintainer('edovnar');
-    CurrentLaunch.attachLabel('test_run', 'run_one_label', 'run_two_label');
-    CurrentLaunch.attachArtifactReference('someRunArtifactName', 'google.com/2');
-    const browser = await firefox.launch();
-    const page1 = await browser.newPage();
+    const browser = await chromium.launch();
+    const page1 = await browser.newPage('https://google.com');
     CurrentTest.addLog('custom log message after opening browser page');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
-    CurrentTest.attachArtifactReference('someTestArtifactName', 'google.com');
-    await page1.goto('https://example.com');
-    // await page1.screenshot({ path: 'screenshot.png' });
+    CurrentTest.attachArtifactReference('someTestArtifactName', 'https://zebrunner.com');
+    await page1.goto('https://zebrunner.com');
+    await page1.screenshot();
     await browser.close();
   });
 
@@ -24,7 +27,7 @@ test.describe('nested foo', () => {
       await page.goto('https://playwright.dev/');
     });
 
-    test('my test', async ({ page }) => {
+    test.skip('skipped test', async ({ page }) => {
       // Assertions use the expect API.
       await expect(page).toHaveURL('https://playwright.dev/');
     });

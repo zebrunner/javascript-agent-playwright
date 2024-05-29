@@ -194,7 +194,7 @@ class ZebrunnerReporter implements Reporter {
         ...pwTest.customLogs.map((log: TestStep) => ({ ...log, testId: zbrTestId })),
       );
       const testSessionEndedAt = new Date();
-      await this.finishTestSession(this.zbrTestRunId, zbrSessionId, zbrTestId, testSessionEndedAt);
+      await this.finishTestSession(this.zbrTestRunId, zbrSessionId, testSessionEndedAt);
       await this.addSessionVideos(this.zbrTestRunId, zbrSessionId, testAttachments.videos);
 
       await this.finishTest(this.zbrTestRunId, zbrTestId, pwTestResult);
@@ -458,17 +458,9 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async finishTestSession(
-    zbrTestRunId: number,
-    zbrTestSessionId: number,
-    zbrTestId: number,
-    testEndedAt: Date,
-  ) {
+  private async finishTestSession(zbrTestRunId: number, zbrTestSessionId: number, testEndedAt: Date) {
     try {
-      await this.apiClient.finishTestSession(zbrTestRunId, zbrTestSessionId, {
-        endedAt: testEndedAt,
-        testIds: [zbrTestId],
-      });
+      await this.apiClient.finishTestSession(zbrTestRunId, zbrTestSessionId, { endedAt: testEndedAt });
     } catch (error) {
       console.log('Error during finishTestSession:', error);
     }
