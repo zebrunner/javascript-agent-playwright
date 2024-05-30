@@ -177,7 +177,7 @@ class ZebrunnerReporter implements Reporter {
 
       await this.saveZbrTestCases(this.zbrRunId, zbrTestId, pwTest.testCases);
       await this.addTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
-      const testAttachments = processAttachments(pwTestResult.attachments);
+      const testAttachments = await processAttachments(pwTestResult.attachments);
       await this.addTestScreenshots(this.zbrRunId, zbrTestId, testAttachments.screenshots);
       await this.addTestFiles(this.zbrRunId, zbrTestId, testAttachments.files);
       await this.addTestArtifactReferences(this.zbrRunId, zbrTestId, pwTest.artifactReferences);

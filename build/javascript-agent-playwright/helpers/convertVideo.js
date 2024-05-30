@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.convertVideo = void 0;
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
 const ffmpeg_1 = require("@ffmpeg-installer/ffmpeg");
-console.log(ffmpeg_1.path);
 fluent_ffmpeg_1.default.setFfmpegPath(ffmpeg_1.path);
 const convertVideo = async (path, format) => {
     try {

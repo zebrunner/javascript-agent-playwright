@@ -161,7 +161,7 @@ class ZebrunnerReporter {
             const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
             await this.saveZbrTestCases(this.zbrRunId, zbrTestId, pwTest.testCases);
             await this.addTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
-            const testAttachments = (0, helpers_1.processAttachments)(pwTestResult.attachments);
+            const testAttachments = await (0, helpers_1.processAttachments)(pwTestResult.attachments);
             await this.addTestScreenshots(this.zbrRunId, zbrTestId, testAttachments.screenshots);
             await this.addTestFiles(this.zbrRunId, zbrTestId, testAttachments.files);
             await this.addTestArtifactReferences(this.zbrRunId, zbrTestId, pwTest.artifactReferences);
