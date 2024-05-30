@@ -64,8 +64,8 @@ class ZebrunnerReporter {
         this.mapPwTestIdToZbrTestId = new Map();
         this.mapPwTestIdToZbrSessionId = new Map();
         this.mapPwTestIdToStatus = new Map();
-        this.suite = await this.rerunResolver(suite);
         this.apiClient = new ZebrunnerApiClient_1.ZebrunnerApiClient(this.reportingConfig);
+        this.suite = await this.rerunResolver(suite);
         this.zbrTestRunId = await this.startTestRunAndGetId(runStartTime);
         await this.saveTestRunTcmConfigs(this.zbrTestRunId);
     }
