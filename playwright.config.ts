@@ -26,7 +26,7 @@ export default defineConfig({
   ],
   reporter: [
     [
-      '../javascript-agent-playwright',
+      './build/index',
       {
         enabled: true,
         projectKey: 'DEF',
@@ -81,8 +81,6 @@ export default defineConfig({
             testCycleKey: 'ZEB-T1',
           },
         },
-
-        pwConcurrentTasks: 10,
       },
     ],
   ],
