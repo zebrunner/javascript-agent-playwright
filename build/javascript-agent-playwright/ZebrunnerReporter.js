@@ -37,7 +37,6 @@ const UpdateTcmConfigsRequest_1 = require("./ZebrunnerApiClient/types/UpdateTcmC
 const helpers_1 = require("./helpers");
 class ZebrunnerReporter {
     reportingConfig;
-    suite;
     apiClient;
     zbrRunId;
     zbrRunLabels;
