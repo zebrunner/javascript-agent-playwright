@@ -26,7 +26,7 @@ export default defineConfig({
   ],
   reporter: [
     [
-      './build/index',
+      './build/javascript-agent-playwright/index',
       {
         enabled: true,
         projectKey: 'DEF',
