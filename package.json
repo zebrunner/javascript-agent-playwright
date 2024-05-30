@@ -1,5 +1,5 @@
 {
-  "name": "@zebrunner/javascript-agent-playwright",
+  "name": "javascript-agent-playwright-beta",
   "version": "0.2.0-beta.1",
   "main": "build/javascript-agent-playwright/index.js",
   "license": "MIT",
