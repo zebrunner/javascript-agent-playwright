@@ -61,7 +61,7 @@ class ZebrunnerReporter {
         this.mapPwTestIdToZbrSessionId = new Map();
         this.mapPwTestIdToStatus = new Map();
         this.apiClient = new ZebrunnerApiClient_1.ZebrunnerApiClient(this.reportingConfig);
-        this.suite = await this.rerunResolver(suite);
+        suite = await this.rerunResolver(suite);
         this.zbrRunId = await this.startTestRunAndGetId(runStartTime);
         await this.saveTestRunTcmConfigs(this.zbrRunId);
     }
@@ -166,7 +166,7 @@ class ZebrunnerReporter {
             await this.addTestScreenshots(this.zbrRunId, zbrTestId, testAttachments.screenshots);
             await this.addTestFiles(this.zbrRunId, zbrTestId, testAttachments.files);
             await this.addTestArtifactReferences(this.zbrRunId, zbrTestId, pwTest.artifactReferences);
-            await this.sendTestsSteps(this.zbrRunId, [
+            await this.sendTestLogs(this.zbrRunId, [
                 ...(0, helpers_1.getTestSteps)(pwTestResult.steps, zbrTestId),
                 ...pwTest.customLogs.map((log) => ({ ...log, testId: zbrTestId })),
             ]);
@@ -391,12 +391,12 @@ class ZebrunnerReporter {
             console.log('Error during finishTest:', error);
         }
     }
-    async sendTestsSteps(zbrRunId, zbrLogEntries) {
+    async sendTestLogs(zbrRunId, zbrLogEntries) {
         try {
             await this.apiClient.sendLogs(zbrRunId, zbrLogEntries);
         }
         catch (error) {
-            console.log('Error during sendTestsSteps:', error);
+            console.log('Error during sendTestLogs:', error);
         }
     }
     async finishTestRun(testRunId, testRunEndedAt) {

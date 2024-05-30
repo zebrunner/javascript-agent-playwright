@@ -27,7 +27,6 @@ import {
 
 class ZebrunnerReporter implements Reporter {
   private reportingConfig: ReportingConfig;
-  private suite!: Suite;
   private apiClient: ZebrunnerApiClient;
 
   private zbrRunId: number;
@@ -63,7 +62,7 @@ class ZebrunnerReporter implements Reporter {
     this.mapPwTestIdToStatus = new Map();
 
     this.apiClient = new ZebrunnerApiClient(this.reportingConfig);
-    this.suite = await this.rerunResolver(suite);
+    suite = await this.rerunResolver(suite);
 
     this.zbrRunId = await this.startTestRunAndGetId(runStartTime);
     await this.saveTestRunTcmConfigs(this.zbrRunId);
