@@ -12,8 +12,10 @@ interface LaunchConfig {
 }
 
 interface MilestoneConfig {
-  readonly id: number;
-  readonly name: string;
+  readonly idFromConfig: number;
+  readonly idFromEnv: number;
+  readonly nameFromConfig: string;
+  readonly nameFromEnv: string;
 }
 
 interface NotificationsConfig {
@@ -120,18 +122,16 @@ export class ReportingConfig {
     }
 
     this.launch = {
-      displayName: getString(
-        'REPORTING_RUN_DISPLAY_NAME',
-        config?.launch?.displayName,
-        process.env.npm_package_name,
-      ),
+      displayName: getString('REPORTING_RUN_DISPLAY_NAME', config?.launch?.displayName, process.env.npm_package_name),
       build: getString('REPORTING_RUN_BUILD', config?.launch?.build),
       environment: getString('REPORTING_RUN_ENVIRONMENT', config?.launch?.environment),
     };
 
     this.milestone = {
-      id: getNumber('REPORTING_MILESTONE_ID', config?.milestone?.id),
-      name: getString('REPORTING_MILESTONE_NAME', config?.milestone?.name),
+      idFromConfig: config?.milestone?.id,
+      idFromEnv: getNumber('REPORTING_MILESTONE_ID', null),
+      nameFromConfig: config?.milestone?.name,
+      nameFromEnv: getString('REPORTING_MILESTONE_NAME', null),
     };
 
     this.notifications = {

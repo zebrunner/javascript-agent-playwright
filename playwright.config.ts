@@ -40,8 +40,8 @@ export default defineConfig({
           environment: 'Local',
         },
         milestone: {
-          id: null,
-          name: null,
+          // id: '76', // "from env var" id
+          // name: 'milestoneNameFromConfig',
         },
         notifications: {
           notifyOnEachFailure: false,

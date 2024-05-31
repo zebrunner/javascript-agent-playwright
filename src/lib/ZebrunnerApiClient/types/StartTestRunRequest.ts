@@ -40,8 +40,13 @@ export class StartTestRunRequest {
       build: reportingConfig.launch.build,
     };
     this.milestone = {
-      id: reportingConfig.milestone.id,
-      name: reportingConfig.milestone.name,
+      // priorities: env var id > env var name > cfg var id > cfg var name
+      id: reportingConfig.milestone.idFromEnv
+        ? reportingConfig.milestone.idFromEnv
+        : reportingConfig.milestone.nameFromEnv
+        ? null
+        : reportingConfig.milestone.idFromConfig,
+      name: reportingConfig.milestone.nameFromEnv || reportingConfig.milestone.nameFromConfig,
     };
     this.notifications = {
       notifyOnEachFailure: reportingConfig.notifications.notifyOnEachFailure,

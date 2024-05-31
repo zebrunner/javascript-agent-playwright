@@ -39,8 +39,10 @@ class ReportingConfig {
             environment: getString('REPORTING_RUN_ENVIRONMENT', config?.launch?.environment),
         };
         this.milestone = {
-            id: getNumber('REPORTING_MILESTONE_ID', config?.milestone?.id),
-            name: getString('REPORTING_MILESTONE_NAME', config?.milestone?.name),
+            idFromConfig: config?.milestone?.id,
+            idFromEnv: getNumber('REPORTING_MILESTONE_ID', null),
+            nameFromConfig: config?.milestone?.name,
+            nameFromEnv: getString('REPORTING_MILESTONE_NAME', null),
         };
         this.notifications = {
             notifyOnEachFailure: getBoolean('REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE', config?.notifications?.notifyOnEachFailure),
