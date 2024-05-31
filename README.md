@@ -79,9 +79,9 @@ The following configuration options allow you to configure accompanying informat
 
 | Env var / Reporter config                                  | Description                                                                                                                             |
 |------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `REPORTING_LAUNCH_DISPLAY_NAME`<br/>`launch.displayName` | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                          |
-| `REPORTING_LAUNCH_BUILD`<br/>`launch.build`              | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test. |
-| `REPORTING_LAUNCH_ENVIRONMENT`<br/>`launch.environment`  | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                          |
+| `REPORTING_RUN_DISPLAY_NAME`<br/>`launch.displayName` | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                          |
+| `REPORTING_RUN_BUILD`<br/>`launch.build`              | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test. |
+| `REPORTING_RUN_ENVIRONMENT`<br/>`launch.environment`  | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                          |
 
 #### Milestone
 
@@ -188,9 +188,9 @@ The following code snippet is a list of all configuration environment variables 
    REPORTING_SERVER_HOSTNAME=https://mycompany.zebrunner.com
    REPORTING_SERVER_ACCESS_TOKEN=somesecretaccesstoken
    
-   REPORTING_LAUNCH_DISPLAY_NAME=Nightly Regression
-   REPORTING_LAUNCH_BUILD=2.41.2.2431-SNAPSHOT
-   REPORTING_LAUNCH_ENVIRONMENT=QA
+   REPORTING_RUN_DISPLAY_NAME=Nightly Regression
+   REPORTING_RUN_BUILD=2.41.2.2431-SNAPSHOT
+   REPORTING_RUN_ENVIRONMENT=QA
    
    REPORTING_MILESTONE_ID=1
    REPORTING_MILESTONE_NAME=Release 1.0.0

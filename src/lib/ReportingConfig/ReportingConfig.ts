@@ -121,12 +121,12 @@ export class ReportingConfig {
 
     this.launch = {
       displayName: getString(
-        'REPORTING_LAUNCH_DISPLAY_NAME',
+        'REPORTING_RUN_DISPLAY_NAME',
         config?.launch?.displayName,
         process.env.npm_package_name,
       ),
-      build: getString('REPORTING_LAUNCH_BUILD', config?.launch?.build),
-      environment: getString('REPORTING_LAUNCH_ENVIRONMENT', config?.launch?.environment),
+      build: getString('REPORTING_RUN_BUILD', config?.launch?.build),
+      environment: getString('REPORTING_RUN_ENVIRONMENT', config?.launch?.environment),
     };
 
     this.milestone = {
