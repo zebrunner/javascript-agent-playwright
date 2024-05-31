@@ -9,9 +9,20 @@ const ffmpeg_1 = require("@ffmpeg-installer/ffmpeg");
 fluent_ffmpeg_1.default.setFfmpegPath(ffmpeg_1.path);
 const convertVideo = async (path, format) => {
     try {
-        const fileName = path.replace('.webm', '');
-        const convertedFilePath = `${fileName}.${format}`;
-        await (0, fluent_ffmpeg_1.default)(path).toFormat(format).outputOptions(['-vsync 2']).saveToFile(convertedFilePath);
+        return new Promise((resolve, reject) => {
+            const fileName = path.replace('.webm', '');
+            const convertedFilePath = `${fileName}.${format}`;
+            (0, fluent_ffmpeg_1.default)(path)
+                .toFormat(format)
+                .outputOptions(['-vsync 2'])
+                .saveToFile(convertedFilePath)
+                .on('end', () => {
+                resolve();
+            })
+                .on('error', (error) => {
+                return reject(new Error(error));
+            });
+        });
     }
     catch (error) {
         console.log('Error during convertVideo:', error);
