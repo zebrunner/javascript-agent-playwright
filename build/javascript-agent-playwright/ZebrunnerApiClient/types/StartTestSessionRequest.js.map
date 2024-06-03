@@ -1,1 +1,1 @@
-{"version":3,"file":"StartTestSessionRequest.js","sourceRoot":"","sources":["../../../../src/lib/ZebrunnerApiClient/types/StartTestSessionRequest.ts"],"names":[],"mappings":""}
+{"version":3,"file":"StartTestSessionRequest.js","sourceRoot":"","sources":["../../../../src/javascript-agent-playwright/ZebrunnerApiClient/types/StartTestSessionRequest.ts"],"names":[],"mappings":""}

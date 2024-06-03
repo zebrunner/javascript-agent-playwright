@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { testRail, xray, zebrunner, zephyr } from '../src/lib/tcm';
+import { testRail, xray, zebrunner, zephyr } from '../src/javascript-agent-playwright/index';
 
 test.describe('feature foo', () => {
 

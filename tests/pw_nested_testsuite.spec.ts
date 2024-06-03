@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { CurrentTest } from '../src/lib/CurrentTest';
-import { CurrentLaunch } from '../src/lib/CurrentLaunch';
+import { CurrentTest } from '../src/javascript-agent-playwright/index';
+import { CurrentLaunch } from '../src/javascript-agent-playwright/index';
 const { chromium } = require('playwright');
 
 test.describe('nested foo', () => {

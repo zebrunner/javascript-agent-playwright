@@ -104,6 +104,7 @@ class ZebrunnerReporter {
         this.mapPwTestIdToStatus.set(pwTest.id, 'started');
     }
     onStdOut(chunk, pwTest) {
+        // onStdOut must not be async function because it must always finish before onTestEnd
         if (chunk.includes('connect') || chunk.includes('POST') || !this.reportingConfig.enabled) {
             return;
         }
@@ -172,7 +173,7 @@ class ZebrunnerReporter {
             const testSessionEndedAt = new Date();
             await this.finishTestSession(this.zbrRunId, zbrSessionId, testSessionEndedAt);
             await this.addSessionVideos(this.zbrRunId, zbrSessionId, testAttachments.videos);
-            await this.finishTest(this.zbrRunId, zbrTestId, pwTestResult);
+            await this.finishTest(this.zbrRunId, zbrTestId, pwTestResult, pwTest.maintainer);
             console.log(`Finished uploading test "${fullTestName}" data to Zebrunner`);
             this.mapPwTestIdToStatus.set(pwTest.id, 'finished');
         }
@@ -182,7 +183,7 @@ class ZebrunnerReporter {
         if (!this.reportingConfig.enabled) {
             return;
         }
-        await (0, helpers_1.waitUntil)(() => Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished' || status === 'reverted')); // all zebrunner tests finished
+        await (0, helpers_1.waitUntil)(() => Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished' || status === 'reverted') && Array.from(this.mapPwTestIdToStatus.values()).length > 0); // all zebrunner tests finished
         await this.attachRunArtifactReferences(this.zbrRunId, this.zbrRunArtifactReferences);
         await this.attachRunLabels(this.zbrRunId, this.zbrRunLabels);
         const testRunEndedAt = new Date();
@@ -219,7 +220,6 @@ class ZebrunnerReporter {
                 name: `${fullSuiteName} > ${pwTest.title}`,
                 className: fullSuiteName,
                 methodName: `${fullSuiteName} > ${pwTest.title}`,
-                maintainer: pwTest.maintainer || 'anonymous',
                 startedAt: testStartedAt,
                 correlationData: JSON.stringify({
                     browser: browserCapabilities.browser.name,
@@ -235,7 +235,6 @@ class ZebrunnerReporter {
     }
     async restartTestAndGetId(zbrRunId, pwTest, testStartedAt) {
         try {
-            console.log('restartTest'); // to remove
             const fullSuiteName = (0, helpers_1.getFullSuiteName)(pwTest);
             const browserCapabilities = (0, helpers_1.parseBrowserCapabilities)(pwTest.parent.project());
             const rerunTest = this.exchangedRunContext.testsToRun.filter((el) => {
@@ -373,7 +372,7 @@ class ZebrunnerReporter {
             console.log('Error during finishTestSession:', error);
         }
     }
-    async finishTest(zbrRunId, zbrTestId, pwTestResult) {
+    async finishTest(zbrRunId, zbrTestId, pwTestResult, maintainer) {
         try {
             const startedAt = new Date(pwTestResult.startTime);
             let endedAt = new Date(startedAt.getTime() + pwTestResult.duration);
@@ -383,6 +382,7 @@ class ZebrunnerReporter {
             await this.apiClient.finishTest(zbrRunId, zbrTestId, {
                 result: (0, helpers_1.determineStatus)(pwTestResult.status),
                 reason: `${(0, helpers_1.cleanseReason)(pwTestResult.error?.message)} \n ${(0, helpers_1.cleanseReason)(pwTestResult.error?.stack)}`,
+                maintainer: maintainer || 'anonymous',
                 endedAt,
             });
         }

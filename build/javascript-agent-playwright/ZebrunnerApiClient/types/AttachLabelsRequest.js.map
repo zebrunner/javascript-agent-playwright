@@ -1,1 +1,1 @@
-{"version":3,"file":"AttachLabelsRequest.js","sourceRoot":"","sources":["../../../../src/lib/ZebrunnerApiClient/types/AttachLabelsRequest.ts"],"names":[],"mappings":""}
+{"version":3,"file":"AttachLabelsRequest.js","sourceRoot":"","sources":["../../../../src/javascript-agent-playwright/ZebrunnerApiClient/types/AttachLabelsRequest.ts"],"names":[],"mappings":""}

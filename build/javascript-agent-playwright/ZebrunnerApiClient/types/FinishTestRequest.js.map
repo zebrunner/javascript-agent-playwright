@@ -1,1 +1,1 @@
-{"version":3,"file":"FinishTestRequest.js","sourceRoot":"","sources":["../../../../src/lib/ZebrunnerApiClient/types/FinishTestRequest.ts"],"names":[],"mappings":";;;AAAA,MAAa,iBAAiB;IAC5B,MAAM,CAA8C;IACpD,MAAM,CAAU;IAChB,OAAO,CAAO;CACf;AAJD,8CAIC"}
+{"version":3,"file":"FinishTestRequest.js","sourceRoot":"","sources":["../../../../src/javascript-agent-playwright/ZebrunnerApiClient/types/FinishTestRequest.ts"],"names":[],"mappings":""}

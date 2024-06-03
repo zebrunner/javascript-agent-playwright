@@ -15,24 +15,27 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
   ],
   reporter: [
     [
-      './build/javascript-agent-playwright/index',
+      './src/javascript-agent-playwright/index',
       {
         enabled: true,
         projectKey: 'DEF',
         server: {
           hostname: 'https://integration.zebrunner.org',
           accessToken: 'TCIryaD5kZiTXQquHnptPLev4C1VyF2rZZ8cvGpnYdOibDvjbl',
+
+          // hostname: "https://automationzbr.zebrunner.com",
+          // accessToken: "etB4xYygItPqgirfZCrbeSlAuToQZguv6qCP6eoakljuXon0cD",
         },
         launch: {
           displayName: 'Playwright dev launch',

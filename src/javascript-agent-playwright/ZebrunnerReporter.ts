@@ -122,6 +122,8 @@ class ZebrunnerReporter implements Reporter {
   }
 
   onStdOut(chunk: string, pwTest: ExtendedPwTestCase) {
+    // onStdOut must not be async function because it must always finish before onTestEnd
+
     if (chunk.includes('connect') || chunk.includes('POST') || !this.reportingConfig.enabled) {
       return;
     }
@@ -189,7 +191,7 @@ class ZebrunnerReporter implements Reporter {
       await this.finishTestSession(this.zbrRunId, zbrSessionId, testSessionEndedAt);
       await this.addSessionVideos(this.zbrRunId, zbrSessionId, testAttachments.videos);
 
-      await this.finishTest(this.zbrRunId, zbrTestId, pwTestResult);
+      await this.finishTest(this.zbrRunId, zbrTestId, pwTestResult, pwTest.maintainer);
 
       console.log(`Finished uploading test "${fullTestName}" data to Zebrunner`);
 
@@ -204,8 +206,11 @@ class ZebrunnerReporter implements Reporter {
       return;
     }
 
-    await waitUntil(() =>
-      Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished' || status === 'reverted'),
+    await waitUntil(
+      () =>
+        Array.from(this.mapPwTestIdToStatus.values()).every(
+          (status) => status === 'finished' || status === 'reverted',
+        ) && Array.from(this.mapPwTestIdToStatus.values()).length > 0,
     ); // all zebrunner tests finished
 
     await this.attachRunArtifactReferences(this.zbrRunId, this.zbrRunArtifactReferences);
@@ -249,7 +254,6 @@ class ZebrunnerReporter implements Reporter {
         name: `${fullSuiteName} > ${pwTest.title}`,
         className: fullSuiteName,
         methodName: `${fullSuiteName} > ${pwTest.title}`,
-        maintainer: pwTest.maintainer || 'anonymous', // maintainer could be added to pwTest using onStdOut
         startedAt: testStartedAt,
         correlationData: JSON.stringify({
           browser: browserCapabilities.browser.name,
@@ -266,7 +270,6 @@ class ZebrunnerReporter implements Reporter {
 
   private async restartTestAndGetId(zbrRunId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
     try {
-      console.log('restartTest'); // to remove
       const fullSuiteName = getFullSuiteName(pwTest);
       const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
@@ -442,7 +445,7 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async finishTest(zbrRunId: number, zbrTestId: number, pwTestResult: PwTestResult) {
+  private async finishTest(zbrRunId: number, zbrTestId: number, pwTestResult: PwTestResult, maintainer: string) {
     try {
       const startedAt = new Date(pwTestResult.startTime);
       let endedAt = new Date(startedAt.getTime() + pwTestResult.duration);
@@ -454,6 +457,7 @@ class ZebrunnerReporter implements Reporter {
       await this.apiClient.finishTest(zbrRunId, zbrTestId, {
         result: determineStatus(pwTestResult.status),
         reason: `${cleanseReason(pwTestResult.error?.message)} \n ${cleanseReason(pwTestResult.error?.stack)}`,
+        maintainer: maintainer || 'anonymous',
         endedAt,
       });
     } catch (error) {

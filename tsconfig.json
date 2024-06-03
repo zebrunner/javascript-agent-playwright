@@ -7,5 +7,5 @@
       "outDir": "./build/javascript-agent-playwright",
       "esModuleInterop": true,
   },
-  "include": ["src/lib"]
+  "include": ["src/javascript-agent-playwright"]
 }

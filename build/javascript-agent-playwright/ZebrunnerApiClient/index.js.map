@@ -1,1 +1,1 @@
-{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/lib/ZebrunnerApiClient/index.ts"],"names":[],"mappings":";;;AAAA,2DAA0D;AAAjD,wHAAA,kBAAkB,OAAA"}
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/javascript-agent-playwright/ZebrunnerApiClient/index.ts"],"names":[],"mappings":";;;AAAA,2DAA0D;AAAjD,wHAAA,kBAAkB,OAAA"}
