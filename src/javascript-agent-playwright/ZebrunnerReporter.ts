@@ -132,7 +132,7 @@ class ZebrunnerReporter implements Reporter {
     }
 
     if (!isJsonString(chunk)) {
-      console.log(chunk);
+      console.log(chunk.trim());
       pwTest?.customLogs.push({
         timestamp: new Date().getTime(),
         message: `console.log("${chunk.trim()}")`,

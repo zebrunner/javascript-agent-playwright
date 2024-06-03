@@ -111,7 +111,7 @@ class ZebrunnerReporter {
             return;
         }
         if (!(0, helpers_1.isJsonString)(chunk)) {
-            console.log(chunk);
+            console.log(chunk.trim());
             pwTest?.customLogs.push({
                 timestamp: new Date().getTime(),
                 message: `console.log("${chunk.trim()}")`,
