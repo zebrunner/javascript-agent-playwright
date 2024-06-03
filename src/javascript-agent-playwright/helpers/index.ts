@@ -10,3 +10,4 @@ export { processAttachments } from './processAttachments';
 export { until } from './until';
 export { isString, isNotBlankString, isBuffer, isFunction, isPromise, isArray, isNotEmptyArray } from './type-utils';
 export { recursiveTestsTraversal } from './recursiveTestsTraversal';
+export { isJsonString } from './isJsonString';

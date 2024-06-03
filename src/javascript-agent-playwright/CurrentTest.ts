@@ -19,7 +19,7 @@ export const CurrentTest = {
   addLog: (message: string): void => {
     if (isNotBlankString(message)) {
       const eventType = EVENT_NAMES.ADD_TEST_LOG;
-      const payload = JSON.stringify({ eventType, payload: message });
+      const payload = JSON.stringify({ eventType, payload: { message, timestamp: new Date().getTime() } });
 
       process.stdout.write(payload);
     } else {

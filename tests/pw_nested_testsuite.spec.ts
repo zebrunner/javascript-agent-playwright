@@ -13,6 +13,7 @@ test.describe('nested foo', () => {
     CurrentTest.setMaintainer('edovnar');
     const browser = await chromium.launch();
     const page1 = await browser.newPage('https://google.com');
+    console.log('Custom Message from console.log');
     CurrentTest.addLog('custom log message after opening browser page');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
     CurrentTest.attachArtifactReference('someTestArtifactName', 'https://zebrunner.com');

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestSteps = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
+exports.isJsonString = exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestSteps = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
 var cleanseReason_1 = require("./cleanseReason");
 Object.defineProperty(exports, "cleanseReason", { enumerable: true, get: function () { return cleanseReason_1.cleanseReason; } });
 var convertVideo_1 = require("./convertVideo");
@@ -31,4 +31,6 @@ Object.defineProperty(exports, "isArray", { enumerable: true, get: function () {
 Object.defineProperty(exports, "isNotEmptyArray", { enumerable: true, get: function () { return type_utils_1.isNotEmptyArray; } });
 var recursiveTestsTraversal_1 = require("./recursiveTestsTraversal");
 Object.defineProperty(exports, "recursiveTestsTraversal", { enumerable: true, get: function () { return recursiveTestsTraversal_1.recursiveTestsTraversal; } });
+var isJsonString_1 = require("./isJsonString");
+Object.defineProperty(exports, "isJsonString", { enumerable: true, get: function () { return isJsonString_1.isJsonString; } });
 //# sourceMappingURL=index.js.map

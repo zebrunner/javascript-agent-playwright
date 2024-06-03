@@ -22,7 +22,7 @@ exports.CurrentTest = {
     addLog: (message) => {
         if ((0, helpers_1.isNotBlankString)(message)) {
             const eventType = events_1.EVENT_NAMES.ADD_TEST_LOG;
-            const payload = JSON.stringify({ eventType, payload: message });
+            const payload = JSON.stringify({ eventType, payload: { message, timestamp: new Date().getTime() } });
             process.stdout.write(payload);
         }
         else {

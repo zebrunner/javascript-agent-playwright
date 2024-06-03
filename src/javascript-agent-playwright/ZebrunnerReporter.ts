@@ -23,6 +23,7 @@ import {
   until,
   isNotEmptyArray,
   recursiveTestsTraversal,
+  isJsonString,
 } from './helpers';
 
 class ZebrunnerReporter implements Reporter {
@@ -130,6 +131,16 @@ class ZebrunnerReporter implements Reporter {
       return;
     }
 
+    if (!isJsonString(chunk)) {
+      console.log(chunk);
+      pwTest?.customLogs.push({
+        timestamp: new Date().getTime(),
+        message: `console.log("${chunk.trim()}")`,
+        level: 'INFO',
+      });
+      return;
+    }
+
     const { eventType, payload } = JSON.parse(chunk);
 
     if (eventType === EVENT_NAMES.ADD_TEST_CASE) {
@@ -137,7 +148,7 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.SET_MAINTAINER) {
       pwTest.maintainer = payload;
     } else if (eventType === EVENT_NAMES.ADD_TEST_LOG) {
-      pwTest.customLogs.push({ timestamp: new Date().getTime(), message: payload, level: 'INFO' });
+      pwTest.customLogs.push({ timestamp: payload.timestamp, message: payload.message, level: 'INFO' });
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_LABELS) {
       this.zbrRunLabels.push(...payload.values.map((value: string) => ({ key: payload.key, value })));
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES) {

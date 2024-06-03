@@ -110,6 +110,15 @@ class ZebrunnerReporter {
         if (chunk.includes('connect') || chunk.includes('POST') || !this.reportingConfig.enabled) {
             return;
         }
+        if (!(0, helpers_1.isJsonString)(chunk)) {
+            console.log(chunk);
+            pwTest?.customLogs.push({
+                timestamp: new Date().getTime(),
+                message: `console.log("${chunk.trim()}")`,
+                level: 'INFO',
+            });
+            return;
+        }
         const { eventType, payload } = JSON.parse(chunk);
         if (eventType === events_1.EVENT_NAMES.ADD_TEST_CASE) {
             this.addZbrTestCase(pwTest, payload);
@@ -118,7 +127,7 @@ class ZebrunnerReporter {
             pwTest.maintainer = payload;
         }
         else if (eventType === events_1.EVENT_NAMES.ADD_TEST_LOG) {
-            pwTest.customLogs.push({ timestamp: new Date().getTime(), message: payload, level: 'INFO' });
+            pwTest.customLogs.push({ timestamp: payload.timestamp, message: payload.message, level: 'INFO' });
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_RUN_LABELS) {
             this.zbrRunLabels.push(...payload.values.map((value) => ({ key: payload.key, value })));

@@ -31,8 +31,10 @@ export default defineConfig({
         enabled: true,
         projectKey: 'DEF',
         server: {
-          hostname: 'https://domain.zebrunner.com',
-          accessToken: 'token',
+          // hostname: 'https://domain.zebrunner.com',
+          // accessToken: 'token',
+          hostname: 'https://integration.zebrunner.org',
+          accessToken: 'Sxyjc2ivR09DhvsRH3D6TWsfgsiZFBESxqUV1geDAeKV1Z8Mal',
         },
         launch: {
           displayName: 'Playwright launch',
