@@ -7,6 +7,6 @@ export { getTestSteps } from './getTestSteps';
 export { getTestLabelsFromTitle } from './getTestLabelsFromTitle';
 export { parseBrowserCapabilities } from './parseBrowserCapabilities';
 export { processAttachments } from './processAttachments';
-export { waitUntil } from './waitUntil';
+export { until } from './until';
 export { isString, isNotBlankString, isBuffer, isFunction, isPromise, isArray, isNotEmptyArray } from './type-utils';
 export { recursiveTestsTraversal } from './recursiveTestsTraversal';

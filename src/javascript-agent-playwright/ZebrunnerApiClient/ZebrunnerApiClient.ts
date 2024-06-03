@@ -10,7 +10,7 @@ import { UpdateTcmConfigsRequest } from './types/UpdateTcmConfigsRequest';
 import { TestStep, ZbrTestCase } from '../types';
 import { AttachLabelsRequest } from './types/AttachLabelsRequest';
 import { AttachArtifactReferencesRequest } from './types/AttachArtifactReferencesRequest';
-import { StartTestRequest } from './types/StartTestRequest';
+import { StartOrUpdateTestRequest } from './types/StartOrUpdateTestRequest';
 import { StartTestSessionRequest } from './types/StartTestSessionRequest';
 import { FinishTestSessionRequest } from './types/FinishTestSessionRequest';
 import { FinishTestRequest } from './types/FinishTestRequest';
@@ -83,16 +83,23 @@ export class ZebrunnerApiClient {
     return response.data.id as number;
   }
 
-  async startTest(testRunId: number, request: StartTestRequest): Promise<number> {
+  async startTest(testRunId: number, request: StartOrUpdateTestRequest): Promise<number> {
     await this.authenticateIfRequired();
     const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST(testRunId), request);
 
     return response.data.id as number;
   }
 
-  async restartTest(testRunId: number, testId: number, request: StartTestRequest): Promise<number> {
+  async restartTest(testRunId: number, testId: number, request: StartOrUpdateTestRequest): Promise<number> {
     await this.authenticateIfRequired();
     const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.RESTART_TEST(testRunId, testId), request);
+
+    return response.data.id as number;
+  }
+
+  async updateTest(testRunId: number, testId: number, request: StartOrUpdateTestRequest): Promise<number> {
+    await this.authenticateIfRequired();
+    const response = await this.axiosInstance.patch(ZEBRUNNER_PATHS.UPDATE_TEST(testRunId, testId), request);
 
     return response.data.id as number;
   }

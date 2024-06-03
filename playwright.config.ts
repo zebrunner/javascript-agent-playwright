@@ -31,20 +31,17 @@ export default defineConfig({
         enabled: true,
         projectKey: 'DEF',
         server: {
-          hostname: 'https://integration.zebrunner.org',
-          accessToken: 'TCIryaD5kZiTXQquHnptPLev4C1VyF2rZZ8cvGpnYdOibDvjbl',
-
-          // hostname: "https://automationzbr.zebrunner.com",
-          // accessToken: "etB4xYygItPqgirfZCrbeSlAuToQZguv6qCP6eoakljuXon0cD",
+          hostname: 'https://domain.zebrunner.com',
+          accessToken: 'token',
         },
         launch: {
-          displayName: 'Playwright dev launch',
+          displayName: 'Playwright launch',
           build: '1.0.0',
           environment: 'Local',
         },
         milestone: {
-          // id: '76', // "from env var" id
-          // name: 'milestoneNameFromConfig',
+          id: null,
+          name: null,
         },
         notifications: {
           notifyOnEachFailure: false,

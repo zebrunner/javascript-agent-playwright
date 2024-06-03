@@ -71,6 +71,11 @@ class ZebrunnerApiClient {
         const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.RESTART_TEST(testRunId, testId), request);
         return response.data.id;
     }
+    async updateTest(testRunId, testId, request) {
+        await this.authenticateIfRequired();
+        const response = await this.axiosInstance.patch(paths_1.ZEBRUNNER_PATHS.UPDATE_TEST(testRunId, testId), request);
+        return response.data.id;
+    }
     async startTestSession(testRunId, request) {
         await this.authenticateIfRequired();
         const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST_SESSION(testRunId), request);

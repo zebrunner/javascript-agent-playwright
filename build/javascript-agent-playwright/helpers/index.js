@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.waitUntil = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestSteps = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
+exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestSteps = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
 var cleanseReason_1 = require("./cleanseReason");
 Object.defineProperty(exports, "cleanseReason", { enumerable: true, get: function () { return cleanseReason_1.cleanseReason; } });
 var convertVideo_1 = require("./convertVideo");
@@ -19,8 +19,8 @@ var parseBrowserCapabilities_1 = require("./parseBrowserCapabilities");
 Object.defineProperty(exports, "parseBrowserCapabilities", { enumerable: true, get: function () { return parseBrowserCapabilities_1.parseBrowserCapabilities; } });
 var processAttachments_1 = require("./processAttachments");
 Object.defineProperty(exports, "processAttachments", { enumerable: true, get: function () { return processAttachments_1.processAttachments; } });
-var waitUntil_1 = require("./waitUntil");
-Object.defineProperty(exports, "waitUntil", { enumerable: true, get: function () { return waitUntil_1.waitUntil; } });
+var until_1 = require("./until");
+Object.defineProperty(exports, "until", { enumerable: true, get: function () { return until_1.until; } });
 var type_utils_1 = require("./type-utils");
 Object.defineProperty(exports, "isString", { enumerable: true, get: function () { return type_utils_1.isString; } });
 Object.defineProperty(exports, "isNotBlankString", { enumerable: true, get: function () { return type_utils_1.isNotBlankString; } });

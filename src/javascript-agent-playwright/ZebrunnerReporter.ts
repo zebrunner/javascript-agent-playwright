@@ -20,7 +20,7 @@ import {
   getTestLabelsFromTitle,
   parseBrowserCapabilities,
   processAttachments,
-  waitUntil,
+  until,
   isNotEmptyArray,
   recursiveTestsTraversal,
 } from './helpers';
@@ -33,6 +33,7 @@ class ZebrunnerReporter implements Reporter {
   private zbrRunLabels: { key: string; value: string }[];
   private zbrRunArtifactReferences: { name: string; value: string }[];
 
+  private totalTestCount: number;
   private mapPwTestIdToZbrTestId: Map<string, number>;
   private mapPwTestIdToZbrSessionId: Map<string, number>;
   private mapPwTestIdToStatus: Map<string, 'started' | 'reverted' | 'finished'>;
@@ -63,6 +64,7 @@ class ZebrunnerReporter implements Reporter {
 
     this.apiClient = new ZebrunnerApiClient(this.reportingConfig);
     suite = await this.rerunResolver(suite);
+    this.totalTestCount = suite.allTests().length;
 
     this.zbrRunId = await this.startTestRunAndGetId(runStartTime);
     await this.saveTestRunTcmConfigs(this.zbrRunId);
@@ -105,7 +107,7 @@ class ZebrunnerReporter implements Reporter {
     pwTest.artifactReferences = [];
     pwTest.customLogs = [];
 
-    await waitUntil(() => !!this.zbrRunId); // zebrunner run initialized
+    await until(() => !!this.zbrRunId); // zebrunner run initialized
 
     const testStartedAt = new Date(pwTestResult.startTime);
 
@@ -167,7 +169,7 @@ class ZebrunnerReporter implements Reporter {
       return;
     }
 
-    await waitUntil(() => this.mapPwTestIdToStatus.get(pwTest.id) === 'started'); // zebrunner test initialized
+    await until(() => this.mapPwTestIdToStatus.get(pwTest.id) === 'started'); // zebrunner test initialized
 
     const zbrTestId = this.mapPwTestIdToZbrTestId.get(pwTest.id);
 
@@ -178,6 +180,7 @@ class ZebrunnerReporter implements Reporter {
       const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
 
       await this.saveZbrTestCases(this.zbrRunId, zbrTestId, pwTest.testCases);
+      await this.addTestMaintainer(this.zbrRunId, zbrTestId, pwTest.maintainer);
       await this.addTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
       const testAttachments = await processAttachments(pwTestResult.attachments);
       await this.addTestScreenshots(this.zbrRunId, zbrTestId, testAttachments.screenshots);
@@ -200,17 +203,16 @@ class ZebrunnerReporter implements Reporter {
   }
 
   async onEnd() {
-    console.log('Playwright test run finished');
-
     if (!this.reportingConfig.enabled) {
+      console.log('All tests finished');
       return;
     }
 
-    await waitUntil(
+    await until(
       () =>
         Array.from(this.mapPwTestIdToStatus.values()).every(
           (status) => status === 'finished' || status === 'reverted',
-        ) && Array.from(this.mapPwTestIdToStatus.values()).length > 0,
+        ) && this.mapPwTestIdToStatus.size === this.totalTestCount,
     ); // all zebrunner tests finished
 
     await this.attachRunArtifactReferences(this.zbrRunId, this.zbrRunArtifactReferences);
@@ -230,6 +232,16 @@ class ZebrunnerReporter implements Reporter {
       return zbrRunId;
     } catch (error) {
       console.log('Error during startTestRunAndGetId:', error);
+    }
+  }
+
+  private async addTestMaintainer(zbrRunId: number, zbrTestId: number, maintainer: string) {
+    try {
+      if (maintainer) {
+        await this.apiClient.updateTest(zbrRunId, zbrTestId, { maintainer });
+      }
+    } catch (error) {
+      console.log('Error during addTestMaintainer (updateTest):', error);
     }
   }
 
@@ -457,7 +469,6 @@ class ZebrunnerReporter implements Reporter {
       await this.apiClient.finishTest(zbrRunId, zbrTestId, {
         result: determineStatus(pwTestResult.status),
         reason: `${cleanseReason(pwTestResult.error?.message)} \n ${cleanseReason(pwTestResult.error?.stack)}`,
-        maintainer: maintainer || 'anonymous',
         endedAt,
       });
     } catch (error) {

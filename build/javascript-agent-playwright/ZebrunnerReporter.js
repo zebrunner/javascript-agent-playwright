@@ -41,6 +41,7 @@ class ZebrunnerReporter {
     zbrRunId;
     zbrRunLabels;
     zbrRunArtifactReferences;
+    totalTestCount;
     mapPwTestIdToZbrTestId;
     mapPwTestIdToZbrSessionId;
     mapPwTestIdToStatus;
@@ -61,6 +62,7 @@ class ZebrunnerReporter {
         this.mapPwTestIdToStatus = new Map();
         this.apiClient = new ZebrunnerApiClient_1.ZebrunnerApiClient(this.reportingConfig);
         suite = await this.rerunResolver(suite);
+        this.totalTestCount = suite.allTests().length;
         this.zbrRunId = await this.startTestRunAndGetId(runStartTime);
         await this.saveTestRunTcmConfigs(this.zbrRunId);
     }
@@ -93,7 +95,7 @@ class ZebrunnerReporter {
         pwTest.labels = (0, helpers_1.getTestLabelsFromTitle)(pwTest.title) || [];
         pwTest.artifactReferences = [];
         pwTest.customLogs = [];
-        await (0, helpers_1.waitUntil)(() => !!this.zbrRunId); // zebrunner run initialized
+        await (0, helpers_1.until)(() => !!this.zbrRunId); // zebrunner run initialized
         const testStartedAt = new Date(pwTestResult.startTime);
         const zbrTestId = this.exchangedRunContext?.mode === 'RERUN'
             ? await this.restartTestAndGetId(this.zbrRunId, pwTest, testStartedAt)
@@ -152,7 +154,7 @@ class ZebrunnerReporter {
         if (!this.reportingConfig.enabled) {
             return;
         }
-        await (0, helpers_1.waitUntil)(() => this.mapPwTestIdToStatus.get(pwTest.id) === 'started'); // zebrunner test initialized
+        await (0, helpers_1.until)(() => this.mapPwTestIdToStatus.get(pwTest.id) === 'started'); // zebrunner test initialized
         const zbrTestId = this.mapPwTestIdToZbrTestId.get(pwTest.id);
         if (pwTest.shouldBeReverted) {
             await this.revertTestRegistration(this.zbrRunId, zbrTestId);
@@ -161,6 +163,7 @@ class ZebrunnerReporter {
         else {
             const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
             await this.saveZbrTestCases(this.zbrRunId, zbrTestId, pwTest.testCases);
+            await this.addTestMaintainer(this.zbrRunId, zbrTestId, pwTest.maintainer);
             await this.addTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
             const testAttachments = await (0, helpers_1.processAttachments)(pwTestResult.attachments);
             await this.addTestScreenshots(this.zbrRunId, zbrTestId, testAttachments.screenshots);
@@ -179,11 +182,11 @@ class ZebrunnerReporter {
         }
     }
     async onEnd() {
-        console.log('Playwright test run finished');
         if (!this.reportingConfig.enabled) {
+            console.log('All tests finished');
             return;
         }
-        await (0, helpers_1.waitUntil)(() => Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished' || status === 'reverted') && Array.from(this.mapPwTestIdToStatus.values()).length > 0); // all zebrunner tests finished
+        await (0, helpers_1.until)(() => Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished' || status === 'reverted') && this.mapPwTestIdToStatus.size === this.totalTestCount); // all zebrunner tests finished
         await this.attachRunArtifactReferences(this.zbrRunId, this.zbrRunArtifactReferences);
         await this.attachRunLabels(this.zbrRunId, this.zbrRunLabels);
         const testRunEndedAt = new Date();
@@ -199,6 +202,16 @@ class ZebrunnerReporter {
         }
         catch (error) {
             console.log('Error during startTestRunAndGetId:', error);
+        }
+    }
+    async addTestMaintainer(zbrRunId, zbrTestId, maintainer) {
+        try {
+            if (maintainer) {
+                await this.apiClient.updateTest(zbrRunId, zbrTestId, { maintainer });
+            }
+        }
+        catch (error) {
+            console.log('Error during addTestMaintainer (updateTest):', error);
         }
     }
     async saveTestRunTcmConfigs(testRunId) {
@@ -382,7 +395,6 @@ class ZebrunnerReporter {
             await this.apiClient.finishTest(zbrRunId, zbrTestId, {
                 result: (0, helpers_1.determineStatus)(pwTestResult.status),
                 reason: `${(0, helpers_1.cleanseReason)(pwTestResult.error?.message)} \n ${(0, helpers_1.cleanseReason)(pwTestResult.error?.stack)}`,
-                maintainer: maintainer || 'anonymous',
                 endedAt,
             });
         }
