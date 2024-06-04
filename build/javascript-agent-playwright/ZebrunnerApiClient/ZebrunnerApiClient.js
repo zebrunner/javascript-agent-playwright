@@ -102,10 +102,10 @@ class ZebrunnerApiClient {
             return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(testRunId, testId), request);
         }
     }
-    async uploadTestScreenshot(testRunId, testId, screenshot) {
+    async uploadTestScreenshot(testRunId, testId, screenshot, contentType) {
         const config = {
             headers: {
-                'Content-Type': 'image/png',
+                'Content-Type': contentType,
                 'x-zbr-screenshot-captured-at': new Date().getTime(),
             },
         };
