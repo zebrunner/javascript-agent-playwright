@@ -39,7 +39,6 @@ class ZebrunnerReporter implements Reporter {
 
   private totalTestCount: number;
   private mapPwTestIdToZbrTestId: Map<string, number>;
-  private mapPwTestIdToZbrSessionId: Map<string, number>;
   private mapPwTestIdToStatus: Map<string, 'started' | 'reverted' | 'finished'>;
 
   private exchangedRunContext: ExchangedRunContext;
@@ -63,7 +62,6 @@ class ZebrunnerReporter implements Reporter {
     this.zbrRunArtifactReferences = [];
 
     this.mapPwTestIdToZbrTestId = new Map();
-    this.mapPwTestIdToZbrSessionId = new Map();
     this.mapPwTestIdToStatus = new Map();
     this.errors = new Map();
 
@@ -121,10 +119,7 @@ class ZebrunnerReporter implements Reporter {
         ? await this.restartTestAndGetId(this.zbrRunId, pwTest, testStartedAt)
         : await this.startTestAndGetId(this.zbrRunId, pwTest, testStartedAt);
 
-    const zbrTestSessionId = await this.startTestSessionAndGetId(this.zbrRunId, zbrTestId, pwTest, testStartedAt);
-
     this.mapPwTestIdToZbrTestId.set(pwTest.id, zbrTestId);
-    this.mapPwTestIdToZbrSessionId.set(pwTest.id, zbrTestSessionId);
     this.mapPwTestIdToStatus.set(pwTest.id, 'started');
   }
 
@@ -192,8 +187,6 @@ class ZebrunnerReporter implements Reporter {
       await this.revertTestRegistration(this.zbrRunId, zbrTestId);
       this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
     } else {
-      const zbrSessionId = this.mapPwTestIdToZbrSessionId.get(pwTest.id);
-
       await this.saveZbrTestCases(this.zbrRunId, zbrTestId, pwTest.testCases);
       await this.addTestMaintainer(this.zbrRunId, zbrTestId, pwTest.maintainer);
       await this.addTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
@@ -205,9 +198,14 @@ class ZebrunnerReporter implements Reporter {
         ...getTestSteps(pwTestResult.steps, zbrTestId),
         ...pwTest.customLogs.map((log: TestStep) => ({ ...log, testId: zbrTestId })),
       ]);
-      const testSessionEndedAt = new Date();
-      await this.finishTestSession(this.zbrRunId, zbrSessionId, testSessionEndedAt);
-      await this.addSessionVideos(this.zbrRunId, zbrSessionId, testAttachments.videos);
+
+      if (testAttachments.videos.length) {
+        const sessionStartedAt = new Date(pwTestResult.startTime);
+        const zbrSessionId = await this.startTestSessionAndGetId(this.zbrRunId, zbrTestId, pwTest, sessionStartedAt);
+        const sessionEndedAt = new Date();
+        await this.finishTestSession(this.zbrRunId, zbrSessionId, sessionEndedAt);
+        await this.addSessionVideos(this.zbrRunId, zbrSessionId, testAttachments.videos);
+      }
 
       await this.finishTest(this.zbrRunId, zbrTestId, pwTestResult, pwTest.maintainer);
 
