@@ -25,6 +25,8 @@ export const processAttachments = async (attachments) => {
       if (attachment.contentType === 'image/png') {
         attachmentObj.screenshots.push({
           path: attachment.path,
+          contentType: attachment.contentType,
+          body: attachment.body,
           timestamp: Date.now(),
         });
       }

@@ -11,3 +11,4 @@ export { until } from './until';
 export { isString, isNotBlankString, isBuffer, isFunction, isPromise, isArray, isNotEmptyArray } from './type-utils';
 export { recursiveTestsTraversal } from './recursiveTestsTraversal';
 export { isJsonString } from './isJsonString';
+export { getErrorsStringFromMap } from './getErrorsStringFromMap';

@@ -147,10 +147,15 @@ export class ZebrunnerApiClient {
     }
   }
 
-  async uploadTestScreenshot(testRunId: number, testId: number, screenshot: Buffer): Promise<void> {
+  async uploadTestScreenshot(
+    testRunId: number,
+    testId: number,
+    screenshot: Buffer,
+    contentType: string,
+  ): Promise<void> {
     const config: AxiosRequestConfig = {
       headers: {
-        'Content-Type': 'image/png',
+        'Content-Type': contentType,
         'x-zbr-screenshot-captured-at': new Date().getTime(),
       },
     };

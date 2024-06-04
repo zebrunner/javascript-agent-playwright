@@ -24,6 +24,7 @@ import {
   isNotEmptyArray,
   recursiveTestsTraversal,
   isJsonString,
+  getErrorsStringFromMap,
 } from './helpers';
 
 class ZebrunnerReporter implements Reporter {
@@ -33,6 +34,8 @@ class ZebrunnerReporter implements Reporter {
   private zbrRunId: number;
   private zbrRunLabels: { key: string; value: string }[];
   private zbrRunArtifactReferences: { name: string; value: string }[];
+
+  private errors: Map<string, number>;
 
   private totalTestCount: number;
   private mapPwTestIdToZbrTestId: Map<string, number>;
@@ -52,7 +55,7 @@ class ZebrunnerReporter implements Reporter {
     this.reportingConfig = new ReportingConfig(zebrunnerReporter[1]);
 
     if (!this.reportingConfig.enabled) {
-      console.log('Zebrunner agent disabled - skipping results upload');
+      console.log('Zebrunner agent disabled - skipping results upload.');
       return;
     }
 
@@ -62,6 +65,7 @@ class ZebrunnerReporter implements Reporter {
     this.mapPwTestIdToZbrTestId = new Map();
     this.mapPwTestIdToZbrSessionId = new Map();
     this.mapPwTestIdToStatus = new Map();
+    this.errors = new Map();
 
     this.apiClient = new ZebrunnerApiClient(this.reportingConfig);
     suite = await this.rerunResolver(suite);
@@ -92,13 +96,13 @@ class ZebrunnerReporter implements Reporter {
 
       return suite;
     } catch (error) {
-      console.log('Error during rerunResolver:', error);
+      this.logError('rerunResolver', error);
     }
   }
 
   async onTestBegin(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
     const fullTestName = `${getFullSuiteName(pwTest)} > ${pwTest.title}`;
-    console.log(`Started test "${fullTestName}"`);
+    console.log(`Started test "${fullTestName}".`);
 
     if (!this.reportingConfig.enabled) {
       return;
@@ -174,7 +178,7 @@ class ZebrunnerReporter implements Reporter {
 
   async onTestEnd(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
     const fullTestName = `${getFullSuiteName(pwTest)} > ${pwTest.title}`;
-    console.log(`Finished test "${fullTestName}": ${pwTestResult.status}`);
+    console.log(`Finished test "${fullTestName}": ${pwTestResult.status}.`);
 
     if (!this.reportingConfig.enabled) {
       return;
@@ -207,7 +211,7 @@ class ZebrunnerReporter implements Reporter {
 
       await this.finishTest(this.zbrRunId, zbrTestId, pwTestResult, pwTest.maintainer);
 
-      console.log(`Finished uploading test "${fullTestName}" data to Zebrunner`);
+      console.log(`Finished uploading test "${fullTestName}" data to Zebrunner.`);
 
       this.mapPwTestIdToStatus.set(pwTest.id, 'finished');
     }
@@ -215,7 +219,7 @@ class ZebrunnerReporter implements Reporter {
 
   async onEnd() {
     if (!this.reportingConfig.enabled) {
-      console.log('All tests finished');
+      console.log('All tests finished.');
       return;
     }
 
@@ -231,7 +235,11 @@ class ZebrunnerReporter implements Reporter {
 
     const testRunEndedAt = new Date();
     await this.finishTestRun(this.zbrRunId, testRunEndedAt);
-    console.log('Zebrunner agent finished work');
+    console.log(
+      `Zebrunner agent finished work${
+        this.errors.size ? `ing with errors in the following stage(s): ${getErrorsStringFromMap(this.errors)}` : ''
+      }.`,
+    );
   }
 
   private async startTestRunAndGetId(startedAt: Date): Promise<number> {
@@ -242,7 +250,7 @@ class ZebrunnerReporter implements Reporter {
 
       return zbrRunId;
     } catch (error) {
-      console.log('Error during startTestRunAndGetId:', error);
+      this.logError('startTestRunAndGetId', error);
     }
   }
 
@@ -252,7 +260,7 @@ class ZebrunnerReporter implements Reporter {
         await this.apiClient.updateTest(zbrRunId, zbrTestId, { maintainer });
       }
     } catch (error) {
-      console.log('Error during addTestMaintainer (updateTest):', error);
+      this.logError('addTestMaintainer', error);
     }
   }
 
@@ -264,7 +272,7 @@ class ZebrunnerReporter implements Reporter {
         await this.apiClient.updateTcmConfigs(testRunId, request);
       }
     } catch (error) {
-      console.log('Error during saveTcmConfigs:', error);
+      this.logError('saveTestRunTcmConfigs', error);
     }
   }
 
@@ -287,7 +295,7 @@ class ZebrunnerReporter implements Reporter {
 
       return zbrTestId;
     } catch (error) {
-      console.log('Error during startTestAndGetId:', error);
+      this.logError('startTestAndGetId', error);
     }
   }
 
@@ -331,7 +339,7 @@ class ZebrunnerReporter implements Reporter {
 
       return zbrTestId;
     } catch (error) {
-      console.log('Error during restartTestAndGetId:', error);
+      this.logError('restartTestAndGetId', error);
     }
   }
 
@@ -376,7 +384,7 @@ class ZebrunnerReporter implements Reporter {
 
       return sessionId;
     } catch (error) {
-      console.log('Error during startTestSessionAndGetId:', error);
+      this.logError('startTestSessionAndGetId', error);
     }
   }
 
@@ -386,7 +394,7 @@ class ZebrunnerReporter implements Reporter {
         await this.apiClient.upsertTestTestCases(zbrRunId, zbrTestId, { items: testCases });
       }
     } catch (error) {
-      console.log('Error during saveZbrTestCases:', error);
+      this.logError('saveZbrTestCases', error);
     }
   }
 
@@ -394,7 +402,7 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.attachTestLabels(zbrRunId, zbrTestId, { items: labels });
     } catch (error) {
-      console.log('Error during addTestTags:', error);
+      this.logError('addTestLabels', error);
     }
   }
 
@@ -403,13 +411,13 @@ class ZebrunnerReporter implements Reporter {
       if (screenshotsArray.length === 0) return;
 
       const screenshotsPromises = screenshotsArray.map((screenshot) => {
-        const file = fs.readFileSync(screenshot.path);
-        return this.apiClient.uploadTestScreenshot(zbrRunId, zbrTestId, Buffer.from(file));
+        const file = screenshot.body ? screenshot.body : Buffer.from(fs.readFileSync(screenshot.path));
+        return this.apiClient.uploadTestScreenshot(zbrRunId, zbrTestId, file, screenshot.contentType);
       });
 
       await Promise.all(screenshotsPromises);
     } catch (error) {
-      console.log('Error during addTestScreenshots:', error);
+      this.logError('addTestScreenshots', error);
     }
   }
 
@@ -431,7 +439,7 @@ class ZebrunnerReporter implements Reporter {
 
       await Promise.all(artifactsPromises);
     } catch (error) {
-      console.log('Error during addTestFiles:', error);
+      this.logError('addTestFiles', error);
     }
   }
 
@@ -456,7 +464,7 @@ class ZebrunnerReporter implements Reporter {
 
       await Promise.all(videoPromises);
     } catch (error) {
-      console.log('Error during addSessionVideos:', error);
+      this.logError('addSessionVideos', error);
     }
   }
 
@@ -464,7 +472,7 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.finishTestSession(zbrRunId, zbrTestSessionId, { endedAt: testEndedAt });
     } catch (error) {
-      console.log('Error during finishTestSession:', error);
+      this.logError('finishTestSession', error);
     }
   }
 
@@ -483,7 +491,7 @@ class ZebrunnerReporter implements Reporter {
         endedAt,
       });
     } catch (error) {
-      console.log('Error during finishTest:', error);
+      this.logError('finishTest', error);
     }
   }
 
@@ -491,7 +499,7 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.sendLogs(zbrRunId, zbrLogEntries);
     } catch (error) {
-      console.log('Error during sendTestLogs:', error);
+      this.logError('sendTestLogs', error);
     }
   }
 
@@ -499,7 +507,7 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.finishTestRun(testRunId, { endedAt: testRunEndedAt });
     } catch (error) {
-      console.log('Error during finishTestRun:', error);
+      this.logError('finishTestRun', error);
     }
   }
 
@@ -507,7 +515,7 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.attachTestRunLabels(zbrRunId, { items: labels });
     } catch (error) {
-      console.log('Error during attachRunLabels:', error);
+      this.logError('attachRunLabels', error);
     }
   }
 
@@ -515,7 +523,7 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.attachTestRunArtifactReferences(zbrRunId, { items: artifactReferences });
     } catch (error) {
-      console.log('Error during attachRunArtifactReferences:', error);
+      this.logError('attachRunArtifactReferences', error);
     }
   }
 
@@ -527,7 +535,7 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.attachTestArtifactReferences(zbrRunId, zbrTestId, { items: artifactReferences });
     } catch (error) {
-      console.log('Error during attachTestArtifactReferences:', error);
+      this.logError('attachTestArtifactReferences', error);
     }
   }
 
@@ -535,8 +543,17 @@ class ZebrunnerReporter implements Reporter {
     try {
       await this.apiClient.revertTestRegistration(zbrRunId, zbrTestId);
     } catch (error) {
-      console.log('Error during revertTestRegistration:', error);
+      this.logError('revertTestRegistration', error);
     }
+  }
+
+  private logError(errorStage: string, error: unknown) {
+    if (this.errors.has(errorStage)) {
+      this.errors.set(errorStage, this.errors.get(errorStage) + 1);
+    } else {
+      this.errors.set(errorStage, 1);
+    }
+    console.log(`Error during ${errorStage}:`, error);
   }
 }
 

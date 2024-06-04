@@ -12,13 +12,16 @@ test.describe('nested foo', () => {
   test('test running in Chrome @ff @smoke_test @slow', async ({ page }, testInfo) => {
     CurrentTest.setMaintainer('edovnar');
     const browser = await chromium.launch();
-    const page1 = await browser.newPage('https://google.com');
+    const page1 = await browser.newPage('https://github.com');
+    const screenshot = await page1.screenshot();
+    await testInfo.attach('screenshot.png', { body: screenshot, contentType: 'image/png' });
     console.log('Custom Message from console.log');
     CurrentTest.addLog('custom log message after opening browser page');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
     CurrentTest.attachArtifactReference('someTestArtifactName', 'https://zebrunner.com');
     await page1.goto('https://zebrunner.com');
-    await page1.screenshot();
+    const screenshot2 = await page1.screenshot();
+    await testInfo.attach('screenshot.png', { body: screenshot2, contentType: 'image/png' });
     await browser.close();
   });
 
