@@ -82,6 +82,10 @@ function getString(envVar: string, configValue: any, defaultValue: string = null
 }
 
 function getBoolean(envVar: string, configValue: any, defaultValue = false): boolean {
+  if (process.env[envVar]?.toLowerCase?.() === 'false') {
+    return false;
+  }
+
   return (
     process.env[envVar]?.toLowerCase?.() === 'true' ||
     configValue === true ||

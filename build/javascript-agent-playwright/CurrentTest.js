@@ -4,65 +4,72 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CurrentTest = void 0;
-const loglevel_1 = __importDefault(require("loglevel"));
 const events_1 = require("./constants/events");
 const helpers_1 = require("./helpers");
-const logger = loglevel_1.default.getLogger('zebrunner');
+const fs_1 = __importDefault(require("fs"));
 exports.CurrentTest = {
     setMaintainer: (maintainer) => {
         if ((0, helpers_1.isNotBlankString)(maintainer)) {
-            const eventType = events_1.EVENT_NAMES.SET_MAINTAINER;
-            const payload = JSON.stringify({ eventType, payload: maintainer });
-            process.stdout.write(payload);
+            process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_MAINTAINER, payload: maintainer }));
         }
         else {
-            logger.warn(`Maintainer must be a not blank string. Provided value is '${maintainer}'`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.setMaintainer', `Maintainer must not be a blank string. Provided value is '${maintainer}'`);
         }
     },
     addLog: (message) => {
         if ((0, helpers_1.isNotBlankString)(message)) {
-            const eventType = events_1.EVENT_NAMES.ADD_TEST_LOG;
-            const payload = JSON.stringify({ eventType, payload: { message, timestamp: new Date().getTime() } });
-            process.stdout.write(payload);
+            process.stdout.write(JSON.stringify({
+                eventType: events_1.EVENT_NAMES.ATTACH_TEST_LOG,
+                payload: { message, timestamp: new Date().getTime() },
+            }));
         }
         else {
-            logger.warn(`Message must be a not blank string. Provided value is '${message}'`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.addLog', `Message must not be a blank string. Provided value is '${message}'`);
         }
     },
     attachLabel: (key, ...values) => {
         if (!(0, helpers_1.isNotBlankString)(key)) {
-            logger.warn(`Label key must be a not blank string. Provided value is '${key}'`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachLabel', `Label key must not be a blank string. Provided value is '${key}'`);
             return;
         }
         if (!(0, helpers_1.isNotEmptyArray)(values)) {
-            logger.warn(`You must provide at least one label value. The label with the key '${key}' has none`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachLabel', `You must provide at least one label value. The label with the key '${key}' has none`);
             return;
         }
         values = values.filter((value) => {
             const isNotBlank = (0, helpers_1.isNotBlankString)(value);
             if (!isNotBlank) {
-                logger.warn(`Label value must be a not blank string. Provided value for key '${key}' is '${value}'`);
+                (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachLabel', `Label value must not be a blank string. Provided value for key '${key}' is '${value}'`);
             }
             return isNotBlank;
         });
         if ((0, helpers_1.isNotEmptyArray)(values)) {
-            const eventType = events_1.EVENT_NAMES.ATTACH_TEST_LABELS;
-            const payload = JSON.stringify({ eventType, payload: { key, values } });
-            process.stdout.write(payload);
+            process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_LABELS, payload: { key, values } }));
         }
     },
     attachArtifactReference: (name, value) => {
         if (!(0, helpers_1.isNotBlankString)(name)) {
-            logger.warn(`Artifact reference name must be a not blank string. Provided value is '${name}'`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifactReference', `Artifact reference name must not be a blank string. Provided value is '${name}'`);
             return;
         }
         if (!(0, helpers_1.isNotBlankString)(value)) {
-            logger.warn(`Artifact reference value must be a not blank string. Provided value for name '${value}' is '${value}'`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifactReference', `Artifact reference value must not be a blank string. Provided value for name '${value}' is '${value}'`);
             return;
         }
-        const eventType = events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES;
-        const payload = JSON.stringify({ eventType, payload: { name, value } });
-        process.stdout.write(payload);
+        process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES, payload: { name, value } }));
+    },
+    attachArtifact: (pathOrBuffer, fileName) => {
+        if (!Buffer.isBuffer(pathOrBuffer) && !fs_1.default.existsSync(pathOrBuffer)) {
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifact', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation, file not found`);
+            return;
+        }
+        if (fileName && !fileName.trim().length) {
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifact', `fileName must not be a blank string. Provided value is '${fileName}'`);
+        }
+        process.stdout.write(JSON.stringify({
+            eventType: events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT,
+            payload: { pathOrBuffer, timestamp: new Date().getTime(), name: fileName },
+        }));
     },
     revertRegistration: () => {
         const eventType = events_1.EVENT_NAMES.REVERT_TEST_REGISTRATION;

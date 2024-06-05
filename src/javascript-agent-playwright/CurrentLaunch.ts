@@ -1,53 +1,82 @@
-import log from 'loglevel';
 import { EVENT_NAMES } from './constants/events';
+import { stdoutErrorEvent } from './helpers';
 import { isNotBlankString, isNotEmptyArray } from './helpers/type-utils';
-
-const logger = log.getLogger('zebrunner');
+import fs from 'fs';
 
 export const CurrentLaunch = {
   attachLabel: (key: string, ...values: string[]) => {
     if (!isNotBlankString(key)) {
-      logger.warn(`Label key must be a not blank string. Provided value is '${key}'`);
+      stdoutErrorEvent('CurrentLaunch.attachLabel', `Label key must be a not blank string. Provided value is '${key}'`);
       return;
     }
 
     if (!isNotEmptyArray(values)) {
-      logger.warn(`You must provide at least one label value. The label with the key '${key}' has none`);
+      stdoutErrorEvent(
+        'CurrentLaunch.attachLabel',
+        `You must provide at least one label value. The label with the key '${key}' has none`,
+      );
       return;
     }
 
     values = values.filter((value) => {
       const isNotBlank = isNotBlankString(value);
       if (!isNotBlank) {
-        logger.warn(`Label value must be a not blank string. Provided value for key '${key}' is '${value}'`);
+        stdoutErrorEvent(
+          'CurrentLaunch.attachLabel',
+          `Label value must be a not blank string. Provided value for key '${key}' is '${value}'`,
+        );
       }
       return isNotBlank;
     });
 
     if (isNotEmptyArray(values)) {
-      const eventType = EVENT_NAMES.ATTACH_TEST_RUN_LABELS;
-      const payload = JSON.stringify({ eventType, payload: { key, values } });
-
-      process.stdout.write(payload);
+      process.stdout.write(JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_RUN_LABELS, payload: { key, values } }));
     }
   },
 
   attachArtifactReference: (name: string, value: string) => {
     if (!isNotBlankString(name)) {
-      logger.warn(`Artifact reference name must be a not blank string. Provided value is '${name}'`);
+      stdoutErrorEvent(
+        'CurrentLaunch.attachArtifactReference',
+        `Artifact reference name must be a not blank string. Provided value is '${name}'`,
+      );
       return;
     }
 
     if (!isNotBlankString(value)) {
-      logger.warn(
+      stdoutErrorEvent(
+        'CurrentLaunch.attachArtifactReference',
         `Artifact reference value must be a not blank string. Provided value for name '${value}' is '${value}'`,
       );
       return;
     }
 
-    const eventType = EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES;
-    const payload = JSON.stringify({ eventType, payload: { name, value } });
+    process.stdout.write(
+      JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES, payload: { name, value } }),
+    );
+  },
 
-    process.stdout.write(payload);
+  attachArtifact: (pathOrBuffer: Buffer | string, fileName?: string) => {
+    if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
+      stdoutErrorEvent(
+        'CurrentLaunch.attachArtifact',
+        `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation, file not found`,
+      );
+      return;
+    }
+
+    if (fileName && !fileName.trim().length) {
+      stdoutErrorEvent(
+        'CurrentTest.attachArtifact',
+        `fileName must not be a blank string. Provided value is '${fileName}'`,
+      );
+    }
+
+    process.stdout.write(
+      JSON.stringify({
+        eventType: EVENT_NAMES.ATTACH_RUN_ARTIFACT,
+        payload: { pathOrBuffer, timestamp: new Date().getTime(), name: fileName },
+      }),
+    );
   },
 };

@@ -13,22 +13,21 @@ const processAttachments = async (attachments) => {
             if (attachment.contentType === 'video/webm') {
                 await (0, convertVideo_1.convertVideo)(attachment.path, 'mp4');
                 attachmentObj.videos.push({
-                    path: attachment.path.replace('.webm', '.mp4'),
+                    pathOrBuffer: attachment.path.replace('.webm', '.mp4'),
                     timestamp: Date.now(),
                 });
             }
             if (attachment.contentType === 'application/zip') {
                 attachmentObj.files.push({
-                    path: attachment.path,
+                    pathOrBuffer: attachment.path,
                     timestamp: Date.now(),
                 });
             }
             if (attachment.contentType === 'image/png') {
                 attachmentObj.screenshots.push({
-                    path: attachment.path,
-                    contentType: attachment.contentType,
-                    body: attachment.body,
+                    pathOrBuffer: attachment.path || attachment.body,
                     timestamp: Date.now(),
+                    contentType: attachment.contentType,
                 });
             }
         }

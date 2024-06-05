@@ -25,9 +25,16 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFileSizeInBytes = void 0;
 const fs = __importStar(require("fs"));
-const getFileSizeInBytes = (filename) => {
-    const stats = fs.statSync(filename);
-    return stats.size;
+const getFileSizeInBytes = (pathOrBuffer) => {
+    let size;
+    if (Buffer.isBuffer(pathOrBuffer)) {
+        size = Buffer.byteLength(pathOrBuffer);
+    }
+    else {
+        const stats = fs.statSync(pathOrBuffer);
+        size = stats.size;
+    }
+    return size;
 };
 exports.getFileSizeInBytes = getFileSizeInBytes;
 //# sourceMappingURL=getFileSizeInBytes.js.map

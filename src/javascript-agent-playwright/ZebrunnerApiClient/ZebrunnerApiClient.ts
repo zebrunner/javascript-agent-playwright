@@ -133,15 +133,19 @@ export class ZebrunnerApiClient {
     );
   }
 
-  async finishTestSession(testRunId: number, testSessionId: number, request: FinishTestSessionRequest): Promise<void> {
+  async finishTestSession(
+    testRunId: number,
+    testSessionId: number,
+    request: FinishTestSessionRequest,
+  ): Promise<AxiosResponse> {
     return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST_SESSION(testRunId, testSessionId), request);
   }
 
-  async finishTest(testRunId: number, testId: number, request: FinishTestRequest): Promise<void> {
+  async finishTest(testRunId: number, testId: number, request: FinishTestRequest): Promise<AxiosResponse> {
     return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST(testRunId, testId), request);
   }
 
-  async attachTestLabels(testRunId: number, testId: number, request: AttachLabelsRequest): Promise<void> {
+  async attachTestLabels(testRunId: number, testId: number, request: AttachLabelsRequest): Promise<AxiosResponse> {
     if (request?.items?.length) {
       return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(testRunId, testId), request);
     }
@@ -179,7 +183,22 @@ export class ZebrunnerApiClient {
     return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_TEST_ARTIFACT(testRunId, testId), file, config);
   }
 
-  async sendLogs(testRunId: number, logs: TestStep[]): Promise<void> {
+  async uploadTestRunArtifact(
+    testRunId: number,
+    contentTypeHeader: string,
+    file: import('form-data') | Buffer,
+  ): Promise<void> {
+    const config: AxiosRequestConfig = {
+      headers: {
+        'Content-Type': contentTypeHeader,
+        Accept: '*/*',
+      },
+    };
+
+    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_TEST_RUN_ARTIFACT(testRunId), file, config);
+  }
+
+  async sendLogs(testRunId: number, logs: TestStep[]): Promise<AxiosResponse> {
     if (logs?.length) {
       return this.axiosInstance.post(ZEBRUNNER_PATHS.SEND_LOGS(testRunId), logs);
     }
@@ -196,21 +215,28 @@ export class ZebrunnerApiClient {
     return new ExchangedRunContext(response.data);
   }
 
-  async updateTcmConfigs(testRunId: number, request: UpdateTcmConfigsRequest): Promise<void> {
+  async updateTcmConfigs(testRunId: number, request: UpdateTcmConfigsRequest): Promise<AxiosResponse> {
     return this.axiosInstance.patch(ZEBRUNNER_PATHS.UPDATE_TCM_CONFIGS(testRunId), request);
   }
 
-  async upsertTestTestCases(testRunId: number, testId: number, request: { items: ZbrTestCase[] }): Promise<void> {
+  async upsertTestTestCases(
+    testRunId: number,
+    testId: number,
+    request: { items: ZbrTestCase[] },
+  ): Promise<AxiosResponse> {
     return this.axiosInstance.post(ZEBRUNNER_PATHS.UPSERT_TEST_TEST_CASES(testRunId, testId), request);
   }
 
-  async attachTestRunLabels(testRunId: number, request: AttachLabelsRequest): Promise<void> {
+  async attachTestRunLabels(testRunId: number, request: AttachLabelsRequest): Promise<AxiosResponse> {
     if (request?.items?.length) {
       return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_RUN_LABELS(testRunId), request);
     }
   }
 
-  async attachTestRunArtifactReferences(testRunId: number, request: AttachArtifactReferencesRequest): Promise<void> {
+  async attachTestRunArtifactReferences(
+    testRunId: number,
+    request: AttachArtifactReferencesRequest,
+  ): Promise<AxiosResponse> {
     if (request?.items?.length) {
       return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_RUN_ARTIFACT_REFERENCES(testRunId), request);
     }
@@ -220,13 +246,13 @@ export class ZebrunnerApiClient {
     testRunId: number,
     testId: number,
     request: AttachArtifactReferencesRequest,
-  ): Promise<void> {
+  ): Promise<AxiosResponse> {
     if (request?.items?.length) {
       return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_ARTIFACT_REFERENCES(testRunId, testId), request);
     }
   }
 
-  async revertTestRegistration(testRunId: number, testId: number): Promise<void> {
+  async revertTestRegistration(testRunId: number, testId: number): Promise<AxiosResponse> {
     return this.axiosInstance.delete(ZEBRUNNER_PATHS.REVERT_TEST_REGISTRATION(testRunId, testId));
   }
 }

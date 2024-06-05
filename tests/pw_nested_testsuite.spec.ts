@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { CurrentTest } from '../src/javascript-agent-playwright/index';
-import { CurrentLaunch } from '../src/javascript-agent-playwright/index';
+import { CurrentTest, zebrunner, CurrentLaunch } from '../src/javascript-agent-playwright/index';
 const { chromium } = require('playwright');
+import * as fs from 'fs';
 
 test.describe('nested foo', () => {
   test.beforeAll(async () => {
@@ -13,15 +13,30 @@ test.describe('nested foo', () => {
     CurrentTest.setMaintainer('edovnar');
     const browser = await chromium.launch();
     const page1 = await browser.newPage('https://github.com');
+
     const screenshot = await page1.screenshot();
     await testInfo.attach('screenshot.png', { body: screenshot, contentType: 'image/png' });
+
     console.log('Custom Message from console.log');
     CurrentTest.addLog('custom log message after opening browser page');
+    zebrunner.testCaseStatus('KEY-3000', 'SKIPPED');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
+    CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
+    CurrentLaunch.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
     CurrentTest.attachArtifactReference('someTestArtifactName', 'https://zebrunner.com');
     await page1.goto('https://zebrunner.com');
+
+    const bufferScreenshot1 = await page1.screenshot();
+    CurrentTest.attachArtifact(bufferScreenshot1);
+    const bufferScreenshot2 = await page1.screenshot();
+    CurrentTest.attachArtifact(bufferScreenshot2, 'screenshot2.png');
+
+    const bufferFileOne = fs.readFileSync('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT2.txt');
+    CurrentLaunch.attachArtifact(bufferFileOne);
+
     const screenshot2 = await page1.screenshot();
     await testInfo.attach('screenshot.png', { body: screenshot2, contentType: 'image/png' });
+
     await browser.close();
   });
 

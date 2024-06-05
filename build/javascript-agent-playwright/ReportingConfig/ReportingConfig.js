@@ -7,6 +7,9 @@ function getString(envVar, configValue, defaultValue = null) {
     return (0, helpers_1.isNotBlankString)(value) ? value : (0, helpers_1.isNotBlankString)(configValue) ? configValue : defaultValue;
 }
 function getBoolean(envVar, configValue, defaultValue = false) {
+    if (process.env[envVar]?.toLowerCase?.() === 'false') {
+        return false;
+    }
     return (process.env[envVar]?.toLowerCase?.() === 'true' ||
         configValue === true ||
         configValue?.toLowerCase?.() === 'true' ||

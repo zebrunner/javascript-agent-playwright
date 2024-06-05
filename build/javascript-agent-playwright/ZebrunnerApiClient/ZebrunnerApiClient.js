@@ -120,6 +120,15 @@ class ZebrunnerApiClient {
         };
         return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_TEST_ARTIFACT(testRunId, testId), file, config);
     }
+    async uploadTestRunArtifact(testRunId, contentTypeHeader, file) {
+        const config = {
+            headers: {
+                'Content-Type': contentTypeHeader,
+                Accept: '*/*',
+            },
+        };
+        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_TEST_RUN_ARTIFACT(testRunId), file, config);
+    }
     async sendLogs(testRunId, logs) {
         if (logs?.length) {
             return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.SEND_LOGS(testRunId), logs);

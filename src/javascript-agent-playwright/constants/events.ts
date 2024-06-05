@@ -1,10 +1,16 @@
 export const EVENT_NAMES = {
-  ADD_TEST_CASE: 'zebrunner:add-test-case',
-  SET_MAINTAINER: 'zebrunner:set-maintainer',
-  ADD_TEST_LOG: 'zebrunner:add-test-log',
   ATTACH_TEST_RUN_LABELS: 'zebrunner:attach-run-labels',
+  ATTACH_TEST_RUN_ARTIFACT_REFERENCES: 'zebrunner:attach-run-artifact-reference',
+  ATTACH_RUN_ARTIFACT: 'zebrunner:attach-run-artifact',
+
+  ATTACH_TEST_CASE: 'zebrunner:attach-test-case',
+  ATTACH_TEST_MAINTAINER: 'zebrunner:attach-test-maintainer',
+  ATTACH_TEST_LOG: 'zebrunner:attach-test-log',
   ATTACH_TEST_LABELS: 'zebrunner:attach-test-labels',
-  ATTACH_TEST_RUN_ARTIFACT_REFERENCES: 'zebrunner:attach-run-artifact-references',
-  ATTACH_TEST_ARTIFACT_REFERENCES: 'zebrunner:attach-test-artifact-references',
+  ATTACH_TEST_ARTIFACT_REFERENCES: 'zebrunner:attach-test-artifact-reference',
+  ATTACH_TEST_ARTIFACT: 'zebrunner:attach-test-artifact',
+
   REVERT_TEST_REGISTRATION: 'zebrunner:revert-test-registration',
+
+  LOG_ERROR: 'zebrunner:log-error',
 };

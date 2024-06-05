@@ -12,3 +12,5 @@ export { isString, isNotBlankString, isBuffer, isFunction, isPromise, isArray, i
 export { recursiveTestsTraversal } from './recursiveTestsTraversal';
 export { isJsonString } from './isJsonString';
 export { getErrorsStringFromMap } from './getErrorsStringFromMap';
+export { stdoutErrorEvent } from './stdoutErrorEvent';
+export { getCustomArtifactObject } from './getCustomArtifactObject';
