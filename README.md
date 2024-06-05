@@ -22,11 +22,11 @@ First, you need to add the Zebrunner Agent into your `package.json`.
 
 ### Reporter setup
 
-The agent does not work automatically after adding it into the project, it requires extra configuration. 
+The agent does not work automatically after adding it into the project, it requires extra configuration.
 For this, you need to navigate to the Playwright configuration file (by default, it is `playwright.config.ts`) and provide the following information:
 
-  - Add `@zebrunner/javascript-agent-playwright` to the list of reporters; 
-  - Provide the reporter configuration (you can find more about the configuration in the [Reporter configuration section](#reporter-configuration) ).
+- Add `@zebrunner/javascript-agent-playwright` to the list of reporters;
+- Provide the reporter configuration (you can find more about the configuration in the [Reporter configuration section](#reporter-configuration) ).
 
 The reporter must be specified in a nested array. The first array element is `@zebrunner/javascript-agent-playwright`, the second element is a reporter configuration object.
 
@@ -34,7 +34,7 @@ Here is an example of a configuration snippet:
 
 ```ts title="playwright.config.ts"
 export default defineConfig({
-  testDir: './tests', 
+  testDir: './tests',
   reporter: [
     [
       '@zebrunner/javascript-agent-playwright',
@@ -65,20 +65,19 @@ The following subsections contain tables with configuration options. The first c
 
 #### Common configuration
 
-| Env var / Reporter config                                        | Description                                                                                                                                                                      |
-|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `REPORTING_ENABLED`<br/>`enabled`                                | Enables or disables reporting. The default value is `false`. If disabled, agent provides output only to console.                                                                                                                     |
-| `REPORTING_PROJECT_KEY`<br/>`projectKey`                | Optional value. It is the key of Zebrunner project that the launch belongs to. The default value is `DEF`.                                                                       |
+| Env var / Reporter config                                | Description                                                                                                                                                                      |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REPORTING_ENABLED`<br/>`enabled`                        | Enables or disables reporting. The default value is `false`. If disabled, agent provides output only to console.                                                                 |
+| `REPORTING_PROJECT_KEY`<br/>`projectKey`                 | Optional value. It is the key of Zebrunner project that the launch belongs to. The default value is `DEF`.                                                                       |
 | `REPORTING_SERVER_HOSTNAME`<br/>`server.hostname`        | Mandatory if reporting is enabled. It is your Zebrunner hostname, e.g. `https://mycompany.zebrunner.com`.                                                                        |
 | `REPORTING_SERVER_ACCESS_TOKEN`<br/>`server.accessToken` | Mandatory if reporting is enabled. The access token is used to perform API calls. It can be obtained in Zebrunner on the 'Account and profile' page in the 'API Access' section. |
-
 
 #### Automation launch configuration
 
 The following configuration options allow you to configure accompanying information that will be displayed in Zebrunner for the automation launch.
 
-| Env var / Reporter config                                  | Description                                                                                                                             |
-|------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| Env var / Reporter config                             | Description                                                                                                                             |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `REPORTING_RUN_DISPLAY_NAME`<br/>`launch.displayName` | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                          |
 | `REPORTING_RUN_BUILD`<br/>`launch.build`              | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test. |
 | `REPORTING_RUN_ENVIRONMENT`<br/>`launch.environment`  | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                          |
@@ -87,8 +86,8 @@ The following configuration options allow you to configure accompanying informat
 
 Zebrunner Milestone for the automation launch can be configured using the following configuration options (all of them are optional).
 
-| Env var / Reporter config                               | Description                                                                                                                                                                                                                         |
-|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Env var / Reporter config                       | Description                                                                                                                                                                                                                         |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `REPORTING_MILESTONE_ID`<br/>`milestone.id`     | Id of the Zebrunner Milestone to link the automation launch to. The id is not displayed on Zebrunner UI, so the field is basically used for internal purposes. If the milestone does not exist, the launch will continue executing. |
 | `REPORTING_MILESTONE_NAME`<br/>`milestone.name` | Name of the Zebrunner Milestone to link the automation launch to. If the milestone does not exist, the appropriate warning message will be displayed in logs, but the test suite will continue executing.                           |
 
@@ -96,11 +95,11 @@ Zebrunner Milestone for the automation launch can be configured using the follow
 
 Zebrunner provides notification capabilities for automation launch results. The following options configure notification rules and targets.
 
-| Env var / Reporter config                                                                      | Description                                                                                                                                                                                                                                                                                                                                                              |
-|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Env var / Reporter config                                                               | Description                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE`<br/>`notifications.notifyOnEachFailure` | Specifies whether Zebrunner should send notifications to Slack/Teams on each test failure. The notifications will be sent even if the launch is still running. The default value is `false`.                                                                                                                                                                             |
 | `REPORTING_NOTIFICATION_SLACK_CHANNELS`<br/>`notifications.slackChannels`               | A comma-separated list of Slack channels to send notifications to. Notifications will be sent only if the Slack integration is properly configured in Zebrunner with valid credentials for the project the launch is reported to. Zebrunner can send two types of notifications: on each test failure (if the appropriate property is enabled) and on the launch finish. |
-| `REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS`<br/>`notifications.teamsChannels`          | A comma-separated list of Microsoft Teams channels to send notifications to. Notifications will be sent only if the Teams integration is configured in the Zebrunner project with valid webhooks for the channels. Zebrunner can send two types of notifications: on each test failure (if the appropriate property is enabled) and on the launch finish.                |
+| `REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS`<br/>`notifications.teamsChannels`            | A comma-separated list of Microsoft Teams channels to send notifications to. Notifications will be sent only if the Teams integration is configured in the Zebrunner project with valid webhooks for the channels. Zebrunner can send two types of notifications: on each test failure (if the appropriate property is enabled) and on the launch finish.                |
 | `REPORTING_NOTIFICATION_EMAILS`<br/>`notifications.emails`                              | A comma-separated list of emails to send notifications to. This type of notifications does not require further configuration on Zebrunner side. Unlike other notification mechanisms, Zebrunner can send emails only on the launch finish.                                                                                                                               |
 
 #### Integration with Test Case Management systems
@@ -122,7 +121,7 @@ The following subsection covers how to provide configuration for pushing results
 ##### Zebrunner Test Case Management (TCM)
 
 | Env var / Reporter config                                                      | Description                                                                                                                                                             |
-|--------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `REPORTING_TCM_ZEBRUNNER_PUSH_RESULTS`<br/>`tcm.zebrunner.pushResults`         | Boolean value which specifies if the execution results should be pushed to Zebrunner TCM. The default value is `false`.                                                 |
 | `REPORTING_TCM_ZEBRUNNER_PUSH_IN_REAL_TIME`<br/>`tcm.zebrunner.pushInRealTime` | Boolean value. Specifies whether to push execution results immediately after each test is finished (value `true`) or not (value `false`). The default value is `false`. |
 | `REPORTING_TCM_ZEBRUNNER_TEST_RUN_ID`<br/>`tcm.zebrunner.testRunId`            | Numeric id of the target Test Run in Zebrunner TCM. If a value is not provided, no new runs will be created.                                                            |
@@ -130,11 +129,11 @@ The following subsection covers how to provide configuration for pushing results
 ##### TestRail
 
 | Env var / Reporter config                                                                      | Description                                                                                                                                                                                                                                            |
-|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `REPORTING_TCM_TESTRAIL_PUSH_RESULTS`<br/>`tcm.testRail.pushResults`                           | Boolean value which specifies if the execution results should be pushed to TestRail. The default value is `false`.                                                                                                                                     |
 | `REPORTING_TCM_TESTRAIL_PUSH_IN_REAL_TIME`<br/>`tcm.testRail.pushInRealTime`                   | Boolean value. Specifies whether to push execution results immediately after each test is finished (value `true`) or not (value `false`). The default value is `false`. Enabling of this option forces the `includeAllTestCasesInNewRun` to be `true`. |
 | `REPORTING_TCM_TESTRAIL_SUITE_ID`<br/>`tcm.testRail.suiteId`                                   | Specifies the numeric id of the TestRail Suite in which the tests reside. TestRail displays the ids prefixed with 'S' letter. You need to provide the id without this letter.                                                                          |
-| `REPORTING_TCM_TESTRAIL_RUN_ID`<br/>`tcm.testRail.runId`                                       | The id of the TestRail Test Run where the results should be pushed. TestRail displays the ids prefixed with 'R' letter. You need to provide the id without this letter.                                                                             |
+| `REPORTING_TCM_TESTRAIL_RUN_ID`<br/>`tcm.testRail.runId`                                       | The id of the TestRail Test Run where the results should be pushed. TestRail displays the ids prefixed with 'R' letter. You need to provide the id without this letter.                                                                                |
 | `REPORTING_TCM_TESTRAIL_RUN_NAME`<br/>`tcm.testRail.runName`                                   | Specifies the name of a new Test Run in TestRail. If push is enabled and run id is not provided, Zebrunner will create a new run in TestRail. If the value is not provided, Zebrunner will use the launch display name.                                |
 | `REPORTING_TCM_TESTRAIL_INCLUDE_ALL_IN_NEW_RUN`<br/>`tcm.testRail.includeAllTestCasesInNewRun` | If the value is set to `true`, all cases from the Suite will be added to the newly created Test Run. The value is forced to be `true` if real-time push is enabled. Default value is `false`.                                                          |
 | `REPORTING_TCM_TESTRAIL_MILESTONE_NAME`<br/>`tcm.testRail.milestoneName`                       | The newly created Test Run will be associated with the milestone specified using this property.                                                                                                                                                        |
@@ -143,7 +142,7 @@ The following subsection covers how to provide configuration for pushing results
 ##### Xray
 
 | Env var / Reporter config                                            | Description                                                                                                                                                             |
-|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `REPORTING_TCM_XRAY_PUSH_RESULTS`<br/>`tcm.xray.pushResults`         | Boolean value which specifies if the execution results should be pushed to Xray. The default value is `false`.                                                          |
 | `REPORTING_TCM_XRAY_PUSH_IN_REAL_TIME`<br/>`tcm.xray.pushInRealTime` | Boolean value. Specifies whether to push execution results immediately after each test is finished (value `true`) or not (value `false`). The default value is `false`. |
 | `REPORTING_TCM_XRAY_EXECUTION_KEY`<br/>`tcm.xray.executionKey`       | The key of the Xray Execution where the results should be pushed.                                                                                                       |
@@ -151,7 +150,7 @@ The following subsection covers how to provide configuration for pushing results
 ##### Zephyr
 
 | Env var / Reporter config                                                | Description                                                                                                                                                             |
-|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `REPORTING_TCM_ZEPHYR_PUSH_RESULTS`<br/>`tcm.zephyr.pushResults`         | Boolean value which specifies if the execution results should be pushed to Zephyr. The default value is `false`.                                                        |
 | `REPORTING_TCM_ZEPHYR_PUSH_IN_REAL_TIME`<br/>`tcm.zephyr.pushInRealTime` | Boolean value. Specifies whether to push execution results immediately after each test is finished (value `true`) or not (value `false`). The default value is `false`. |
 | `REPORTING_TCM_ZEPHYR_JIRA_PROJECT_KEY`<br/>`tcm.zephyr.jiraProjectKey`  | Specifies the key of the Jira project where the tests reside.                                                                                                           |
@@ -166,7 +165,7 @@ One of the examples of such cases is when a test case result status does not cor
 Another example is custom Result Statuses in the target TCM system. In this case, we cannot anticipate the correct status and simply skip the test execution. In order to tackle this, Zebrunner allows you to configure default status for passed and failed test executions.
 
 | Env var / Reporter config                                                | Description                                                                                              |
-|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
 | `REPORTING_TCM_TEST_CASE_STATUS_ON_PASS`<br/>`tcm.testCaseStatus.onPass` | The default status that will be assigned to passed test executions when they are pushed to a TCM system. |
 | `REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL`<br/>`tcm.testCaseStatus.onFail` | The default status that will be assigned to failed test executions when they are pushed to a TCM system. |
 
@@ -187,19 +186,19 @@ The following code snippet is a list of all configuration environment variables 
    REPORTING_PROJECT_KEY=DEF
    REPORTING_SERVER_HOSTNAME=https://mycompany.zebrunner.com
    REPORTING_SERVER_ACCESS_TOKEN=somesecretaccesstoken
-   
+
    REPORTING_RUN_DISPLAY_NAME=Nightly Regression
    REPORTING_RUN_BUILD=2.41.2.2431-SNAPSHOT
    REPORTING_RUN_ENVIRONMENT=QA
-   
+
    REPORTING_MILESTONE_ID=1
    REPORTING_MILESTONE_NAME=Release 1.0.0
-   
+
    REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE=false
    REPORTING_NOTIFICATION_SLACK_CHANNELS=dev,qa
    REPORTING_NOTIFICATION_MS_TEAMS_CHANNELS=dev-channel,management
    REPORTING_NOTIFICATION_EMAILS=manager@mycompany.com
-   
+
    REPORTING_TCM_TEST_CASE_STATUS_ON_PASS=PASS
    REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL=FAIL
 
@@ -232,7 +231,7 @@ Below you can see an example of the full configuration provided via `playwright.
 
 ```ts title="playwright.config.ts"
 export default defineConfig({
-  testDir: './tests', 
+  testDir: './tests',
   reporter: [
     [
       '@zebrunner/javascript-agent-playwright',
@@ -241,22 +240,22 @@ export default defineConfig({
         projectKey: 'DEF',
         server: {
           hostname: 'https://mycompany.zebrunner.com',
-          accessToken: 'somesecretaccesstoken'
+          accessToken: 'somesecretaccesstoken',
         },
         launch: {
-          displayName: "Playwright launch",
+          displayName: 'Playwright launch',
           build: '1.0.0',
-          environment: 'Local'
+          environment: 'Local',
         },
         milestone: {
           id: null,
-          name: null
+          name: null,
         },
         notifications: {
           notifyOnEachFailure: false,
           slackChannels: 'dev, qa',
           teamsChannels: 'dev-channel, management',
-          emails: 'dkazak@zebrunner.com'
+          emails: 'dkazak@zebrunner.com',
         },
         tcm: {
           testCaseStatus: {
@@ -266,7 +265,7 @@ export default defineConfig({
           zebrunner: {
             pushResults: false,
             pushInRealTime: false,
-            testRunId: 42
+            testRunId: 42,
           },
           testRail: {
             pushResults: false,
@@ -276,23 +275,23 @@ export default defineConfig({
             includeAllTestCasesInNewRun: true,
             runName: 'New Demo Run',
             milestoneName: 'Demo Milestone',
-            assignee: 'tester@mycompany.com'
+            assignee: 'tester@mycompany.com',
           },
           xray: {
             pushResults: false,
             pushInRealTime: false,
-            executionKey: 'QT-100'
+            executionKey: 'QT-100',
           },
           zephyr: {
             pushResults: false,
             pushInRealTime: false,
             jiraProjectKey: 'ZEB',
-            testCycleKey: 'ZEB-T1'
-          }
+            testCycleKey: 'ZEB-T1',
+          },
         },
-      }
-    ]
-  ]
+      },
+    ],
+  ],
 });
 ```
 
@@ -303,27 +302,21 @@ It is highly recommended to add following additional configuration to your `play
 - enable taking screenshots on failure feature that will allow to send them into Zebrunner:
 
 ```ts title="playwright.config.ts"
-  use: {
-    screenshot: 'only-on-failure'
-  }
+use: {
+  screenshot: 'only-on-failure';
+}
 ```
 
-[//]: # (FIXME: when video/trace is on, launch is hang up, necessary to fix)
-[//]: # (- enable capturing of a video and trace - will be attached as artifacts)
-[//]: # ()
-[//]: # (```ts title="playwright.config.ts")
-
-[//]: # (  use: {)
-
-[//]: # (    screenshot: 'only-on-failure',)
-
-[//]: # (    video: 'on',)
-
-[//]: # (    trace: 'on',)
-
-[//]: # (  },)
-
-[//]: # (```)
+[//]: # 'FIXME: when video/trace is on, launch is hang up, necessary to fix'
+[//]: # '- enable capturing of a video and trace - will be attached as artifacts'
+[//]: #
+[//]: # '```ts title="playwright.config.ts"'
+[//]: # '  use: {'
+[//]: # "    screenshot: 'only-on-failure',"
+[//]: # "    video: 'on',"
+[//]: # "    trace: 'on',"
+[//]: # '  },'
+[//]: # '```'
 
 - enable detection of `browser` and `os` settings that will be sent to Zebrunner:
 
@@ -348,13 +341,12 @@ In order to keep track of those, the Agent comes with the `#setMaintainer()` met
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test suite', () => {
-  
-  test('first test', async ({page}) => {
+  test('first test', async ({ page }) => {
     CurrentTest.setMaintainer('developer');
     // ...
   });
 
-  test('second test', async ({page}) => {
+  test('second test', async ({ page }) => {
     CurrentTest.setMaintainer('tester');
     // ...
   });
@@ -372,11 +364,11 @@ In some cases, it may be useful to attach meta information related to a test. Th
 You can attach labels by writing them in the name of the test through `@`:
 
 ```ts
-test('test running in Firefox @ff @smoke_test @slow', async ({page}, testInfo) => {
-    const browser = await firefox.launch();
-    const page1 = await browser.newPage();
-    await page1.goto('https://example.com');
-    await browser.close();
+test('test running in Firefox @ff @smoke_test @slow', async ({ page }, testInfo) => {
+  const browser = await firefox.launch();
+  const page1 = await browser.newPage();
+  await page1.goto('https://example.com');
+  await browser.close();
 });
 ```
 
@@ -392,20 +384,19 @@ The `#attachLabel()` method accepts the `key` as first argument and `values` sta
 import { CurrentTest, CurrentLaunch } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test suite', () => {
-    test.beforeAll(async () => {
-        // will be attached to the entire run
-        CurrentLaunch.attachLabel('label', 'value')
-    });
-  
+  test.beforeAll(async () => {
+    // will be attached to the entire run
+    CurrentLaunch.attachLabel('label', 'value');
+  });
 
-    test('first test', async ({page}) => {
-        CurrentTest.attachLabel('tag', 'ff');
-        // ...
-    });
+  test('first test', async ({ page }) => {
+    CurrentTest.attachLabel('tag', 'ff');
+    // ...
+  });
 
-    test('second test', async ({page}) => {
-        CurrentTest.attachLabel('customLabelName', 'smoke_test', 'slow');
-        // ...
+  test('second test', async ({ page }) => {
+    CurrentTest.attachLabel('customLabelName', 'smoke_test', 'slow');
+    // ...
   });
 });
 ```
@@ -428,8 +419,7 @@ The Agent comes with the `#addLog()` method of the `CurrentTest` object. This me
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test suite', () => {
-
-  test('first test', async ({page}) => {
+  test('first test', async ({ page }) => {
     CurrentTest.addLog('custom log message on test start');
     // ...
   });
@@ -448,17 +438,55 @@ The `attachArtifactReference` methods of the `CurrentTest` and `CurrentLaunch` o
 import { CurrentTest, CurrentLaunch } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test Suite', () => {
-    test.beforeAll(async () => {
-        // will be attached to the entire run
-        CurrentLaunch.attachArtifactReference('Zebrunner', 'https://zebrunner.com')
-    });
-    
-    test('first test', async ({page}) => {
-        // will be attached to 'important test' only
-        CurrentTest.attachArtifactReference('SUT', 'https://myapp.com/app')
-        // ...
-    });
-})
+  test.beforeAll(async () => {
+    // will be attached to the entire run
+    CurrentLaunch.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
+  });
+
+  test('first test', async ({ page }) => {
+    // will be attached to 'important test' only
+    CurrentTest.attachArtifactReference('SUT', 'https://myapp.com/app');
+    // ...
+  });
+});
+```
+
+## Attaching artifacts to test and launch
+
+In case your tests or the entire launch produce some artifacts, it may be useful to track them in Zebrunner. The agent comes with convenient methods for uploading artifacts in Zebrunner and linking them to the currently running test or the launch.
+
+The `attachArtifact` method of the `CurrentTest` and `CurrentLaunch` objects serve exactly this purpose. This method accept two arguments. The first one is the artifact `path` on disk or `Buffer` instance. The second one is the artifact `name` which will be shown in Zebrunner. The `name` is optional.
+
+```ts
+import { CurrentTest, CurrentLaunch } from '@zebrunner/javascript-agent-playwright';
+
+test.describe('Test Suite', () => {
+  test.beforeAll(async () => {
+    // will be attached to the entire run and named "some_text_file1.txt"
+    CurrentLaunch.attachArtifact('./some_folder/some_text_file1.txt');
+    // ...
+
+    // will be attached to the entire run and named "text2.txt"
+    CurrentLaunch.attachArtifact('./some_folder/some_text_file2.txt', 'text2.txt');
+    // ...
+  });
+
+  test('first test', async ({ page }) => {
+    // will be attached to 'first test' only and named "some_text_file1.txt"
+    CurrentTest.attachArtifact('./some_folder/some_text_file1.txt');
+    // ...
+
+    // will be attached to 'first test' only and named "image.png"
+    const bufferScreenshot = await page.screenshot();
+    CurrentTest.attachArtifact(bufferScreenshot, 'image.png');
+    // ...
+
+    // will be attached to 'first test' only and named "file_{someISODate}"
+    const bufferScreenshot2 = await page.screenshot();
+    CurrentTest.attachArtifact(bufferScreenshot2);
+    // ...
+  });
+});
 ```
 
 ## Reverting test registration
@@ -471,15 +499,13 @@ Zebrunner Agent comes with a convenient method `#revertRegistration()` of the `C
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test Suite', () => {
-
-    test('not important test', async ({page}) => {
-        if (new Date().getDay() === 1) {
-            currentTest.revertRegistration()
-        }
-        // test code
-    });
-
-})
+  test('not important test', async ({ page }) => {
+    if (new Date().getDay() === 1) {
+      currentTest.revertRegistration();
+    }
+    // test code
+  });
+});
 ```
 
 It is worth mentioning that the method invocation does not affect the test execution, but simply unregisters the test in Zebrunner instead of finishing it. To interrupt the test execution, you need to do additional actions, for example, throw an Error.
@@ -503,32 +529,31 @@ Here is an example:
 import { zebrunner } from '@zebrunner/javascript-agent-playwright';
 
 describe('Test Suite', () => {
+  it('first test', () => {
+    // links single test case 'KEY-1000' to the test
+    zebrunner.testCaseKey('KEY-1000');
+    // test code
+  });
 
-    it('first test', () => {
-        // links single test case 'KEY-1000' to the test
-        zebrunner.testCaseKey("KEY-1000");
-        // test code
-    });
+  it('second test', () => {
+    // links test cases 'KEY-2000' and 'KEY-2001' to the current test
+    zebrunner.testCaseKey('KEY-2000', 'KEY-2001');
+    // test code
+  });
 
-    it('second test', () => {
-        // links test cases 'KEY-2000' and 'KEY-2001' to the current test
-        zebrunner.testCaseKey("KEY-2000", "KEY-2001");
-        // test code
-    });
-
-    it('third test', () => {
-        // links test case 'KEY-3000' to the current test
-        zebrunner.testCaseKey("KEY-3000");
-        // test code
-        if (someCondition) {
-            // overriddes the status of the test case when results are pushed to the Zebrunner TCM.
-            // using this method, you can manually specify the desired result status.
-            zebrunner.testCaseStatus("KEY-3000", "SKIPPED");
-        }
-    });
-
-})
+  it('third test', () => {
+    // links test case 'KEY-3000' to the current test
+    zebrunner.testCaseKey('KEY-3000');
+    // test code
+    if (someCondition) {
+      // overriddes the status of the test case when results are pushed to the Zebrunner TCM.
+      // using this method, you can manually specify the desired result status.
+      zebrunner.testCaseStatus('KEY-3000', 'SKIPPED');
+    }
+  });
+});
 ```
+
 ### TestRail
 
 The Agent comes with the `testRail` object which contains methods to link test cases to a currently executing test:
@@ -544,32 +569,30 @@ Here is an example:
 import { testRail } from '@zebrunner/javascript-agent-playwright';
 
 describe('Test Suite', () => {
+  it('first test', () => {
+    // links single test case 'C1002' to the test
+    testRail.testCaseId('C1000');
+    // test code
+  });
 
-    it('first test', () => {
-        // links single test case 'C1002' to the test
-        testRail.testCaseId("C1000");
-        // test code
-    });
+  it('second test', () => {
+    // links test cases 'C2000' and 'C2001' to the current test
+    testRail.testCaseId('C2000', 'C2001');
+    // test code
+  });
 
-    it('second test', () => {
-        // links test cases 'C2000' and 'C2001' to the current test
-        testRail.testCaseId("C2000", "C2001");
-        // test code
-    });
-
-    it('third test', () => {
-        // links test case 'C3000' to the current test
-        testRail.testCaseId("C3000");
-        // test code
-        if (someCondition) {
-            // overriddes the status of the test case when results are pushed to the TestRail.
-            // by default Zebrunner maps the test execution result to a result status from TestRail.
-            // using this method, you can manually specify the desired result status.
-            testRail.testCaseStatus("C3000", "SKIPPED");
-        }
-    });
-
-})
+  it('third test', () => {
+    // links test case 'C3000' to the current test
+    testRail.testCaseId('C3000');
+    // test code
+    if (someCondition) {
+      // overriddes the status of the test case when results are pushed to the TestRail.
+      // by default Zebrunner maps the test execution result to a result status from TestRail.
+      // using this method, you can manually specify the desired result status.
+      testRail.testCaseStatus('C3000', 'SKIPPED');
+    }
+  });
+});
 ```
 
 ### Xray
@@ -587,32 +610,30 @@ Here is an example:
 import { xray } from '@zebrunner/javascript-agent-playwright';
 
 describe('Test Suite', () => {
+  it('first test', () => {
+    // links single test case 'KEY-1000' to the test
+    xray.testCaseKey('KEY-1000');
+    // test code
+  });
 
-    it('first test', () => {
-        // links single test case 'KEY-1000' to the test
-        xray.testCaseKey("KEY-1000");
-        // test code
-    });
+  it('second test', () => {
+    // links test cases 'KEY-2000' and 'KEY-2001' to the current test
+    xray.testCaseKey('KEY-2000', 'KEY-2001');
+    // test code
+  });
 
-    it('second test', () => {
-        // links test cases 'KEY-2000' and 'KEY-2001' to the current test
-        xray.testCaseKey("KEY-2000", "KEY-2001");
-        // test code
-    });
-
-    it('third test', () => {
-        // links test case 'KEY-3000' to the current test
-        xray.testCaseKey("KEY-3000");
-        // test code
-        if (someCondition) {
-            // overriddes the status of the test case when results are pushed to the Xray.
-            // by default Zebrunner maps the test execution result to a result status from Xray.
-            // using this method, you can manually specify the desired result status.
-            xray.testCaseStatus("KEY-3000", "SKIP");
-        }
-    });
-
-})
+  it('third test', () => {
+    // links test case 'KEY-3000' to the current test
+    xray.testCaseKey('KEY-3000');
+    // test code
+    if (someCondition) {
+      // overriddes the status of the test case when results are pushed to the Xray.
+      // by default Zebrunner maps the test execution result to a result status from Xray.
+      // using this method, you can manually specify the desired result status.
+      xray.testCaseStatus('KEY-3000', 'SKIP');
+    }
+  });
+});
 ```
 
 ### Zephyr
@@ -630,37 +651,36 @@ Here is an example:
 import { zephyr } from '@zebrunner/javascript-agent-playwright';
 
 describe('Test Suite', () => {
+  it('first test', () => {
+    // links single test case 'KEY-1000' to the test
+    zephyr.testCaseKey('KEY-1000');
+    // test code
+  });
 
-    it('first test', () => {
-        // links single test case 'KEY-1000' to the test
-        zephyr.testCaseKey("KEY-1000");
-        // test code
-    });
+  it('second test', () => {
+    // links test cases 'KEY-2000' and 'KEY-2001' to the current test
+    zephyr.testCaseKey('KEY-2000', 'KEY-2001');
+    // test code
+  });
 
-    it('second test', () => {
-        // links test cases 'KEY-2000' and 'KEY-2001' to the current test
-        zephyr.testCaseKey("KEY-2000", "KEY-2001");
-        // test code
-    });
-
-    it('third test', () => {
-        // links test case 'KEY-3000' to the current test
-        zephyr.testCaseKey("KEY-3000");
-        // test code
-        if (someCondition) {
-            // overriddes the status of the test case when results are pushed to the Zephyr.
-            // by default Zebrunner maps the test execution result to a result status from Zephyr.
-            // using this method, you can manually specify the desired result status.
-            zephyr.testCaseStatus("KEY-3000", "SKIP");
-        }
-    });
-
-})
+  it('third test', () => {
+    // links test case 'KEY-3000' to the current test
+    zephyr.testCaseKey('KEY-3000');
+    // test code
+    if (someCondition) {
+      // overriddes the status of the test case when results are pushed to the Zephyr.
+      // by default Zebrunner maps the test execution result to a result status from Zephyr.
+      // using this method, you can manually specify the desired result status.
+      zephyr.testCaseStatus('KEY-3000', 'SKIP');
+    }
+  });
+});
 ```
 
 ## Contribution
 
 To check out the project and build from the source, do the following:
+
 ```
 git clone https://github.com/zebrunner/javascript-agent-playwright.git
 cd javascript-agent-playwright
@@ -669,4 +689,3 @@ cd javascript-agent-playwright
 ## License
 
 Zebrunner reporting agent for Playwright is released under version 2.0 of the [Apache License](https://www.apache.org/licenses/LICENSE-2.0).
-
