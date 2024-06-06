@@ -331,6 +331,19 @@ projects: [
 ]
 ```
 
+You may want to create screenshots manually during test execution. In this case you need to attach each manually created screenshot to test using Playwright `testInfo.attach()` method. After attaching screenshot, it will be uploaded to Zebrunner automatically.
+
+```ts
+test.describe('Test suite', () => {
+  test('some test name', async ({ page }, testInfo) => {
+    // ...
+    const screenshot = await page.screenshot();
+    await testInfo.attach('manualScreenshot.png', { body: screenshot, contentType: 'image/png' });
+    // ...
+  });
+});
+```
+
 ## Tracking test maintainer
 
 You may want to add transparency to the process of automation maintenance by having an engineer responsible for evolution of specific tests or test suites. To serve that purpose, Zebrunner comes with a concept of a maintainer.
@@ -458,6 +471,7 @@ In case your tests or the entire launch produce some artifacts, it may be useful
 The `attachArtifact` method of the `CurrentTest` and `CurrentLaunch` objects serve exactly this purpose. This method accept two arguments. The first one is the artifact `path` on disk or `Buffer` instance. The second one is the artifact `name` which will be shown in Zebrunner. The `name` is optional.
 
 ```ts
+import * as fs from 'fs';
 import { CurrentTest, CurrentLaunch } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test Suite', () => {
@@ -466,8 +480,8 @@ test.describe('Test Suite', () => {
     CurrentLaunch.attachArtifact('./some_folder/some_text_file1.txt');
     // ...
 
-    // will be attached to the entire run and named "text2.txt"
-    CurrentLaunch.attachArtifact('./some_folder/some_text_file2.txt', 'text2.txt');
+    // will be attached to the entire run and named "text1.txt"
+    CurrentLaunch.attachArtifact('./some_folder/some_text_file1.txt', 'text1.txt');
     // ...
   });
 
@@ -476,14 +490,14 @@ test.describe('Test Suite', () => {
     CurrentTest.attachArtifact('./some_folder/some_text_file1.txt');
     // ...
 
-    // will be attached to 'first test' only and named "image.png"
-    const bufferScreenshot = await page.screenshot();
-    CurrentTest.attachArtifact(bufferScreenshot, 'image.png');
+    // will be attached to 'first test' only and named "custom_log.txt"
+    const bufferFileOne = fs.readFileSync('./my_project/custom_log.txt');
+    CurrentTest.attachArtifact(bufferFileOne, 'custom_log.txt');
     // ...
 
     // will be attached to 'first test' only and named "file_{someISODate}"
-    const bufferScreenshot2 = await page.screenshot();
-    CurrentTest.attachArtifact(bufferScreenshot2);
+    const bufferFileTwo = fs.readFileSync('./my_project/custom_log.txt');
+    CurrentTest.attachArtifact(bufferFileTwo);
     // ...
   });
 });
