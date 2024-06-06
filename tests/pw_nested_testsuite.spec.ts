@@ -19,7 +19,7 @@ test.describe('nested foo', () => {
 
     console.log('Custom Message from console.log');
     CurrentTest.addLog('custom log message after opening browser page');
-    zebrunner.testCaseStatus('KEY-3000', 'SKIPPED');
+    zebrunner.testCaseKey('DEF-1231');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
     CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
     CurrentLaunch.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');

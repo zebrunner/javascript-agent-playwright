@@ -15,14 +15,14 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
   ],
   reporter: [
     [
@@ -57,9 +57,9 @@ export default defineConfig({
             onFail: 'FAILED',
           },
           zebrunner: {
-            pushResults: false,
+            pushResults: true,
             pushInRealTime: false,
-            testRunId: 42,
+            testRunId: 815,
           },
           testRail: {
             pushResults: false,
