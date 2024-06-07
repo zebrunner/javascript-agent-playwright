@@ -81,7 +81,7 @@ The following configuration options allow you to configure accompanying informat
 | `REPORTING_LAUNCH_DISPLAY_NAME`<br/>`launch.displayName`                     | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                                         |
 | `REPORTING_LAUNCH_BUILD`<br/>`launch.build`                                  | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test.                |
 | `REPORTING_LAUNCH_ENVIRONMENT`<br/>`launch.environment`                      | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                                         |
-| `REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES`<br/>`launch.treatSkipsAsFailures` | If the value is set to true, skipped tests will be treated as failures when the result of the entire launch is calculated. The default value is false. |
+| `REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES`<br/>`launch.treatSkipsAsFailures` | If the value is set to true, skipped tests will be treated as failures when the result of the entire launch is calculated. For example, launch with all passed tests but one skipped will be considered a failure. The default value is true. |
 
 #### Milestone
 
@@ -191,7 +191,7 @@ The following code snippet is a list of all configuration environment variables 
    REPORTING_LAUNCH_DISPLAY_NAME=Nightly Regression
    REPORTING_LAUNCH_BUILD=2.41.2.2431-SNAPSHOT
    REPORTING_LAUNCH_ENVIRONMENT=QA
-   REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES=FALSE
+   REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES=TRUE
 
    REPORTING_MILESTONE_ID=1
    REPORTING_MILESTONE_NAME=Release 1.0.0

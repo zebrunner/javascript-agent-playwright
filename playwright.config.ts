@@ -38,7 +38,7 @@ export default defineConfig({
           displayName: 'Playwright launch',
           build: '1.0.0',
           environment: 'Local',
-          //treatSkipsAsFailures: true,
+          treatSkipsAsFailures: true,
         },
         milestone: {
           id: null,
