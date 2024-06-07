@@ -15,14 +15,14 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
   ],
   reporter: [
     [
@@ -31,15 +31,14 @@ export default defineConfig({
         enabled: true,
         projectKey: 'DEF',
         server: {
-          // hostname: 'https://domain.zebrunner.com',
-          // accessToken: 'token',
-          hostname: 'https://integration.zebrunner.org',
-          accessToken: 'Sxyjc2ivR09DhvsRH3D6TWsfgsiZFBESxqUV1geDAeKV1Z8Mal',
+          hostname: 'https://domain.zebrunner.com',
+          accessToken: 'token',
         },
         launch: {
           displayName: 'Playwright launch',
           build: '1.0.0',
           environment: 'Local',
+          //treatSkipsAsFailures: true,
         },
         milestone: {
           id: null,

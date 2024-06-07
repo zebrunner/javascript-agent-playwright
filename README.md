@@ -76,11 +76,12 @@ The following subsections contain tables with configuration options. The first c
 
 The following configuration options allow you to configure accompanying information that will be displayed in Zebrunner for the automation launch.
 
-| Env var / Reporter config                             | Description                                                                                                                             |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `REPORTING_RUN_DISPLAY_NAME`<br/>`launch.displayName` | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                          |
-| `REPORTING_RUN_BUILD`<br/>`launch.build`              | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test. |
-| `REPORTING_RUN_ENVIRONMENT`<br/>`launch.environment`  | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                          |
+| Env var / Reporter config                                                    | Description                                                                                                                                            |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `REPORTING_LAUNCH_DISPLAY_NAME`<br/>`launch.displayName`                     | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                                         |
+| `REPORTING_LAUNCH_BUILD`<br/>`launch.build`                                  | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test.                |
+| `REPORTING_LAUNCH_ENVIRONMENT`<br/>`launch.environment`                      | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                                         |
+| `REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES`<br/>`launch.treatSkipsAsFailures` | If the value is set to true, skipped tests will be treated as failures when the result of the entire launch is calculated. The default value is false. |
 
 #### Milestone
 
@@ -187,9 +188,10 @@ The following code snippet is a list of all configuration environment variables 
    REPORTING_SERVER_HOSTNAME=https://mycompany.zebrunner.com
    REPORTING_SERVER_ACCESS_TOKEN=somesecretaccesstoken
 
-   REPORTING_RUN_DISPLAY_NAME=Nightly Regression
-   REPORTING_RUN_BUILD=2.41.2.2431-SNAPSHOT
-   REPORTING_RUN_ENVIRONMENT=QA
+   REPORTING_LAUNCH_DISPLAY_NAME=Nightly Regression
+   REPORTING_LAUNCH_BUILD=2.41.2.2431-SNAPSHOT
+   REPORTING_LAUNCH_ENVIRONMENT=QA
+   REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES=FALSE
 
    REPORTING_MILESTONE_ID=1
    REPORTING_MILESTONE_NAME=Release 1.0.0

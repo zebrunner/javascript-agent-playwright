@@ -9,6 +9,7 @@ interface LaunchConfig {
   readonly displayName: string;
   readonly build: string;
   readonly environment: string;
+  readonly treatSkipsAsFailures: boolean;
 }
 
 interface MilestoneConfig {
@@ -126,9 +127,10 @@ export class ReportingConfig {
     }
 
     this.launch = {
-      displayName: getString('REPORTING_RUN_DISPLAY_NAME', config?.launch?.displayName, process.env.npm_package_name),
-      build: getString('REPORTING_RUN_BUILD', config?.launch?.build),
-      environment: getString('REPORTING_RUN_ENVIRONMENT', config?.launch?.environment),
+      displayName: getString('REPORTING_LAUNCH_DISPLAY_NAME', config?.launch?.displayName, process.env.npm_package_name),
+      build: getString('REPORTING_LAUNCH_BUILD', config?.launch?.build),
+      environment: getString('REPORTING_LAUNCH_ENVIRONMENT', config?.launch?.environment),
+      treatSkipsAsFailures: getBoolean('REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES', config?.launch?.treatSkipsAsFailures)
     };
 
     this.milestone = {

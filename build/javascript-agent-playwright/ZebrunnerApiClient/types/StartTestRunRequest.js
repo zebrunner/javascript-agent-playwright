@@ -19,6 +19,7 @@ class StartTestRunRequest {
         this.config = {
             environment: reportingConfig.launch.environment,
             build: reportingConfig.launch.build,
+            treatSkipsAsFailures: reportingConfig.launch.treatSkipsAsFailures,
         };
         this.milestone = {
             // priorities: env var id > env var name > cfg var id > cfg var name

@@ -58,17 +58,17 @@ exports.CurrentTest = {
         }
         process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES, payload: { name, value } }));
     },
-    attachArtifact: (pathOrBuffer, fileName) => {
+    attachArtifact: (pathOrBuffer, name) => {
         if (!Buffer.isBuffer(pathOrBuffer) && !fs_1.default.existsSync(pathOrBuffer)) {
             (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifact', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation, file not found`);
             return;
         }
-        if (fileName && !fileName.trim().length) {
-            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifact', `fileName must not be a blank string. Provided value is '${fileName}'`);
+        if (name && !name.trim().length) {
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifact', `fileName must not be a blank string. Provided value is '${name}'`);
         }
         process.stdout.write(JSON.stringify({
             eventType: events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT,
-            payload: { pathOrBuffer, timestamp: new Date().getTime(), name: fileName },
+            payload: { pathOrBuffer, timestamp: new Date().getTime(), name },
         }));
     },
     revertRegistration: () => {

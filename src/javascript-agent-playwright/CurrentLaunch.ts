@@ -56,7 +56,7 @@ export const CurrentLaunch = {
     );
   },
 
-  attachArtifact: (pathOrBuffer: Buffer | string, fileName?: string) => {
+  attachArtifact: (pathOrBuffer: Buffer | string, name?: string) => {
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
         'CurrentLaunch.attachArtifact',
@@ -65,17 +65,17 @@ export const CurrentLaunch = {
       return;
     }
 
-    if (fileName && !fileName.trim().length) {
+    if (name && !name.trim().length) {
       stdoutErrorEvent(
         'CurrentTest.attachArtifact',
-        `fileName must not be a blank string. Provided value is '${fileName}'`,
+        `fileName must not be a blank string. Provided value is '${name}'`,
       );
     }
 
     process.stdout.write(
       JSON.stringify({
         eventType: EVENT_NAMES.ATTACH_RUN_ARTIFACT,
-        payload: { pathOrBuffer, timestamp: new Date().getTime(), name: fileName },
+        payload: { pathOrBuffer, timestamp: new Date().getTime(), name },
       }),
     );
   },

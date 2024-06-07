@@ -37,9 +37,10 @@ class ReportingConfig {
             throw new Error('When reporting is enabled, you must provide Zebrunner hostname and accessToken');
         }
         this.launch = {
-            displayName: getString('REPORTING_RUN_DISPLAY_NAME', config?.launch?.displayName, process.env.npm_package_name),
-            build: getString('REPORTING_RUN_BUILD', config?.launch?.build),
-            environment: getString('REPORTING_RUN_ENVIRONMENT', config?.launch?.environment),
+            displayName: getString('REPORTING_LAUNCH_DISPLAY_NAME', config?.launch?.displayName, process.env.npm_package_name),
+            build: getString('REPORTING_LAUNCH_BUILD', config?.launch?.build),
+            environment: getString('REPORTING_LAUNCH_ENVIRONMENT', config?.launch?.environment),
+            treatSkipsAsFailures: getBoolean('REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES', config?.launch?.treatSkipsAsFailures)
         };
         this.milestone = {
             idFromConfig: config?.milestone?.id,
