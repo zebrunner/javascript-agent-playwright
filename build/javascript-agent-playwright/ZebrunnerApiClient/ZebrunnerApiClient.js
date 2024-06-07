@@ -48,10 +48,16 @@ class ZebrunnerApiClient {
         });
     }
     async authenticateIfRequired() {
-        if (!this.axiosInstance.defaults.headers.common.Authorization) {
-            const request = new RefreshTokenRequest_1.RefreshTokenRequest(this.accessToken);
-            const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.REFRESH_TOKEN(), request);
-            this.axiosInstance.defaults.headers.common.Authorization = `${response.data.authTokenType} ${response.data.authToken}`;
+        try {
+            if (!this.axiosInstance.defaults.headers.common.Authorization) {
+                const request = new RefreshTokenRequest_1.RefreshTokenRequest(this.accessToken);
+                const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.REFRESH_TOKEN(), request);
+                this.axiosInstance.defaults.headers.common.Authorization = `${response.data.authTokenType} ${response.data.authToken}`;
+            }
+        }
+        catch (error) {
+            console.log('Zebrunner authentication failed. Please, recheck credentials (hostname and token).');
+            process.exit();
         }
     }
     async startTestRun(projectKey, request) {

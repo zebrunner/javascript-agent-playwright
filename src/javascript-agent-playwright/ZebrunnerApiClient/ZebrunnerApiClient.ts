@@ -66,11 +66,16 @@ export class ZebrunnerApiClient {
   }
 
   private async authenticateIfRequired() {
-    if (!this.axiosInstance.defaults.headers.common.Authorization) {
-      const request = new RefreshTokenRequest(this.accessToken);
-      const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.REFRESH_TOKEN(), request);
+    try {
+      if (!this.axiosInstance.defaults.headers.common.Authorization) {
+        const request = new RefreshTokenRequest(this.accessToken);
+        const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.REFRESH_TOKEN(), request);
 
-      this.axiosInstance.defaults.headers.common.Authorization = `${response.data.authTokenType} ${response.data.authToken}`;
+        this.axiosInstance.defaults.headers.common.Authorization = `${response.data.authTokenType} ${response.data.authToken}`;
+      }
+    } catch (error) {
+      console.log('Zebrunner authentication failed. Please, recheck credentials (hostname and token).');
+      process.exit();
     }
   }
 
