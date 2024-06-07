@@ -62,10 +62,16 @@ class ZebrunnerApiClient {
     }
     async startTestRun(projectKey, request) {
         await this.authenticateIfRequired();
-        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST_RUN(), request, {
-            params: { projectKey },
-        });
-        return response.data.id;
+        try {
+            const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST_RUN(), request, {
+                params: { projectKey },
+            });
+            return response.data.id;
+        }
+        catch (error) {
+            console.log(error?.response?.data?.message || 'Unknown error during launch registration in Zebrunner');
+            process.exit();
+        }
     }
     async startTest(testRunId, request) {
         await this.authenticateIfRequired();
