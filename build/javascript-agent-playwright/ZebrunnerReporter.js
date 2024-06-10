@@ -70,10 +70,6 @@ class ZebrunnerReporter {
         suite = await this.rerunResolver(suite);
         this.totalTestCount = suite.allTests().length;
         this.zbrRunId = await this.startTestRunAndGetId(runStartTime);
-        // if (!this.zbrRunId) {
-        //   console.log('Failed auth');
-        //   process.exit();
-        // }
         await this.saveTestRunTcmConfigs(this.zbrRunId);
     }
     async rerunResolver(suite) {
