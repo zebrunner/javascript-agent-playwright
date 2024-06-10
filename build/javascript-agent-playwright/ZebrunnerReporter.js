@@ -162,7 +162,10 @@ class ZebrunnerReporter {
             pwTest.shouldBeReverted = true;
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_RUN_ARTIFACT) {
-            this.zbrRunArtifacts.push((0, helpers_1.getCustomArtifactObject)(payload));
+            // do not add duplicate file since pw could execute it's methods containing attachArtifact() call multiple times
+            this.zbrRunArtifacts = this.zbrRunArtifacts
+                .filter((a) => JSON.stringify(a.pathOrBuffer) !== JSON.stringify(payload.pathOrBuffer))
+                .concat([(0, helpers_1.getCustomArtifactObject)(payload)]);
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT) {
             pwTest.customArtifacts.push((0, helpers_1.getCustomArtifactObject)(payload));

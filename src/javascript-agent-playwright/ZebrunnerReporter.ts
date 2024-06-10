@@ -179,7 +179,10 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.REVERT_TEST_REGISTRATION) {
       pwTest.shouldBeReverted = true;
     } else if (eventType === EVENT_NAMES.ATTACH_RUN_ARTIFACT) {
-      this.zbrRunArtifacts.push(getCustomArtifactObject(payload));
+      // do not add duplicate file since pw could execute it's methods containing attachArtifact() call multiple times
+      this.zbrRunArtifacts = this.zbrRunArtifacts
+        .filter((a) => JSON.stringify(a.pathOrBuffer) !== JSON.stringify(payload.pathOrBuffer))
+        .concat([getCustomArtifactObject(payload)]);
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT) {
       pwTest.customArtifacts.push(getCustomArtifactObject(payload));
     } else if (eventType === EVENT_NAMES.LOG_ERROR) {

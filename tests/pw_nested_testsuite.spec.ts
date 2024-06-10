@@ -7,6 +7,9 @@ test.describe('nested foo', () => {
   test.beforeAll(async () => {
     CurrentLaunch.attachLabel('test_run_label_key', 'run_label_value_one', 'run_label_value_two');
     CurrentLaunch.attachArtifactReference('someRunArtifactName', 'https://zebrunner.com');
+    CurrentLaunch.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
+    const bufferFileOne = fs.readFileSync('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT2.txt');
+    CurrentLaunch.attachArtifact(bufferFileOne);
   });
 
   test('test running in Chrome @ff @smoke_test @slow', async ({ page }, testInfo) => {
@@ -22,7 +25,6 @@ test.describe('nested foo', () => {
     zebrunner.testCaseKey('DEF-1231');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
     CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
-    CurrentLaunch.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
     CurrentTest.attachArtifactReference('someTestArtifactName', 'https://zebrunner.com');
     await page1.goto('https://zebrunner.com');
 
@@ -30,9 +32,6 @@ test.describe('nested foo', () => {
     CurrentTest.attachArtifact(bufferScreenshot1);
     const bufferScreenshot2 = await page1.screenshot();
     CurrentTest.attachArtifact(bufferScreenshot2, 'screenshot2.png');
-
-    const bufferFileOne = fs.readFileSync('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT2.txt');
-    CurrentLaunch.attachArtifact(bufferFileOne);
 
     const screenshot2 = await page1.screenshot();
     await testInfo.attach('screenshot.png', { body: screenshot2, contentType: 'image/png' });
