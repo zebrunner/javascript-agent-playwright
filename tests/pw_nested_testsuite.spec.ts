@@ -21,7 +21,17 @@ test.describe('nested foo', () => {
     await testInfo.attach('screenshot.png', { body: screenshot, contentType: 'image/png' });
 
     console.log('Custom Message from console.log');
-    CurrentTest.addLog('custom log message after opening browser page');
+    CurrentTest.addLog('NO PARAMETER custom log message');
+
+    CurrentTest.addLog('INFO level log message', 'INFO');
+    CurrentTest.addLog('DEBUG level log message', 'DEBUG');
+    CurrentTest.addLog('ERROR level log message', 'ERROR');
+    CurrentTest.addLog('WARN level log message', 'WARN');
+    CurrentTest.addLog('TRACE level log message', 'TRACE');
+    CurrentTest.addLog('FATAL level log message', 'FATAL');
+
+    CurrentTest.addLog('CUSTOM string level log message', 'CUSTOM');
+
     zebrunner.testCaseKey('DEF-1231');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
     CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');

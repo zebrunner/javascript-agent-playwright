@@ -157,7 +157,7 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_MAINTAINER) {
       pwTest.maintainer = payload;
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_LOG) {
-      pwTest.customLogs.push({ timestamp: payload.timestamp, message: payload.message, level: 'INFO' });
+      pwTest.customLogs.push({ timestamp: payload.timestamp, message: payload.message, level: payload.level });
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_LABELS) {
       this.zbrRunLabels.push(...payload.values.map((value: string) => ({ key: payload.key, value })));
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES) {

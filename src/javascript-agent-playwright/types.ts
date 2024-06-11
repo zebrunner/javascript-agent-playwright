@@ -1,7 +1,9 @@
 import { TestCase as PwTestCase } from '@playwright/test/reporter';
 
+export type LogLevel = 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string;
+
 export type TestStep = {
-  level: 'INFO' | 'ERROR';
+  level: LogLevel;
   timestamp: number;
   message: string;
   testId?: number;

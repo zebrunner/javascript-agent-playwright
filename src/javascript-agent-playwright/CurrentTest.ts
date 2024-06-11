@@ -1,6 +1,7 @@
 import { EVENT_NAMES } from './constants/events';
 import { isNotBlankString, isNotEmptyArray, stdoutErrorEvent } from './helpers';
 import fs from 'fs';
+import { LogLevel } from './types';
 
 export const CurrentTest = {
   setMaintainer: (maintainer: string): void => {
@@ -14,16 +15,19 @@ export const CurrentTest = {
     }
   },
 
-  addLog: (message: string): void => {
-    if (isNotBlankString(message)) {
+  addLog: (message: string, level: LogLevel = 'INFO'): void => {
+    if (isNotBlankString(message) && isNotBlankString(level)) {
       process.stdout.write(
         JSON.stringify({
           eventType: EVENT_NAMES.ATTACH_TEST_LOG,
-          payload: { message, timestamp: new Date().getTime() },
+          payload: { message, timestamp: new Date().getTime(), level },
         }),
       );
     } else {
-      stdoutErrorEvent('CurrentTest.addLog', `Message must not be a blank string. Provided value is '${message}'`);
+      stdoutErrorEvent(
+        'CurrentTest.addLog',
+        `Message and level parameters must not be a blank string, provided parameters are '${message}' and '${level}'.`,
+      );
     }
   },
 

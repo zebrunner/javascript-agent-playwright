@@ -132,7 +132,7 @@ class ZebrunnerReporter {
             pwTest.maintainer = payload;
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_LOG) {
-            pwTest.customLogs.push({ timestamp: payload.timestamp, message: payload.message, level: 'INFO' });
+            pwTest.customLogs.push({ timestamp: payload.timestamp, message: payload.message, level: payload.level });
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_RUN_LABELS) {
             this.zbrRunLabels.push(...payload.values.map((value) => ({ key: payload.key, value })));

@@ -76,11 +76,11 @@ The following subsections contain tables with configuration options. The first c
 
 The following configuration options allow you to configure accompanying information that will be displayed in Zebrunner for the automation launch.
 
-| Env var / Reporter config                                                    | Description                                                                                                                                            |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `REPORTING_LAUNCH_DISPLAY_NAME`<br/>`launch.displayName`                     | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                                         |
-| `REPORTING_LAUNCH_BUILD`<br/>`launch.build`                                  | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test.                |
-| `REPORTING_LAUNCH_ENVIRONMENT`<br/>`launch.environment`                      | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                                         |
+| Env var / Reporter config                                                    | Description                                                                                                                                                                                                                                   |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REPORTING_LAUNCH_DISPLAY_NAME`<br/>`launch.displayName`                     | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                                                                                                                                |
+| `REPORTING_LAUNCH_BUILD`<br/>`launch.build`                                  | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test.                                                                                                       |
+| `REPORTING_LAUNCH_ENVIRONMENT`<br/>`launch.environment`                      | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                                                                                                                                |
 | `REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES`<br/>`launch.treatSkipsAsFailures` | If the value is set to true, skipped tests will be treated as failures when the result of the entire launch is calculated. For example, launch with all passed tests but one skipped will be considered a failure. The default value is true. |
 
 #### Milestone
@@ -428,20 +428,30 @@ Labels with `customLabelName` key, `smoke_test` and `slow` values will be added 
 
 You may want to add custom test logs displayed in Zebrunner.
 
-The Agent comes with the `#addLog()` method of the `CurrentTest` object. This method accepts the `message` as argument and should be used in the scope of the test method.
+The Agent comes with the `#addLog()` method of the `CurrentTest` object. This method accepts the `message` as first parameter, `level` (optional) as second parameter and should be used in the scope of the test method. Valid values for `level` are `'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE'` or custom `string`, default is `'INFO'`.
 
 ```ts
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test suite', () => {
   test('first test', async ({ page }) => {
-    CurrentTest.addLog('custom log message on test start');
+    CurrentTest.addLog('INFO level log message on test start');
+    // ...
+
+    CurrentTest.addLog('INFO level log message', 'INFO');
+    CurrentTest.addLog('ERROR level log message', 'ERROR');
+    CurrentTest.addLog('WARN level log message', 'WARN');
+    CurrentTest.addLog('FATAL level log message', 'FATAL');
+    CurrentTest.addLog('DEBUG level log message', 'DEBUG');
+    CurrentTest.addLog('TRACE level log message', 'TRACE');
+
+    CurrentTest.addLog('CUSTOM string level log message', 'CUSTOM');
     // ...
   });
 });
 ```
 
-In this example, log with `custom log message on test start` message will be applied to `first test` and visible in `Zebrunner` along with other logs collected by Playwright.
+In this example, logs with specified levels be applied to `first test` and visible in `Zebrunner` along with other logs collected by Playwright.
 
 ## Attaching artifact references to test and launch
 

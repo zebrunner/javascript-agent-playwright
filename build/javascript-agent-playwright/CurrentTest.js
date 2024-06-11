@@ -16,15 +16,15 @@ exports.CurrentTest = {
             (0, helpers_1.stdoutErrorEvent)('CurrentTest.setMaintainer', `Maintainer must not be a blank string. Provided value is '${maintainer}'`);
         }
     },
-    addLog: (message) => {
-        if ((0, helpers_1.isNotBlankString)(message)) {
+    addLog: (message, level = 'INFO') => {
+        if ((0, helpers_1.isNotBlankString)(message) && (0, helpers_1.isNotBlankString)(level)) {
             process.stdout.write(JSON.stringify({
                 eventType: events_1.EVENT_NAMES.ATTACH_TEST_LOG,
-                payload: { message, timestamp: new Date().getTime() },
+                payload: { message, timestamp: new Date().getTime(), level },
             }));
         }
         else {
-            (0, helpers_1.stdoutErrorEvent)('CurrentTest.addLog', `Message must not be a blank string. Provided value is '${message}'`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentTest.addLog', `Message and level parameters must not be a blank string, provided parameters are '${message}' and '${level}'.`);
         }
     },
     attachLabel: (key, ...values) => {
