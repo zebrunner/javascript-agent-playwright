@@ -17,9 +17,6 @@ test.describe('nested foo', () => {
     const browser = await chromium.launch();
     const page1 = await browser.newPage('https://github.com');
 
-    const screenshot = await page1.screenshot();
-    await testInfo.attach('screenshot.png', { body: screenshot, contentType: 'image/png' });
-
     console.log('Custom Message from console.log');
     CurrentTest.addLog('NO PARAMETER custom log message');
 
@@ -43,8 +40,7 @@ test.describe('nested foo', () => {
     const bufferScreenshot2 = await page1.screenshot();
     CurrentTest.attachArtifact(bufferScreenshot2, 'screenshot2.png');
 
-    const screenshot2 = await page1.screenshot();
-    await testInfo.attach('screenshot.png', { body: screenshot2, contentType: 'image/png' });
+    CurrentTest.attachScreenshot(await page1.screenshot());
 
     await browser.close();
   });

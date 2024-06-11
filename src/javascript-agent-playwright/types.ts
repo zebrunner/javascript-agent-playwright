@@ -18,7 +18,7 @@ export interface ZbrTestCase {
 }
 
 export type FileArtifact = {
-  timestamp: Date;
+  timestamp: number;
   pathOrBuffer: string | Buffer;
   name?: string;
   contentType?: string;
@@ -32,4 +32,5 @@ export interface ExtendedPwTestCase extends PwTestCase {
   artifactReferences: { name: string; value: string }[];
   customLogs: TestStep[];
   customArtifacts: FileArtifact[];
+  customScreenshots: FileArtifact[];
 }

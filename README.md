@@ -172,7 +172,7 @@ Another example is custom Result Statuses in the target TCM system. In this case
 
 When pushing results to a TCM system, Zebrunner derives the Result Status in the following order:
 
-1. Checks the explicitly assigned value (which was assigned using the `#testCaseStatus()` method).
+1. Checks the explicitly assigned value (which was assigned using the `testCaseStatus()` method).
 2. Takes the default status provided via configuration for passed and/or failed tests.
 3. Uses internal mapping of Zebrunner statuses to the Result Statuses of the target TCM system.
 
@@ -333,14 +333,17 @@ projects: [
 ]
 ```
 
-You may want to create screenshots manually during test execution. In this case you need to attach each manually created screenshot to test using Playwright `testInfo.attach()` method. After attaching screenshot, it will be uploaded to Zebrunner automatically.
+You may want to create screenshots manually during test execution. In this case you need to attach screenshot using the `attachScreenshot()` method of the `CurrentTest` object. This method accept `path` on disk or `Buffer` instance as a parameter and should be used in scope of the test method. Attached screenshot will be uploaded to `Zebrunner` after test execution along with screenshots collected by `Playwright` automatically.
 
 ```ts
+import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
+
 test.describe('Test suite', () => {
   test('some test name', async ({ page }, testInfo) => {
     // ...
-    const screenshot = await page.screenshot();
-    await testInfo.attach('manualScreenshot.png', { body: screenshot, contentType: 'image/png' });
+    CurrentTest.attachScreenshot(await page.screenshot());
+    // ...
+    CurrentTest.attachScreenshot('./some_folder/some_image.png');
     // ...
   });
 });
@@ -350,7 +353,7 @@ test.describe('Test suite', () => {
 
 You may want to add transparency to the process of automation maintenance by having an engineer responsible for evolution of specific tests or test suites. To serve that purpose, Zebrunner comes with a concept of a maintainer.
 
-In order to keep track of those, the Agent comes with the `#setMaintainer()` method of the `CurrentTest` object. This method accepts the username of an existing Zebrunner user. If there is no user with the given username, `anonymous` will be assigned.
+In order to keep track of those, the Agent comes with the `setMaintainer()` method of the `CurrentTest` object. This method accepts the username of an existing Zebrunner user. If there is no user with the given username, `anonymous` will be assigned.
 
 ```ts
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
@@ -393,7 +396,7 @@ After test execution, labels with `tag` key and `ff`, `smoke_test`, `slow` value
 
 To attach a label to a test, you need to invoke the `attachLabel` method of the `CurrentTest` object in scope of the test method. To attach label to the entire launch, you can either invoke the `attachLabel` method of the `CurrentLaunch` object.
 
-The `#attachLabel()` method accepts the `key` as first argument and `values` starting from the second argument.
+The `attachLabel()` method accepts the `key` as first argument and `values` starting from the second argument.
 
 ```ts
 import { CurrentTest, CurrentLaunch } from '@zebrunner/javascript-agent-playwright';
@@ -428,7 +431,7 @@ Labels with `customLabelName` key, `smoke_test` and `slow` values will be added 
 
 You may want to add custom test logs displayed in Zebrunner.
 
-The Agent comes with the `#addLog()` method of the `CurrentTest` object. This method accepts the `message` as first parameter, `level` (optional) as second parameter and should be used in the scope of the test method. Valid values for `level` are `'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE'` or custom `string`, default is `'INFO'`.
+The Agent comes with the `addLog()` method of the `CurrentTest` object. This method accepts the `message` as first parameter, `level` (optional) as second parameter and should be used in the scope of the test method. Valid values for `level` are `'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE'` or custom `string`, default is `'INFO'`.
 
 ```ts
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
@@ -519,7 +522,7 @@ test.describe('Test Suite', () => {
 
 In some cases, it might be handy not to register test executions in Zebrunner. This may be caused by very special circumstances of a test environment or execution conditions.
 
-Zebrunner Agent comes with a convenient method `#revertRegistration()` of the `CurrentTest` object for reverting test registration at runtime. The following code snippet shows a case where test is not reported on Monday.
+Zebrunner Agent comes with a convenient method `revertRegistration()` of the `CurrentTest` object for reverting test registration at runtime. The following code snippet shows a case where test is not reported on Monday.
 
 ```ts
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
@@ -544,10 +547,10 @@ Note: to learn more about pushing results to a TCM system, see the [Integration 
 
 The Agent comes with the `zebrunner` object which contains methods to link test cases to a currently executing test:
 
-- `#testCaseKey(...testCaseKeys)` — accepts a list of test cases which should be linked to the current test;
-- `#testCaseStatus(testCaseKey, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status or if you have conditional logic determining the actual result status for the test case.
+- `testCaseKey(...testCaseKeys)` — accepts a list of test cases which should be linked to the current test;
+- `testCaseStatus(testCaseKey, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status or if you have conditional logic determining the actual result status for the test case.
 
-If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `#testCaseStatus('KEY-1', 'SKIPPED')` first, and then invoke the `#testCaseKey('KEY-1')`, then the result status you provided in the first invocation will be ignored.
+If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `testCaseStatus('KEY-1', 'SKIPPED')` first, and then invoke the `testCaseKey('KEY-1')`, then the result status you provided in the first invocation will be ignored.
 
 Here is an example:
 
@@ -584,10 +587,10 @@ describe('Test Suite', () => {
 
 The Agent comes with the `testRail` object which contains methods to link test cases to a currently executing test:
 
-- `#testCaseId(...testCaseIds)` — accepts a list of test cases which should be linked to current test;
-- `#testCaseStatus(testCaseId, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status, or if you have conditional logic determining the actual result status for the test case.
+- `testCaseId(...testCaseIds)` — accepts a list of test cases which should be linked to current test;
+- `testCaseStatus(testCaseId, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status, or if you have conditional logic determining the actual result status for the test case.
 
-If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `#testCaseStatus('C1', 'SKIPPED')` first and then invoke the `#testCaseId('C1')`, then the result status you provided in the first invocation will be ignored.
+If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `testCaseStatus('C1', 'SKIPPED')` first and then invoke the `testCaseId('C1')`, then the result status you provided in the first invocation will be ignored.
 
 Here is an example:
 
@@ -625,10 +628,10 @@ describe('Test Suite', () => {
 
 The Agent comes with the `xray` object which contains methods to link test cases to a currently executing test:
 
-- `#testCaseKey(...testCaseKeys)` — accepts a list of test cases which should be linked to current test;
-- `#testCaseStatus(testCaseKey, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status, or if you have conditional logic determining the actual result status for the test case.
+- `testCaseKey(...testCaseKeys)` — accepts a list of test cases which should be linked to current test;
+- `testCaseStatus(testCaseKey, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status, or if you have conditional logic determining the actual result status for the test case.
 
-If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `#testCaseStatus('KEY-1', 'SKIP')` first, and then invoke the `#testCaseKey('KEY-1')`, then the result status you provided in the first invocation will be ignored.
+If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `testCaseStatus('KEY-1', 'SKIP')` first, and then invoke the `testCaseKey('KEY-1')`, then the result status you provided in the first invocation will be ignored.
 
 Here is an example:
 
@@ -666,10 +669,10 @@ describe('Test Suite', () => {
 
 The Agent comes with the `zephyr` object which contains methods to link test cases to a currently executing test:
 
-- `#testCaseKey(...testCaseKeys)` — accepts a list of test cases which should be linked to current test;
-- `#testCaseStatus(testCaseKey, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status, or if you have conditional logic determining the actual result status for the test case.
+- `testCaseKey(...testCaseKeys)` — accepts a list of test cases which should be linked to current test;
+- `testCaseStatus(testCaseKey, resultStatus)` — links one test case and provides\overrides its result status. This may be useful if the test case result status does not correlate with the test execution status, or if you have conditional logic determining the actual result status for the test case.
 
-If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `#testCaseStatus('KEY-1', 'SKIP')` first, and then invoke the `#testCaseKey('KEY-1')`, then the result status you provided in the first invocation will be ignored.
+If these methods are invoked for the same test case id many times within a test method, the last invocation will take precedence. For example, if you invoke the `testCaseStatus('KEY-1', 'SKIP')` first, and then invoke the `testCaseKey('KEY-1')`, then the result status you provided in the first invocation will be ignored.
 
 Here is an example:
 

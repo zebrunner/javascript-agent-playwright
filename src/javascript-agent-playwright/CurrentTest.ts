@@ -87,7 +87,7 @@ export const CurrentTest = {
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
         'CurrentTest.attachArtifact',
-        `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation, file not found`,
+        `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`,
       );
       return;
     }
@@ -103,6 +103,23 @@ export const CurrentTest = {
       JSON.stringify({
         eventType: EVENT_NAMES.ATTACH_TEST_ARTIFACT,
         payload: { pathOrBuffer, timestamp: new Date().getTime(), name },
+      }),
+    );
+  },
+
+  attachScreenshot: (pathOrBuffer: Buffer | string) => {
+    if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
+      stdoutErrorEvent(
+        'CurrentTest.attachScreenshot',
+        `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`,
+      );
+      return;
+    }
+
+    process.stdout.write(
+      JSON.stringify({
+        eventType: EVENT_NAMES.ATTACH_TEST_SCREENSHOT,
+        payload: { pathOrBuffer, timestamp: new Date().getTime() },
       }),
     );
   },

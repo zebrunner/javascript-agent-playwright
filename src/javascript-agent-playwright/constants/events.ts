@@ -9,6 +9,7 @@ export const EVENT_NAMES = {
   ATTACH_TEST_LABELS: 'zebrunner:attach-test-labels',
   ATTACH_TEST_ARTIFACT_REFERENCES: 'zebrunner:attach-test-artifact-reference',
   ATTACH_TEST_ARTIFACT: 'zebrunner:attach-test-artifact',
+  ATTACH_TEST_SCREENSHOT: 'zebrunner:attach-test-screenshot',
 
   REVERT_TEST_REGISTRATION: 'zebrunner:revert-test-registration',
 

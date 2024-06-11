@@ -102,6 +102,7 @@ class ZebrunnerReporter {
         pwTest.artifactReferences = [];
         pwTest.customLogs = [];
         pwTest.customArtifacts = [];
+        pwTest.customScreenshots = [];
         await (0, helpers_1.until)(() => !!this.zbrRunId); // zebrunner run initialized
         const testStartedAt = new Date(pwTestResult.startTime);
         const zbrTestId = this.exchangedRunContext?.mode === 'RERUN'
@@ -167,6 +168,9 @@ class ZebrunnerReporter {
                 .filter((a) => JSON.stringify(a.pathOrBuffer) !== JSON.stringify(payload.pathOrBuffer))
                 .concat([(0, helpers_1.getCustomArtifactObject)(payload)]);
         }
+        else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_SCREENSHOT) {
+            pwTest.customScreenshots.push((0, helpers_1.getCustomScreenshotObject)(payload));
+        }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT) {
             pwTest.customArtifacts.push((0, helpers_1.getCustomArtifactObject)(payload));
         }
@@ -191,7 +195,10 @@ class ZebrunnerReporter {
             await this.attachTestMaintainer(this.zbrRunId, zbrTestId, pwTest.maintainer);
             await this.attachTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
             const testAttachments = await (0, helpers_1.processAttachments)(pwTestResult.attachments);
-            await this.attachTestScreenshots(this.zbrRunId, zbrTestId, testAttachments.screenshots);
+            await this.attachTestScreenshots(this.zbrRunId, zbrTestId, [
+                ...testAttachments.screenshots,
+                ...pwTest.customScreenshots,
+            ]);
             await this.attachTestFiles(this.zbrRunId, zbrTestId, [...testAttachments.files, ...pwTest.customArtifacts]);
             await this.attachTestArtifactReferences(this.zbrRunId, zbrTestId, pwTest.artifactReferences);
             await this.attachTestLogs(this.zbrRunId, [
@@ -369,7 +376,7 @@ class ZebrunnerReporter {
                 const file = Buffer.isBuffer(screenshot.pathOrBuffer)
                     ? screenshot.pathOrBuffer
                     : fs.readFileSync(screenshot.pathOrBuffer);
-                return this.apiClient.uploadTestScreenshot(zbrRunId, zbrTestId, file, screenshot.contentType);
+                return this.apiClient.uploadTestScreenshot(zbrRunId, zbrTestId, file, screenshot.timestamp);
             });
             await Promise.all(screenshotsPromises);
         }

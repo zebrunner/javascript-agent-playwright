@@ -114,12 +114,9 @@ class ZebrunnerApiClient {
             return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(testRunId, testId), request);
         }
     }
-    async uploadTestScreenshot(testRunId, testId, screenshot, contentType) {
+    async uploadTestScreenshot(testRunId, testId, screenshot, timestamp) {
         const config = {
-            headers: {
-                'Content-Type': contentType,
-                'x-zbr-screenshot-captured-at': new Date().getTime(),
-            },
+            headers: { 'x-zbr-screenshot-captured-at': timestamp || new Date().getTime() },
         };
         return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_SCREENSHOT(testRunId, testId), screenshot, config);
     }

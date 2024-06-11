@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCustomArtifactObject = exports.stdoutErrorEvent = exports.getErrorsStringFromMap = exports.isJsonString = exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestSteps = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
+exports.getCustomScreenshotObject = exports.getCustomArtifactObject = exports.stdoutErrorEvent = exports.getErrorsStringFromMap = exports.isJsonString = exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestSteps = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
 var cleanseReason_1 = require("./cleanseReason");
 Object.defineProperty(exports, "cleanseReason", { enumerable: true, get: function () { return cleanseReason_1.cleanseReason; } });
 var convertVideo_1 = require("./convertVideo");
@@ -39,4 +39,6 @@ var stdoutErrorEvent_1 = require("./stdoutErrorEvent");
 Object.defineProperty(exports, "stdoutErrorEvent", { enumerable: true, get: function () { return stdoutErrorEvent_1.stdoutErrorEvent; } });
 var getCustomArtifactObject_1 = require("./getCustomArtifactObject");
 Object.defineProperty(exports, "getCustomArtifactObject", { enumerable: true, get: function () { return getCustomArtifactObject_1.getCustomArtifactObject; } });
+var getCustomScreenshotObject_1 = require("./getCustomScreenshotObject");
+Object.defineProperty(exports, "getCustomScreenshotObject", { enumerable: true, get: function () { return getCustomScreenshotObject_1.getCustomScreenshotObject; } });
 //# sourceMappingURL=index.js.map
