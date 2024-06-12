@@ -41,6 +41,7 @@ exports.CurrentLaunch = {
         process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES, payload: { name, value } }));
     },
     attachArtifact: (pathOrBuffer, name) => {
+        const timestamp = new Date().getTime();
         if (!Buffer.isBuffer(pathOrBuffer) && !fs_1.default.existsSync(pathOrBuffer)) {
             (0, helpers_1.stdoutErrorEvent)('CurrentLaunch.attachArtifact', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation, file not found`);
             return;
@@ -50,7 +51,7 @@ exports.CurrentLaunch = {
         }
         process.stdout.write(JSON.stringify({
             eventType: events_1.EVENT_NAMES.ATTACH_RUN_ARTIFACT,
-            payload: { pathOrBuffer, timestamp: new Date().getTime(), name },
+            payload: { pathOrBuffer, timestamp, name },
         }));
     },
 };

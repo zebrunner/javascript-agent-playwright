@@ -16,11 +16,13 @@ export const CurrentTest = {
   },
 
   addLog: (message: string, level: LogLevel = 'INFO'): void => {
+    const timestamp = new Date().getTime();
+
     if (isNotBlankString(message) && isNotBlankString(level)) {
       process.stdout.write(
         JSON.stringify({
           eventType: EVENT_NAMES.ATTACH_TEST_LOG,
-          payload: { message, timestamp: new Date().getTime(), level },
+          payload: { message, timestamp, level },
         }),
       );
     } else {
@@ -84,6 +86,8 @@ export const CurrentTest = {
   },
 
   attachArtifact: (pathOrBuffer: Buffer | string, name?: string) => {
+    const timestamp = new Date().getTime();
+
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
         'CurrentTest.attachArtifact',
@@ -102,12 +106,14 @@ export const CurrentTest = {
     process.stdout.write(
       JSON.stringify({
         eventType: EVENT_NAMES.ATTACH_TEST_ARTIFACT,
-        payload: { pathOrBuffer, timestamp: new Date().getTime(), name },
+        payload: { pathOrBuffer, timestamp, name },
       }),
     );
   },
 
   attachScreenshot: (pathOrBuffer: Buffer | string) => {
+    const timestamp = new Date().getTime();
+
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
         'CurrentTest.attachScreenshot',
@@ -119,7 +125,7 @@ export const CurrentTest = {
     process.stdout.write(
       JSON.stringify({
         eventType: EVENT_NAMES.ATTACH_TEST_SCREENSHOT,
-        payload: { pathOrBuffer, timestamp: new Date().getTime() },
+        payload: { pathOrBuffer, timestamp },
       }),
     );
   },

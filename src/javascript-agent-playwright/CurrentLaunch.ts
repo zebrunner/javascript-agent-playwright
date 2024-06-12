@@ -57,6 +57,8 @@ export const CurrentLaunch = {
   },
 
   attachArtifact: (pathOrBuffer: Buffer | string, name?: string) => {
+    const timestamp = new Date().getTime();
+
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
         'CurrentLaunch.attachArtifact',
@@ -75,7 +77,7 @@ export const CurrentLaunch = {
     process.stdout.write(
       JSON.stringify({
         eventType: EVENT_NAMES.ATTACH_RUN_ARTIFACT,
-        payload: { pathOrBuffer, timestamp: new Date().getTime(), name },
+        payload: { pathOrBuffer, timestamp, name },
       }),
     );
   },

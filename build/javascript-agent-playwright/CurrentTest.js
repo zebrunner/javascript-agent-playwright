@@ -17,10 +17,11 @@ exports.CurrentTest = {
         }
     },
     addLog: (message, level = 'INFO') => {
+        const timestamp = new Date().getTime();
         if ((0, helpers_1.isNotBlankString)(message) && (0, helpers_1.isNotBlankString)(level)) {
             process.stdout.write(JSON.stringify({
                 eventType: events_1.EVENT_NAMES.ATTACH_TEST_LOG,
-                payload: { message, timestamp: new Date().getTime(), level },
+                payload: { message, timestamp, level },
             }));
         }
         else {
@@ -59,6 +60,7 @@ exports.CurrentTest = {
         process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES, payload: { name, value } }));
     },
     attachArtifact: (pathOrBuffer, name) => {
+        const timestamp = new Date().getTime();
         if (!Buffer.isBuffer(pathOrBuffer) && !fs_1.default.existsSync(pathOrBuffer)) {
             (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifact', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`);
             return;
@@ -68,17 +70,18 @@ exports.CurrentTest = {
         }
         process.stdout.write(JSON.stringify({
             eventType: events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT,
-            payload: { pathOrBuffer, timestamp: new Date().getTime(), name },
+            payload: { pathOrBuffer, timestamp, name },
         }));
     },
     attachScreenshot: (pathOrBuffer) => {
+        const timestamp = new Date().getTime();
         if (!Buffer.isBuffer(pathOrBuffer) && !fs_1.default.existsSync(pathOrBuffer)) {
             (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachScreenshot', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`);
             return;
         }
         process.stdout.write(JSON.stringify({
             eventType: events_1.EVENT_NAMES.ATTACH_TEST_SCREENSHOT,
-            payload: { pathOrBuffer, timestamp: new Date().getTime() },
+            payload: { pathOrBuffer, timestamp },
         }));
     },
     revertRegistration: () => {
