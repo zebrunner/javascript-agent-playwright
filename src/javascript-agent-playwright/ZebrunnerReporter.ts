@@ -116,11 +116,11 @@ class ZebrunnerReporter implements Reporter {
       return;
     }
 
-    pwTest.labels = getTestLabelsFromTitle(pwTest.title) || [];
     pwTest.artifactReferences = [];
     pwTest.customLogs = [];
     pwTest.customArtifacts = [];
     pwTest.customScreenshots = [];
+    pwTest.labels = getTestLabelsFromTitle(pwTest.title) || [];
 
     await until(() => !!this.zbrRunId); // zebrunner run initialized
 

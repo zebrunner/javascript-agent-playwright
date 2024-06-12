@@ -98,11 +98,11 @@ class ZebrunnerReporter {
         if (!this.reportingConfig.enabled) {
             return;
         }
-        pwTest.labels = (0, helpers_1.getTestLabelsFromTitle)(pwTest.title) || [];
         pwTest.artifactReferences = [];
         pwTest.customLogs = [];
         pwTest.customArtifacts = [];
         pwTest.customScreenshots = [];
+        pwTest.labels = (0, helpers_1.getTestLabelsFromTitle)(pwTest.title) || [];
         await (0, helpers_1.until)(() => !!this.zbrRunId); // zebrunner run initialized
         const testStartedAt = new Date(pwTestResult.startTime);
         const zbrTestId = this.exchangedRunContext?.mode === 'RERUN'

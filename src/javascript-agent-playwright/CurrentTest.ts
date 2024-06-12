@@ -15,6 +15,9 @@ export const CurrentTest = {
     }
   },
 
+  /**
+   * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
+   */
   addLog: (message: string, level: LogLevel = 'INFO'): void => {
     const timestamp = new Date().getTime();
 

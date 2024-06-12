@@ -16,6 +16,9 @@ exports.CurrentTest = {
             (0, helpers_1.stdoutErrorEvent)('CurrentTest.setMaintainer', `Maintainer must not be a blank string. Provided value is '${maintainer}'`);
         }
     },
+    /**
+     * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
+     */
     addLog: (message, level = 'INFO') => {
         const timestamp = new Date().getTime();
         if ((0, helpers_1.isNotBlankString)(message) && (0, helpers_1.isNotBlankString)(level)) {
