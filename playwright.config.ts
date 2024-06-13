@@ -52,8 +52,9 @@ export default defineConfig({
         },
         tcm: {
           testCaseStatus: {
-            onPass: 'SUCCESS',
-            onFail: 'FAILED',
+            onPass: 'retest',
+            onFail: 'skipped',
+            onSkip: 'invalid',
           },
           zebrunner: {
             pushResults: true,

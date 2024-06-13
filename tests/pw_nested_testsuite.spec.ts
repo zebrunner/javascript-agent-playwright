@@ -30,6 +30,7 @@ test.describe('nested foo', () => {
     CurrentTest.addLog('CUSTOM string level log message', 'CUSTOM');
 
     zebrunner.testCaseKey('DEF-1231');
+    zebrunner.testCaseStatus('DEF-1249', 'Retest');
     CurrentTest.attachLabel('someTestLabelKey', 'someTestLabelValueOne', 'someTestLabelValueTwo');
     CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
     CurrentTest.attachArtifactReference('someTestArtifactName', 'https://zebrunner.com');

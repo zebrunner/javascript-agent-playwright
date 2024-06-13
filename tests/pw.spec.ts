@@ -9,23 +9,23 @@ test.describe('feature foo', () => {
   });
 
   test('my test', async ({page}) => {
-    xray.testCaseKey("ZEB-1");
-    zebrunner.testCaseKey("ZEB-1");
+    //xray.testCaseKey("ZEB-1");
+    //zebrunner.testCaseKey("ZEB-1");
     // Assertions use the expect API.
     await expect(page).toHaveURL('https://playwright.dev/');
   });
 
   test('basic test', async ({page}) => {
-    xray.testCaseKey("ZEB-1");
-    zebrunner.testCaseKey("ZEB-1");
+    //xray.testCaseKey("ZEB-1");
+    //zebrunner.testCaseKey("ZEB-1");
     const title = page.locator('.navbar__inner .navbar__title');
     await expect(title).toHaveText('Playwright');
   });
 
   test('my test1', async ({page}) => {
-    xray.testCaseKey("ZEB-1");
-    testRail.testCaseId("ZEB-1");
-    zebrunner.testCaseKey("ZEB-1");
+    //xray.testCaseKey("ZEB-1");
+    //testRail.testCaseId("ZEB-1");
+    //zebrunner.testCaseKey("ZEB-1");
     // Expect a title "to contain" a substring.
     await expect(page).toHaveTitle(/Playwright/);
 

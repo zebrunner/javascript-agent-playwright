@@ -210,7 +210,7 @@ class ZebrunnerReporter implements Reporter {
       await this.revertTestRegistration(this.zbrRunId, zbrTestId);
       this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
     } else {
-      await this.attachZbrTestCases(this.zbrRunId, zbrTestId, pwTest.testCases);
+      await this.attachTestCases(this.zbrRunId, zbrTestId, pwTest.testCases, pwTestResult.status);
       await this.attachTestMaintainer(this.zbrRunId, zbrTestId, pwTest.maintainer);
       await this.attachTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
       const testAttachments = await processAttachments(pwTestResult.attachments);
@@ -413,13 +413,31 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async attachZbrTestCases(zbrRunId: number, zbrTestId: number, testCases: ZbrTestCase[]): Promise<void> {
+  private async attachTestCases(
+    zbrRunId: number,
+    zbrTestId: number,
+    testCases: ZbrTestCase[],
+    pwTestStatus: string,
+  ): Promise<void> {
     try {
       if (isNotEmptyArray(testCases)) {
-        await this.apiClient.upsertTestTestCases(zbrRunId, zbrTestId, { items: testCases });
+        const testCasesWithStatuses = testCases.map((testCase) => {
+          if (!testCase.resultStatus) {
+            if (pwTestStatus === 'passed') {
+              testCase.resultStatus = this.reportingConfig.tcm.testCaseStatus.onPass;
+            } else if (pwTestStatus === 'failed') {
+              testCase.resultStatus = this.reportingConfig.tcm.testCaseStatus.onFail;
+            } else if (pwTestStatus === 'skipped') {
+              testCase.resultStatus = this.reportingConfig.tcm.testCaseStatus.onSkip;
+            }
+          }
+          return testCase;
+        });
+
+        await this.apiClient.upsertTestTestCases(zbrRunId, zbrTestId, { items: testCasesWithStatuses });
       }
     } catch (error) {
-      this.logError('attachZbrTestCases', error);
+      this.logError('attachTestCases', error);
     }
   }
 

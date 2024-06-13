@@ -169,6 +169,7 @@ Another example is custom Result Statuses in the target TCM system. In this case
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
 | `REPORTING_TCM_TEST_CASE_STATUS_ON_PASS`<br/>`tcm.testCaseStatus.onPass` | The default status that will be assigned to passed test executions when they are pushed to a TCM system. |
 | `REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL`<br/>`tcm.testCaseStatus.onFail` | The default status that will be assigned to failed test executions when they are pushed to a TCM system. |
+| `REPORTING_TCM_TEST_CASE_STATUS_ON_SKIP`<br/>`tcm.testCaseStatus.onSkip` | The default status that will be assigned to skipped test executions when they are pushed to a TCM system. |
 
 When pushing results to a TCM system, Zebrunner derives the Result Status in the following order:
 
@@ -203,6 +204,7 @@ The following code snippet is a list of all configuration environment variables 
 
    REPORTING_TCM_TEST_CASE_STATUS_ON_PASS=PASS
    REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL=FAIL
+   REPORTING_TCM_TEST_CASE_STATUS_ON_SKIP=SKIP
 
    REPORTING_TCM_ZEBRUNNER_PUSH_RESULTS=false
    REPORTING_TCM_ZEBRUNNER_PUSH_IN_REAL_TIME=true
