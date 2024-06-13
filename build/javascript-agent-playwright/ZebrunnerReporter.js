@@ -120,7 +120,7 @@ class ZebrunnerReporter {
             console.log(chunk.trim());
             if (pwTest) {
                 const prevStep = pwTestResult.steps[pwTestResult.steps.length - 1];
-                pwTestResult.steps.push((0, helpers_1.createPwStepObject)(prevStep.startTime.getTime() + prevStep.duration, `console.log("${chunk.trim()}");`));
+                pwTestResult.steps.push((0, helpers_1.createPwStepObject)(prevStep.startTime.getTime(), `console.log("${chunk.trim()}");`));
             }
             return;
         }

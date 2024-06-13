@@ -148,7 +148,7 @@ class ZebrunnerReporter implements Reporter {
       if (pwTest) {
         const prevStep = pwTestResult.steps[pwTestResult.steps.length - 1];
         pwTestResult.steps.push(
-          createPwStepObject(prevStep.startTime.getTime() + prevStep.duration, `console.log("${chunk.trim()}");`),
+          createPwStepObject(prevStep.startTime.getTime(), `console.log("${chunk.trim()}");`),
         );
       }
       return;
