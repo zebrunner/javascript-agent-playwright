@@ -191,7 +191,7 @@ class ZebrunnerReporter {
             this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
         }
         else {
-            await this.attachZbrTestCases(this.zbrRunId, zbrTestId, pwTest.testCases);
+            await this.attachTestCases(this.zbrRunId, zbrTestId, pwTest.testCases, pwTestResult.status);
             await this.attachTestMaintainer(this.zbrRunId, zbrTestId, pwTest.maintainer);
             await this.attachTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
             const testAttachments = await (0, helpers_1.processAttachments)(pwTestResult.attachments);
@@ -350,14 +350,28 @@ class ZebrunnerReporter {
             this.logError('startTestSessionAndGetId', error);
         }
     }
-    async attachZbrTestCases(zbrRunId, zbrTestId, testCases) {
+    async attachTestCases(zbrRunId, zbrTestId, testCases, pwTestStatus) {
         try {
             if ((0, helpers_1.isNotEmptyArray)(testCases)) {
-                await this.apiClient.upsertTestTestCases(zbrRunId, zbrTestId, { items: testCases });
+                const testCasesWithStatuses = testCases.map((testCase) => {
+                    if (!testCase.resultStatus) {
+                        if (pwTestStatus === 'passed') {
+                            testCase.resultStatus = this.reportingConfig.tcm.testCaseStatus.onPass;
+                        }
+                        else if (pwTestStatus === 'failed') {
+                            testCase.resultStatus = this.reportingConfig.tcm.testCaseStatus.onFail;
+                        }
+                        else if (pwTestStatus === 'skipped') {
+                            testCase.resultStatus = this.reportingConfig.tcm.testCaseStatus.onSkip;
+                        }
+                    }
+                    return testCase;
+                });
+                await this.apiClient.upsertTestTestCases(zbrRunId, zbrTestId, { items: testCasesWithStatuses });
             }
         }
         catch (error) {
-            this.logError('attachZbrTestCases', error);
+            this.logError('attachTestCases', error);
         }
     }
     async attachTestLabels(zbrRunId, zbrTestId, labels) {

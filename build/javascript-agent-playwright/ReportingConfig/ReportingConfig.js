@@ -58,6 +58,7 @@ class ReportingConfig {
             testCaseStatus: {
                 onPass: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_PASS', config?.tcm?.testCaseStatus?.onPass),
                 onFail: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL', config?.tcm?.testCaseStatus?.onFail),
+                onSkip: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_SKIP', config?.tcm?.testCaseStatus?.onSkip),
             },
             zebrunner: {
                 pushResults: getBoolean('REPORTING_TCM_ZEBRUNNER_PUSH_RESULTS', config?.tcm?.zebrunner?.pushResults),
