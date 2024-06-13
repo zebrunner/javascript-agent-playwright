@@ -30,7 +30,7 @@ export const CurrentLaunch = {
     });
 
     if (isNotEmptyArray(values)) {
-      process.stdout.write(JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_RUN_LABELS, payload: { key, values } }));
+      process.stdout.write(JSON.stringify({ eventType: EVENT_NAMES.ATTACH_LAUNCH_LABELS, payload: { key, values } }));
     }
   },
 
@@ -52,7 +52,7 @@ export const CurrentLaunch = {
     }
 
     process.stdout.write(
-      JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES, payload: { name, value } }),
+      JSON.stringify({ eventType: EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT_REFERENCES, payload: { name, value } }),
     );
   },
 
@@ -76,7 +76,7 @@ export const CurrentLaunch = {
 
     process.stdout.write(
       JSON.stringify({
-        eventType: EVENT_NAMES.ATTACH_RUN_ARTIFACT,
+        eventType: EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT,
         payload: { pathOrBuffer, timestamp, name },
       }),
     );

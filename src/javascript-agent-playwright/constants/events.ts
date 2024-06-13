@@ -1,7 +1,7 @@
 export const EVENT_NAMES = {
-  ATTACH_TEST_RUN_LABELS: 'zebrunner:attach-run-labels',
-  ATTACH_TEST_RUN_ARTIFACT_REFERENCES: 'zebrunner:attach-run-artifact-reference',
-  ATTACH_RUN_ARTIFACT: 'zebrunner:attach-run-artifact',
+  ATTACH_LAUNCH_LABELS: 'zebrunner:attach-run-labels',
+  ATTACH_LAUNCH_ARTIFACT_REFERENCES: 'zebrunner:attach-run-artifact-reference',
+  ATTACH_LAUNCH_ARTIFACT: 'zebrunner:attach-run-artifact',
 
   ATTACH_TEST_CASE: 'zebrunner:attach-test-case',
   ATTACH_TEST_MAINTAINER: 'zebrunner:attach-test-maintainer',

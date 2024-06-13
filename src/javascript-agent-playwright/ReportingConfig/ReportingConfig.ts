@@ -135,7 +135,11 @@ export class ReportingConfig {
       ),
       build: getString('REPORTING_LAUNCH_BUILD', config?.launch?.build),
       environment: getString('REPORTING_LAUNCH_ENVIRONMENT', config?.launch?.environment),
-      treatSkipsAsFailures: getBoolean('REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES', config?.launch?.treatSkipsAsFailures, true)
+      treatSkipsAsFailures: getBoolean(
+        'REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES',
+        config?.launch?.treatSkipsAsFailures,
+        true,
+      ),
     };
 
     this.milestone = {
@@ -159,7 +163,7 @@ export class ReportingConfig {
       testCaseStatus: {
         onPass: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_PASS', config?.tcm?.testCaseStatus?.onPass),
         onFail: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL', config?.tcm?.testCaseStatus?.onFail),
-        onSkip: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_SKIP', config?.tcm?.testCaseStatus?.onSkip), 
+        onSkip: getString('REPORTING_TCM_TEST_CASE_STATUS_ON_SKIP', config?.tcm?.testCaseStatus?.onSkip),
       },
       zebrunner: {
         pushResults: getBoolean('REPORTING_TCM_ZEBRUNNER_PUSH_RESULTS', config?.tcm?.zebrunner?.pushResults),

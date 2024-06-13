@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCustomScreenshotObject = exports.getCustomArtifactObject = exports.stdoutErrorEvent = exports.getErrorsStringFromMap = exports.isJsonString = exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestSteps = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
+exports.createPwStepObject = exports.getCustomScreenshotObject = exports.getCustomArtifactObject = exports.stdoutErrorEvent = exports.getErrorsStringFromMap = exports.isJsonString = exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestLogs = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
 var cleanseReason_1 = require("./cleanseReason");
 Object.defineProperty(exports, "cleanseReason", { enumerable: true, get: function () { return cleanseReason_1.cleanseReason; } });
 var convertVideo_1 = require("./convertVideo");
@@ -11,8 +11,8 @@ var getFileSizeInBytes_1 = require("./getFileSizeInBytes");
 Object.defineProperty(exports, "getFileSizeInBytes", { enumerable: true, get: function () { return getFileSizeInBytes_1.getFileSizeInBytes; } });
 var getFullSuiteName_1 = require("./getFullSuiteName");
 Object.defineProperty(exports, "getFullSuiteName", { enumerable: true, get: function () { return getFullSuiteName_1.getFullSuiteName; } });
-var getTestSteps_1 = require("./getTestSteps");
-Object.defineProperty(exports, "getTestSteps", { enumerable: true, get: function () { return getTestSteps_1.getTestSteps; } });
+var getTestLogs_1 = require("./getTestLogs");
+Object.defineProperty(exports, "getTestLogs", { enumerable: true, get: function () { return getTestLogs_1.getTestLogs; } });
 var getTestLabelsFromTitle_1 = require("./getTestLabelsFromTitle");
 Object.defineProperty(exports, "getTestLabelsFromTitle", { enumerable: true, get: function () { return getTestLabelsFromTitle_1.getTestLabelsFromTitle; } });
 var parseBrowserCapabilities_1 = require("./parseBrowserCapabilities");
@@ -41,4 +41,6 @@ var getCustomArtifactObject_1 = require("./getCustomArtifactObject");
 Object.defineProperty(exports, "getCustomArtifactObject", { enumerable: true, get: function () { return getCustomArtifactObject_1.getCustomArtifactObject; } });
 var getCustomScreenshotObject_1 = require("./getCustomScreenshotObject");
 Object.defineProperty(exports, "getCustomScreenshotObject", { enumerable: true, get: function () { return getCustomScreenshotObject_1.getCustomScreenshotObject; } });
+var createPwStepObject_1 = require("./createPwStepObject");
+Object.defineProperty(exports, "createPwStepObject", { enumerable: true, get: function () { return createPwStepObject_1.createPwStepObject; } });
 //# sourceMappingURL=index.js.map

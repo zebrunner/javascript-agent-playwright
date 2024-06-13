@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ExchangedRunContext = void 0;
-class ExchangedRunContext {
-    testRunUuid;
+exports.ExchangedLaunchContext = void 0;
+class ExchangedLaunchContext {
+    launchUuid;
     mode;
     runAllowed;
     reason;
@@ -10,7 +10,7 @@ class ExchangedRunContext {
     testsToRun;
     fullExecutionPlanContext;
     constructor(response) {
-        this.testRunUuid = response.testRunUuid;
+        this.launchUuid = response.launchUuid;
         this.mode = response.mode;
         this.runAllowed = response.runAllowed;
         this.reason = response.reason;
@@ -19,5 +19,5 @@ class ExchangedRunContext {
         this.fullExecutionPlanContext = response.fullExecutionPlanContext;
     }
 }
-exports.ExchangedRunContext = ExchangedRunContext;
-//# sourceMappingURL=ExchangedRunContext.js.map
+exports.ExchangedLaunchContext = ExchangedLaunchContext;
+//# sourceMappingURL=ExchangedLaunchContext.js.map

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StartTestRunRequest = void 0;
-class StartTestRunRequest {
+exports.StartLaunchRequest = void 0;
+class StartLaunchRequest {
     uuid;
     name;
     startedAt;
@@ -49,5 +49,5 @@ class StartTestRunRequest {
         };
     }
 }
-exports.StartTestRunRequest = StartTestRunRequest;
-//# sourceMappingURL=StartTestRunRequest.js.map
+exports.StartLaunchRequest = StartLaunchRequest;
+//# sourceMappingURL=StartLaunchRequest.js.map

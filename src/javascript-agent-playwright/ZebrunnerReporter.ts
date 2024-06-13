@@ -7,16 +7,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { ZebrunnerApiClient } from './ZebrunnerApiClient';
 import { EVENT_NAMES } from './constants/events';
 import { ReportingConfig } from './ReportingConfig';
-import { ExchangedRunContext } from './ZebrunnerApiClient/types/ExchangedRunContext';
-import { StartTestRunRequest } from './ZebrunnerApiClient/types/StartTestRunRequest';
+import { ExchangedLaunchContext } from './ZebrunnerApiClient/types/ExchangedLaunchContext';
+import { StartLaunchRequest } from './ZebrunnerApiClient/types/StartLaunchRequest';
 import { UpdateTcmConfigsRequest } from './ZebrunnerApiClient/types/UpdateTcmConfigsRequest';
-import { ZbrTestCase, TestStep, ExtendedPwTestCase, FileArtifact } from './types';
+import { ZbrTestCase, TestLog, ExtendedPwTestCase, FileArtifact } from './types';
 import {
   cleanseReason,
   determineStatus,
   getFileSizeInBytes,
   getFullSuiteName,
-  getTestSteps,
+  getTestLogs,
   getTestLabelsFromTitle,
   parseBrowserCapabilities,
   processAttachments,
@@ -27,16 +27,17 @@ import {
   getErrorsStringFromMap,
   getCustomArtifactObject,
   getCustomScreenshotObject,
+  createPwStepObject,
 } from './helpers';
 
 class ZebrunnerReporter implements Reporter {
   private reportingConfig: ReportingConfig;
   private apiClient: ZebrunnerApiClient;
 
-  private zbrRunId: number;
-  private zbrRunLabels: { key: string; value: string }[];
-  private zbrRunArtifactReferences: { name: string; value: string }[];
-  private zbrRunArtifacts: FileArtifact[];
+  private zbrLaunchId: number;
+  private zbrLaunchLabels: { key: string; value: string }[];
+  private zbrLaunchArtifactReferences: { name: string; value: string }[];
+  private zbrLaunchArtifacts: FileArtifact[];
 
   private errors: Map<string, number>;
 
@@ -44,7 +45,7 @@ class ZebrunnerReporter implements Reporter {
   private mapPwTestIdToZbrTestId: Map<string, number>;
   private mapPwTestIdToStatus: Map<string, 'started' | 'reverted' | 'finished'>;
 
-  private exchangedRunContext: ExchangedRunContext;
+  private exchangedLaunchContext: ExchangedLaunchContext;
 
   async onBegin(config: FullConfig, suite: Suite) {
     if (!suite.allTests().length) {
@@ -52,7 +53,7 @@ class ZebrunnerReporter implements Reporter {
       process.exit();
     }
 
-    const runStartTime = new Date();
+    const launchStartTime = new Date();
 
     const reporters: ReporterDescription[] = config.reporter;
     const zebrunnerReporter: ReporterDescription = reporters.find((reporterAndConfig) =>
@@ -66,9 +67,9 @@ class ZebrunnerReporter implements Reporter {
       return;
     }
 
-    this.zbrRunLabels = [];
-    this.zbrRunArtifactReferences = [];
-    this.zbrRunArtifacts = [];
+    this.zbrLaunchLabels = [];
+    this.zbrLaunchArtifactReferences = [];
+    this.zbrLaunchArtifacts = [];
 
     this.mapPwTestIdToZbrTestId = new Map();
     this.mapPwTestIdToStatus = new Map();
@@ -78,9 +79,9 @@ class ZebrunnerReporter implements Reporter {
     suite = await this.rerunResolver(suite);
     this.totalTestCount = suite.allTests().length;
 
-    this.zbrRunId = await this.startTestRunAndGetId(runStartTime);
+    this.zbrLaunchId = await this.startLaunchAndGetId(launchStartTime);
 
-    await this.saveTestRunTcmConfigs(this.zbrRunId);
+    await this.saveLaunchTcmConfigs(this.zbrLaunchId);
   }
 
   private async rerunResolver(suite: Suite) {
@@ -89,18 +90,18 @@ class ZebrunnerReporter implements Reporter {
         return suite;
       }
 
-      const runContext = JSON.parse(process.env.REPORTING_RUN_CONTEXT);
-      this.exchangedRunContext = await this.apiClient.exchangeRunContext(runContext);
+      const launchContext = JSON.parse(process.env.REPORTING_RUN_CONTEXT);
+      this.exchangedLaunchContext = await this.apiClient.exchangeLaunchContext(launchContext);
 
-      if (this.exchangedRunContext.mode === 'NEW' || !this.exchangedRunContext.runOnlySpecificTests) {
+      if (this.exchangedLaunchContext.mode === 'NEW' || !this.exchangedLaunchContext.runOnlySpecificTests) {
         return suite;
       }
 
-      if (!this.exchangedRunContext.runAllowed) {
-        throw new Error(`${this.exchangedRunContext.reason}`);
+      if (!this.exchangedLaunchContext.runAllowed) {
+        throw new Error(`${this.exchangedLaunchContext.reason}`);
       }
 
-      recursiveTestsTraversal(suite, this.exchangedRunContext);
+      recursiveTestsTraversal(suite, this.exchangedLaunchContext);
 
       return suite;
     } catch (error) {
@@ -117,58 +118,73 @@ class ZebrunnerReporter implements Reporter {
     }
 
     pwTest.artifactReferences = [];
-    pwTest.customLogs = [];
     pwTest.customArtifacts = [];
     pwTest.customScreenshots = [];
     pwTest.labels = getTestLabelsFromTitle(pwTest.title) || [];
 
-    await until(() => !!this.zbrRunId); // zebrunner run initialized
+    await until(() => !!this.zbrLaunchId); // zebrunner launch initialized
 
     const testStartedAt = new Date(pwTestResult.startTime);
 
     const zbrTestId =
-      this.exchangedRunContext?.mode === 'RERUN'
-        ? await this.restartTestAndGetId(this.zbrRunId, pwTest, testStartedAt)
-        : await this.startTestAndGetId(this.zbrRunId, pwTest, testStartedAt);
+      this.exchangedLaunchContext?.mode === 'RERUN'
+        ? await this.restartTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt)
+        : await this.startTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt);
 
     this.mapPwTestIdToZbrTestId.set(pwTest.id, zbrTestId);
     this.mapPwTestIdToStatus.set(pwTest.id, 'started');
   }
 
-  onStdOut(chunk: string, pwTest: ExtendedPwTestCase) {
-    // onStdOut must not be async function because it must always finish before onTestEnd
+  onStdOut(chunk: string, pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
+    // onStdOut must NOT be async function because it must always finish before onTestEnd
 
-    if (chunk.includes('connect') || chunk.includes('POST') || !this.reportingConfig.enabled) {
+    if (!this.reportingConfig.enabled) {
       return;
     }
 
     if (!isJsonString(chunk)) {
+      // handle console.log's from tests source code
       console.log(chunk.trim());
-      pwTest?.customLogs.push({
-        timestamp: new Date().getTime(),
-        message: `console.log("${chunk.trim()}")`,
-        level: 'INFO',
-      });
+      if (pwTest) {
+        const prevStep = pwTestResult.steps[pwTestResult.steps.length - 1];
+        pwTestResult.steps.push(
+          createPwStepObject(prevStep.startTime.getTime() + prevStep.duration, `console.log("${chunk.trim()}");`),
+        );
+      }
       return;
     }
 
     const { eventType, payload } = JSON.parse(chunk);
 
+    if (eventType === EVENT_NAMES.LOG_ERROR) {
+      this.logError(payload.stage, payload.message);
+    }
+
+    // handle actions related to launch:
+    if (eventType === EVENT_NAMES.ATTACH_LAUNCH_LABELS) {
+      this.zbrLaunchLabels.push(...payload.values.map((value: string) => ({ key: payload.key, value })));
+    } else if (eventType === EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT_REFERENCES) {
+      const index = this.zbrLaunchArtifactReferences.findIndex((ar) => ar.name === payload.name);
+      if (index === -1) {
+        this.zbrLaunchArtifactReferences.push({ name: payload.name, value: payload.value });
+      } else {
+        this.zbrLaunchArtifactReferences[index].value = payload.value;
+      }
+    } else if (eventType === EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT) {
+      // do not add duplicate file since pw could execute it's methods containing attachArtifact() call multiple times
+      this.zbrLaunchArtifacts = this.zbrLaunchArtifacts
+        .filter((a) => JSON.stringify(a.pathOrBuffer) !== JSON.stringify(payload.pathOrBuffer))
+        .concat([getCustomArtifactObject(payload)]);
+    }
+
+    // handle actions related to test:
+    if (!pwTest) return;
     if (eventType === EVENT_NAMES.ATTACH_TEST_CASE) {
-      this.addZbrTestCase(pwTest, payload);
+      this.addTestCase(pwTest, payload);
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_MAINTAINER) {
       pwTest.maintainer = payload;
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_LOG) {
-      pwTest.customLogs.push({ timestamp: payload.timestamp, message: payload.message, level: payload.level });
-    } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_LABELS) {
-      this.zbrRunLabels.push(...payload.values.map((value: string) => ({ key: payload.key, value })));
-    } else if (eventType === EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES) {
-      const index = this.zbrRunArtifactReferences.findIndex((ar) => ar.name === payload.name);
-      if (index === -1) {
-        this.zbrRunArtifactReferences.push({ name: payload.name, value: payload.value });
-      } else {
-        this.zbrRunArtifactReferences[index].value = payload.value;
-      }
+      pwTestResult.steps.push(createPwStepObject(payload.timestamp, payload.message, payload.level));
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES) {
       const index = pwTest.artifactReferences.findIndex((ar) => ar.name === payload.name);
       if (index === -1) {
@@ -180,17 +196,10 @@ class ZebrunnerReporter implements Reporter {
       pwTest.labels.push(...payload.values.map((value: string) => ({ key: payload.key, value })));
     } else if (eventType === EVENT_NAMES.REVERT_TEST_REGISTRATION) {
       pwTest.shouldBeReverted = true;
-    } else if (eventType === EVENT_NAMES.ATTACH_RUN_ARTIFACT) {
-      // do not add duplicate file since pw could execute it's methods containing attachArtifact() call multiple times
-      this.zbrRunArtifacts = this.zbrRunArtifacts
-        .filter((a) => JSON.stringify(a.pathOrBuffer) !== JSON.stringify(payload.pathOrBuffer))
-        .concat([getCustomArtifactObject(payload)]);
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_SCREENSHOT) {
       pwTest.customScreenshots.push(getCustomScreenshotObject(payload));
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT) {
       pwTest.customArtifacts.push(getCustomArtifactObject(payload));
-    } else if (eventType === EVENT_NAMES.LOG_ERROR) {
-      this.logError(payload.stage, payload.message);
     }
   }
 
@@ -207,33 +216,30 @@ class ZebrunnerReporter implements Reporter {
     const zbrTestId = this.mapPwTestIdToZbrTestId.get(pwTest.id);
 
     if (pwTest.shouldBeReverted) {
-      await this.revertTestRegistration(this.zbrRunId, zbrTestId);
+      await this.revertTestRegistration(this.zbrLaunchId, zbrTestId);
       this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
     } else {
-      await this.attachTestCases(this.zbrRunId, zbrTestId, pwTest.testCases, pwTestResult.status);
-      await this.attachTestMaintainer(this.zbrRunId, zbrTestId, pwTest.maintainer);
-      await this.attachTestLabels(this.zbrRunId, zbrTestId, pwTest.labels);
+      await this.attachTestCases(this.zbrLaunchId, zbrTestId, pwTest.testCases, pwTestResult.status);
+      await this.attachTestMaintainer(this.zbrLaunchId, zbrTestId, pwTest.maintainer);
+      await this.attachTestLabels(this.zbrLaunchId, zbrTestId, pwTest.labels);
       const testAttachments = await processAttachments(pwTestResult.attachments);
-      await this.attachTestScreenshots(this.zbrRunId, zbrTestId, [
+      await this.attachTestScreenshots(this.zbrLaunchId, zbrTestId, [
         ...testAttachments.screenshots,
         ...pwTest.customScreenshots,
       ]);
-      await this.attachTestFiles(this.zbrRunId, zbrTestId, [...testAttachments.files, ...pwTest.customArtifacts]);
-      await this.attachTestArtifactReferences(this.zbrRunId, zbrTestId, pwTest.artifactReferences);
-      await this.attachTestLogs(this.zbrRunId, [
-        ...getTestSteps(pwTestResult.steps, zbrTestId),
-        ...pwTest.customLogs.map((log: TestStep) => ({ ...log, testId: zbrTestId })),
-      ]);
+      await this.attachTestFiles(this.zbrLaunchId, zbrTestId, [...testAttachments.files, ...pwTest.customArtifacts]);
+      await this.attachTestArtifactReferences(this.zbrLaunchId, zbrTestId, pwTest.artifactReferences);
+      await this.attachTestLogs(this.zbrLaunchId, getTestLogs(pwTestResult.steps, zbrTestId));
 
       if (testAttachments.videos.length) {
         const sessionStartedAt = new Date(pwTestResult.startTime);
-        const zbrSessionId = await this.startTestSessionAndGetId(this.zbrRunId, zbrTestId, pwTest, sessionStartedAt);
+        const zbrSessionId = await this.startTestSessionAndGetId(this.zbrLaunchId, zbrTestId, pwTest, sessionStartedAt);
         const sessionEndedAt = new Date();
-        await this.finishTestSession(this.zbrRunId, zbrSessionId, sessionEndedAt);
-        await this.attachSessionVideos(this.zbrRunId, zbrSessionId, testAttachments.videos);
+        await this.finishTestSession(this.zbrLaunchId, zbrSessionId, sessionEndedAt);
+        await this.attachSessionVideos(this.zbrLaunchId, zbrSessionId, testAttachments.videos);
       }
 
-      await this.finishTest(this.zbrRunId, zbrTestId, pwTestResult, pwTest.maintainer);
+      await this.finishTest(this.zbrLaunchId, zbrTestId, pwTestResult, pwTest.maintainer);
 
       console.log(`Finished uploading test "${fullTestName}" data to Zebrunner.`);
 
@@ -254,12 +260,12 @@ class ZebrunnerReporter implements Reporter {
         ) && this.mapPwTestIdToStatus.size === this.totalTestCount,
     ); // all zebrunner tests finished
 
-    await this.attachRunArtifactReferences(this.zbrRunId, this.zbrRunArtifactReferences);
-    await this.attachRunLabels(this.zbrRunId, this.zbrRunLabels);
-    await this.attachRunFiles(this.zbrRunId, this.zbrRunArtifacts);
+    await this.attachLaunchArtifactReferences(this.zbrLaunchId, this.zbrLaunchArtifactReferences);
+    await this.attachLaunchLabels(this.zbrLaunchId, this.zbrLaunchLabels);
+    await this.attachLaunchFiles(this.zbrLaunchId, this.zbrLaunchArtifacts);
 
-    const testRunEndedAt = new Date();
-    await this.finishTestRun(this.zbrRunId, testRunEndedAt);
+    const launchEndedAt = new Date();
+    await this.finishLaunch(this.zbrLaunchId, launchEndedAt);
     console.log(
       `Zebrunner agent finished work${
         this.errors.size ? `ing with errors in the following stage(s): ${getErrorsStringFromMap(this.errors)}` : ''
@@ -267,46 +273,46 @@ class ZebrunnerReporter implements Reporter {
     );
   }
 
-  private async startTestRunAndGetId(startedAt: Date): Promise<number> {
+  private async startLaunchAndGetId(startedAt: Date): Promise<number> {
     try {
-      const runUuid = this.exchangedRunContext ? this.exchangedRunContext.testRunUuid : null;
-      const request = new StartTestRunRequest(runUuid, startedAt, this.reportingConfig);
-      const zbrRunId = await this.apiClient.startTestRun(this.reportingConfig.projectKey, request);
+      const launchUuid = this.exchangedLaunchContext ? this.exchangedLaunchContext.launchUuid : null;
+      const request = new StartLaunchRequest(launchUuid, startedAt, this.reportingConfig);
+      const zbrLaunchId = await this.apiClient.startLaunch(this.reportingConfig.projectKey, request);
 
-      return zbrRunId;
+      return zbrLaunchId;
     } catch (error) {
-      this.logError('startTestRunAndGetId', error);
+      this.logError('startLaunchAndGetId', error);
     }
   }
 
-  private async attachTestMaintainer(zbrRunId: number, zbrTestId: number, maintainer: string) {
+  private async attachTestMaintainer(zbrLaunchId: number, zbrTestId: number, maintainer: string) {
     try {
       if (maintainer) {
-        await this.apiClient.updateTest(zbrRunId, zbrTestId, { maintainer });
+        await this.apiClient.updateTest(zbrLaunchId, zbrTestId, { maintainer });
       }
     } catch (error) {
       this.logError('attachTestMaintainer', error);
     }
   }
 
-  private async saveTestRunTcmConfigs(testRunId: number): Promise<void> {
+  private async saveLaunchTcmConfigs(zbrLaunchId: number): Promise<void> {
     try {
       const request = new UpdateTcmConfigsRequest(this.reportingConfig);
 
       if (request.hasAnyValue) {
-        await this.apiClient.updateTcmConfigs(testRunId, request);
+        await this.apiClient.updateTcmConfigs(zbrLaunchId, request);
       }
     } catch (error) {
-      this.logError('saveTestRunTcmConfigs', error);
+      this.logError('saveLaunchTcmConfigs', error);
     }
   }
 
-  private async startTestAndGetId(zbrRunId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
+  private async startTestAndGetId(zbrLaunchId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
     try {
       const fullSuiteName = getFullSuiteName(pwTest);
       const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
-      const zbrTestId = await this.apiClient.startTest(zbrRunId, {
+      const zbrTestId = await this.apiClient.startTest(zbrLaunchId, {
         name: `${fullSuiteName} > ${pwTest.title}`,
         className: fullSuiteName,
         methodName: `${fullSuiteName} > ${pwTest.title}`,
@@ -324,12 +330,12 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async restartTestAndGetId(zbrRunId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
+  private async restartTestAndGetId(zbrLaunchId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
     try {
       const fullSuiteName = getFullSuiteName(pwTest);
       const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
-      const rerunTest = this.exchangedRunContext.testsToRun.filter(
+      const testToRerun = this.exchangedLaunchContext.testsToRun.filter(
         (el: {
           id: number;
           name: string;
@@ -350,7 +356,7 @@ class ZebrunnerReporter implements Reporter {
           return false;
         },
       )[0];
-      const zbrTestId = await this.apiClient.restartTest(zbrRunId, rerunTest.id, {
+      const zbrTestId = await this.apiClient.restartTest(zbrLaunchId, testToRerun.id, {
         name: `${fullSuiteName} > ${pwTest.title}`,
         className: fullSuiteName,
         methodName: `${fullSuiteName} > ${pwTest.title}`,
@@ -368,7 +374,7 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private addZbrTestCase(pwTest: ExtendedPwTestCase, newTestCase: ZbrTestCase) {
+  private addTestCase(pwTest: ExtendedPwTestCase, newTestCase: ZbrTestCase) {
     if (isNotEmptyArray(pwTest.testCases)) {
       pwTest.testCases = pwTest.testCases.filter(
         (testCase: ZbrTestCase) =>
@@ -383,14 +389,14 @@ class ZebrunnerReporter implements Reporter {
   }
 
   private async startTestSessionAndGetId(
-    zbrRunId: number,
+    zbrLaunchId: number,
     zbrTestId: number,
     pwTest: ExtendedPwTestCase,
     testStartedAt: Date,
   ) {
     try {
       const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
-      const sessionId = await this.apiClient.startTestSession(zbrRunId, {
+      const sessionId = await this.apiClient.startTestSession(zbrLaunchId, {
         sessionId: uuidv4(),
         initiatedAt: testStartedAt,
         startedAt: testStartedAt,
@@ -414,7 +420,7 @@ class ZebrunnerReporter implements Reporter {
   }
 
   private async attachTestCases(
-    zbrRunId: number,
+    zbrLaunchId: number,
     zbrTestId: number,
     testCases: ZbrTestCase[],
     pwTestStatus: string,
@@ -431,25 +437,26 @@ class ZebrunnerReporter implements Reporter {
               testCase.resultStatus = this.reportingConfig.tcm.testCaseStatus.onSkip;
             }
           }
+
           return testCase;
         });
 
-        await this.apiClient.upsertTestTestCases(zbrRunId, zbrTestId, { items: testCasesWithStatuses });
+        await this.apiClient.upsertTestTestCases(zbrLaunchId, zbrTestId, { items: testCasesWithStatuses });
       }
     } catch (error) {
       this.logError('attachTestCases', error);
     }
   }
 
-  private async attachTestLabels(zbrRunId: number, zbrTestId: number, labels: { key: string; value: string }[]) {
+  private async attachTestLabels(zbrLaunchId: number, zbrTestId: number, labels: { key: string; value: string }[]) {
     try {
-      await this.apiClient.attachTestLabels(zbrRunId, zbrTestId, { items: labels });
+      await this.apiClient.attachTestLabels(zbrLaunchId, zbrTestId, { items: labels });
     } catch (error) {
       this.logError('attachTestLabels', error);
     }
   }
 
-  private async attachTestScreenshots(zbrRunId: number, zbrTestId: number, screenshots: FileArtifact[]) {
+  private async attachTestScreenshots(zbrLaunchId: number, zbrTestId: number, screenshots: FileArtifact[]) {
     try {
       if (!screenshots.length) return;
 
@@ -458,7 +465,7 @@ class ZebrunnerReporter implements Reporter {
           ? screenshot.pathOrBuffer
           : fs.readFileSync(screenshot.pathOrBuffer);
 
-        return this.apiClient.uploadTestScreenshot(zbrRunId, zbrTestId, file, screenshot.timestamp);
+        return this.apiClient.uploadTestScreenshot(zbrLaunchId, zbrTestId, file, screenshot.timestamp);
       });
 
       await Promise.all(screenshotsPromises);
@@ -467,7 +474,11 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async attachTestFiles(zbrRunId?: number, zbrTestId?: number, files?: FileArtifact[]): Promise<AxiosResponse> {
+  private async attachTestFiles(
+    zbrLaunchId?: number,
+    zbrTestId?: number,
+    files?: FileArtifact[],
+  ): Promise<AxiosResponse> {
     if (!files.length) {
       return;
     }
@@ -481,7 +492,12 @@ class ZebrunnerReporter implements Reporter {
           file.name ? file.name : isBuffer ? `file_${new Date(file.timestamp).toISOString()}` : null,
         );
 
-        return this.apiClient.uploadTestArtifact(zbrRunId, zbrTestId, formData.getHeaders()['content-type'], formData);
+        return this.apiClient.uploadTestArtifact(
+          zbrLaunchId,
+          zbrTestId,
+          formData.getHeaders()['content-type'],
+          formData,
+        );
       });
 
       await Promise.all(filePromises);
@@ -490,7 +506,7 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async attachSessionVideos(zbrRunId: number, zbrSessionId: number, videos: FileArtifact[]) {
+  private async attachSessionVideos(zbrLaunchId: number, zbrSessionId: number, videos: FileArtifact[]) {
     try {
       if (!videos.length) {
         return;
@@ -506,7 +522,7 @@ class ZebrunnerReporter implements Reporter {
         );
 
         return this.apiClient.uploadSessionArtifact(
-          zbrRunId,
+          zbrLaunchId,
           zbrSessionId,
           formData.getHeaders()['content-type'],
           getFileSizeInBytes(video.pathOrBuffer),
@@ -520,7 +536,7 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async attachRunFiles(zbrRunId?: number, files?: FileArtifact[]) {
+  private async attachLaunchFiles(zbrLaunchId?: number, files?: FileArtifact[]) {
     try {
       if (!files.length) {
         return;
@@ -535,24 +551,24 @@ class ZebrunnerReporter implements Reporter {
           file.name ? file.name : isBuffer ? `file_${new Date(file.timestamp).toISOString()}` : null,
         );
 
-        return this.apiClient.uploadTestRunArtifact(zbrRunId, formData.getHeaders()['content-type'], formData);
+        return this.apiClient.uploadLaunchArtifact(zbrLaunchId, formData.getHeaders()['content-type'], formData);
       });
 
       await Promise.all(filePromises);
     } catch (error) {
-      this.logError('attachRunFiles', error);
+      this.logError('attachLaunchFiles', error);
     }
   }
 
-  private async finishTestSession(zbrRunId: number, zbrTestSessionId: number, testEndedAt: Date) {
+  private async finishTestSession(zbrLaunchId: number, zbrTestSessionId: number, testEndedAt: Date) {
     try {
-      await this.apiClient.finishTestSession(zbrRunId, zbrTestSessionId, { endedAt: testEndedAt });
+      await this.apiClient.finishTestSession(zbrLaunchId, zbrTestSessionId, { endedAt: testEndedAt });
     } catch (error) {
       this.logError('finishTestSession', error);
     }
   }
 
-  private async finishTest(zbrRunId: number, zbrTestId: number, pwTestResult: PwTestResult, maintainer: string) {
+  private async finishTest(zbrLaunchId: number, zbrTestId: number, pwTestResult: PwTestResult, maintainer: string) {
     try {
       const startedAt = new Date(pwTestResult.startTime);
       let endedAt = new Date(startedAt.getTime() + pwTestResult.duration);
@@ -561,7 +577,7 @@ class ZebrunnerReporter implements Reporter {
         endedAt = new Date(endedAt.getTime() + 1);
       }
 
-      await this.apiClient.finishTest(zbrRunId, zbrTestId, {
+      await this.apiClient.finishTest(zbrLaunchId, zbrTestId, {
         result: determineStatus(pwTestResult.status),
         reason: `${cleanseReason(pwTestResult.error?.message)} \n ${cleanseReason(pwTestResult.error?.stack)}`,
         endedAt,
@@ -571,53 +587,56 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async attachTestLogs(zbrRunId: number, zbrLogEntries: TestStep[]) {
+  private async attachTestLogs(zbrLaunchId: number, zbrLogEntries: TestLog[]) {
     try {
-      await this.apiClient.sendLogs(zbrRunId, zbrLogEntries);
+      await this.apiClient.sendLogs(zbrLaunchId, zbrLogEntries);
     } catch (error) {
       this.logError('attachTestLogs', error);
     }
   }
 
-  private async finishTestRun(testRunId: number, testRunEndedAt: Date): Promise<void> {
+  private async finishLaunch(zbrLaunchId: number, launchEndedAt: Date): Promise<void> {
     try {
-      await this.apiClient.finishTestRun(testRunId, { endedAt: testRunEndedAt });
+      await this.apiClient.finishLaunch(zbrLaunchId, { endedAt: launchEndedAt });
     } catch (error) {
-      this.logError('finishTestRun', error);
+      this.logError('finishLaunch', error);
     }
   }
 
-  private async attachRunLabels(zbrRunId: number, labels: { key: string; value: string }[]) {
+  private async attachLaunchLabels(zbrLaunchId: number, labels: { key: string; value: string }[]) {
     try {
-      await this.apiClient.attachTestRunLabels(zbrRunId, { items: labels });
+      await this.apiClient.attachLaunchLabels(zbrLaunchId, { items: labels });
     } catch (error) {
-      this.logError('attachRunLabels', error);
+      this.logError('attachLaunchLabels', error);
     }
   }
 
-  private async attachRunArtifactReferences(zbrRunId: number, artifactReferences: { name: string; value: string }[]) {
+  private async attachLaunchArtifactReferences(
+    zbrLaunchId: number,
+    artifactReferences: { name: string; value: string }[],
+  ) {
     try {
-      await this.apiClient.attachTestRunArtifactReferences(zbrRunId, { items: artifactReferences });
+      await this.apiClient.attachLaunchArtifactReferences(zbrLaunchId, { items: artifactReferences });
     } catch (error) {
-      this.logError('attachRunArtifactReferences', error);
+      this.logError('attachLaunchArtifactReferences', error);
     }
   }
 
   private async attachTestArtifactReferences(
-    zbrRunId: number,
+    zbrLaunchId: number,
     zbrTestId: number,
     artifactReferences: { name: string; value: string }[],
   ) {
     try {
-      await this.apiClient.attachTestArtifactReferences(zbrRunId, zbrTestId, { items: artifactReferences });
+      await this.apiClient.attachTestArtifactReferences(zbrLaunchId, zbrTestId, { items: artifactReferences });
     } catch (error) {
       this.logError('attachTestArtifactReferences', error);
     }
   }
 
-  private async revertTestRegistration(zbrRunId: number, zbrTestId: number) {
+  private async revertTestRegistration(zbrLaunchId: number, zbrTestId: number) {
     try {
-      await this.apiClient.revertTestRegistration(zbrRunId, zbrTestId);
+      await this.apiClient.revertTestRegistration(zbrLaunchId, zbrTestId);
     } catch (error) {
       this.logError('revertTestRegistration', error);
     }

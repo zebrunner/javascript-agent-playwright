@@ -2,7 +2,7 @@ import { TestCase as PwTestCase } from '@playwright/test/reporter';
 
 export type LogLevel = 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string;
 
-export type TestStep = {
+export type TestLog = {
   level: LogLevel;
   timestamp: number;
   message: string;
@@ -30,7 +30,6 @@ export interface ExtendedPwTestCase extends PwTestCase {
   labels: { key: string; value: string }[];
   shouldBeReverted: boolean;
   artifactReferences: { name: string; value: string }[];
-  customLogs: TestStep[];
   customArtifacts: FileArtifact[];
   customScreenshots: FileArtifact[];
 }

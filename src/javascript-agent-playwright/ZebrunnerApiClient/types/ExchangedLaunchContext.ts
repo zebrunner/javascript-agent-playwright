@@ -1,5 +1,5 @@
-export class ExchangedRunContext {
-  testRunUuid: string;
+export class ExchangedLaunchContext {
+  launchUuid: string;
   mode: 'NEW' | 'RERUN';
   runAllowed: boolean;
   reason: string;
@@ -11,7 +11,7 @@ export class ExchangedRunContext {
   fullExecutionPlanContext: string;
 
   constructor(response: any) {
-    this.testRunUuid = response.testRunUuid;
+    this.launchUuid = response.launchUuid;
     this.mode = response.mode;
 
     this.runAllowed = response.runAllowed;

@@ -7,8 +7,7 @@ exports.ZebrunnerApiClient = void 0;
 const axios_1 = __importDefault(require("axios"));
 const loglevel_1 = __importDefault(require("loglevel"));
 const paths_1 = require("./paths");
-const ExchangedRunContext_1 = require("./types/ExchangedRunContext");
-const RefreshTokenRequest_1 = require("./types/RefreshTokenRequest");
+const types_1 = require("./types");
 class ZebrunnerApiClient {
     logger = loglevel_1.default.getLogger('zebrunner.api-client');
     accessToken;
@@ -50,7 +49,7 @@ class ZebrunnerApiClient {
     async authenticateIfRequired() {
         try {
             if (!this.axiosInstance.defaults.headers.common.Authorization) {
-                const request = new RefreshTokenRequest_1.RefreshTokenRequest(this.accessToken);
+                const request = new types_1.RefreshTokenRequest(this.accessToken);
                 const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.REFRESH_TOKEN(), request);
                 this.axiosInstance.defaults.headers.common.Authorization = `${response.data.authTokenType} ${response.data.authToken}`;
             }
@@ -60,10 +59,10 @@ class ZebrunnerApiClient {
             process.exit();
         }
     }
-    async startTestRun(projectKey, request) {
+    async startLaunch(projectKey, request) {
         await this.authenticateIfRequired();
         try {
-            const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST_RUN(), request, {
+            const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_LAUNCH(), request, {
                 params: { projectKey },
             });
             return response.data.id;
@@ -73,27 +72,27 @@ class ZebrunnerApiClient {
             process.exit();
         }
     }
-    async startTest(testRunId, request) {
+    async startTest(launchId, request) {
         await this.authenticateIfRequired();
-        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST(testRunId), request);
+        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST(launchId), request);
         return response.data.id;
     }
-    async restartTest(testRunId, testId, request) {
+    async restartTest(launchId, testId, request) {
         await this.authenticateIfRequired();
-        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.RESTART_TEST(testRunId, testId), request);
+        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.RESTART_TEST(launchId, testId), request);
         return response.data.id;
     }
-    async updateTest(testRunId, testId, request) {
+    async updateTest(launchId, testId, request) {
         await this.authenticateIfRequired();
-        const response = await this.axiosInstance.patch(paths_1.ZEBRUNNER_PATHS.UPDATE_TEST(testRunId, testId), request);
+        const response = await this.axiosInstance.patch(paths_1.ZEBRUNNER_PATHS.UPDATE_TEST(launchId, testId), request);
         return response.data.id;
     }
-    async startTestSession(testRunId, request) {
+    async startTestSession(launchId, request) {
         await this.authenticateIfRequired();
-        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST_SESSION(testRunId), request);
+        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.START_TEST_SESSION(launchId), request);
         return response.data.id;
     }
-    async uploadSessionArtifact(testRunId, testSessionId, contentTypeHeader, fileSize, file) {
+    async uploadSessionArtifact(launchId, testSessionId, contentTypeHeader, fileSize, file) {
         const config = {
             headers: {
                 'Content-Type': contentTypeHeader,
@@ -101,79 +100,79 @@ class ZebrunnerApiClient {
                 'x-zbr-video-content-length': fileSize,
             },
         };
-        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_TEST_SESSION_ARTIFACT(testRunId, testSessionId), file, config);
+        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_TEST_SESSION_ARTIFACT(launchId, testSessionId), file, config);
     }
-    async finishTestSession(testRunId, testSessionId, request) {
-        return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.FINISH_TEST_SESSION(testRunId, testSessionId), request);
+    async finishTestSession(launchId, testSessionId, request) {
+        return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.FINISH_TEST_SESSION(launchId, testSessionId), request);
     }
-    async finishTest(testRunId, testId, request) {
-        return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.FINISH_TEST(testRunId, testId), request);
+    async finishTest(launchId, testId, request) {
+        return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.FINISH_TEST(launchId, testId), request);
     }
-    async attachTestLabels(testRunId, testId, request) {
+    async attachTestLabels(launchId, testId, request) {
         if (request?.items?.length) {
-            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(testRunId, testId), request);
+            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(launchId, testId), request);
         }
     }
-    async uploadTestScreenshot(testRunId, testId, screenshot, timestamp) {
+    async uploadTestScreenshot(launchId, testId, screenshot, timestamp) {
         const config = {
             headers: { 'x-zbr-screenshot-captured-at': timestamp || new Date().getTime() },
         };
-        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_SCREENSHOT(testRunId, testId), screenshot, config);
+        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_SCREENSHOT(launchId, testId), screenshot, config);
     }
-    async uploadTestArtifact(testRunId, testId, contentTypeHeader, file) {
+    async uploadTestArtifact(launchId, testId, contentTypeHeader, file) {
         const config = {
             headers: {
                 'Content-Type': contentTypeHeader,
                 Accept: '*/*',
             },
         };
-        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_TEST_ARTIFACT(testRunId, testId), file, config);
+        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_TEST_ARTIFACT(launchId, testId), file, config);
     }
-    async uploadTestRunArtifact(testRunId, contentTypeHeader, file) {
+    async uploadLaunchArtifact(launchId, contentTypeHeader, file) {
         const config = {
             headers: {
                 'Content-Type': contentTypeHeader,
                 Accept: '*/*',
             },
         };
-        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_TEST_RUN_ARTIFACT(testRunId), file, config);
+        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPLOAD_LAUNCH_ARTIFACT(launchId), file, config);
     }
-    async sendLogs(testRunId, logs) {
+    async sendLogs(launchId, logs) {
         if (logs?.length) {
-            return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.SEND_LOGS(testRunId), logs);
+            return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.SEND_LOGS(launchId), logs);
         }
     }
-    async finishTestRun(id, request) {
-        return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.FINISH_TEST_RUN(id), request);
+    async finishLaunch(id, request) {
+        return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.FINISH_LAUNCH(id), request);
     }
-    async exchangeRunContext(runContext) {
+    async exchangeLaunchContext(launchContext) {
         await this.authenticateIfRequired();
-        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.EXCHANGE_RUN_CONTEXT(), runContext);
-        return new ExchangedRunContext_1.ExchangedRunContext(response.data);
+        const response = await this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.EXCHANGE_LAUNCH_CONTEXT(), launchContext);
+        return new types_1.ExchangedLaunchContext(response.data);
     }
-    async updateTcmConfigs(testRunId, request) {
-        return this.axiosInstance.patch(paths_1.ZEBRUNNER_PATHS.UPDATE_TCM_CONFIGS(testRunId), request);
+    async updateTcmConfigs(launchId, request) {
+        return this.axiosInstance.patch(paths_1.ZEBRUNNER_PATHS.UPDATE_TCM_CONFIGS(launchId), request);
     }
-    async upsertTestTestCases(testRunId, testId, request) {
-        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPSERT_TEST_TEST_CASES(testRunId, testId), request);
+    async upsertTestTestCases(launchId, testId, request) {
+        return this.axiosInstance.post(paths_1.ZEBRUNNER_PATHS.UPSERT_TEST_TEST_CASES(launchId, testId), request);
     }
-    async attachTestRunLabels(testRunId, request) {
+    async attachLaunchLabels(launchId, request) {
         if (request?.items?.length) {
-            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_RUN_LABELS(testRunId), request);
+            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_LAUNCH_LABELS(launchId), request);
         }
     }
-    async attachTestRunArtifactReferences(testRunId, request) {
+    async attachLaunchArtifactReferences(launchId, request) {
         if (request?.items?.length) {
-            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_RUN_ARTIFACT_REFERENCES(testRunId), request);
+            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_LAUNCH_ARTIFACT_REFERENCES(launchId), request);
         }
     }
-    async attachTestArtifactReferences(testRunId, testId, request) {
+    async attachTestArtifactReferences(launchId, testId, request) {
         if (request?.items?.length) {
-            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_ARTIFACT_REFERENCES(testRunId, testId), request);
+            return this.axiosInstance.put(paths_1.ZEBRUNNER_PATHS.ATTACH_TEST_ARTIFACT_REFERENCES(launchId, testId), request);
         }
     }
-    async revertTestRegistration(testRunId, testId) {
-        return this.axiosInstance.delete(paths_1.ZEBRUNNER_PATHS.REVERT_TEST_REGISTRATION(testRunId, testId));
+    async revertTestRegistration(launchId, testId) {
+        return this.axiosInstance.delete(paths_1.ZEBRUNNER_PATHS.REVERT_TEST_REGISTRATION(launchId, testId));
     }
 }
 exports.ZebrunnerApiClient = ZebrunnerApiClient;

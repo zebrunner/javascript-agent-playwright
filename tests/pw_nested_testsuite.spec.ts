@@ -18,13 +18,13 @@ test.describe('nested foo', () => {
     const page1 = await browser.newPage('https://github.com');
 
     console.log('Custom Message from console.log');
-    CurrentTest.addLog('NO PARAMETER custom log message');
+    // CurrentTest.addLog('NO PARAMETER custom log message');
 
-    CurrentTest.addLog('INFO level log message', 'INFO');
-    CurrentTest.addLog('DEBUG level log message', 'DEBUG');
-    CurrentTest.addLog('ERROR level log message', 'ERROR');
-    CurrentTest.addLog('WARN level log message', 'WARN');
-    CurrentTest.addLog('TRACE level log message', 'TRACE');
+    // CurrentTest.addLog('INFO level log message', 'INFO');
+    // CurrentTest.addLog('DEBUG level log message', 'DEBUG');
+    // CurrentTest.addLog('ERROR level log message', 'ERROR');
+    // CurrentTest.addLog('WARN level log message', 'WARN');
+    // CurrentTest.addLog('TRACE level log message', 'TRACE');
     CurrentTest.addLog('FATAL level log message', 'FATAL');
 
     CurrentTest.addLog('CUSTOM string level log message', 'CUSTOM');

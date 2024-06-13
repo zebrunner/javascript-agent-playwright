@@ -1,8 +1,8 @@
 import { Suite } from '@playwright/test/reporter';
 import UAParser from 'ua-parser-js';
-import { ExchangedRunContext } from '../ZebrunnerApiClient/types/ExchangedRunContext';
+import { ExchangedLaunchContext } from '../ZebrunnerApiClient/types/ExchangedLaunchContext';
 
-export const recursiveTestsTraversal = (suite: Suite, exchangedRunContext: ExchangedRunContext) => {
+export const recursiveTestsTraversal = (suite: Suite, exchangedLaunchContext: ExchangedLaunchContext) => {
   // eslint-disable-next-line no-restricted-syntax
   for (const res of suite.suites) {
     if (res.tests.length > 0) {
@@ -13,7 +13,7 @@ export const recursiveTestsTraversal = (suite: Suite, exchangedRunContext: Excha
       const systemOptions = parser.getResult();
       res.tests = res.tests.filter((el) => {
         const testName = `${suiteName} > ${el.title}`;
-        const isSuitableTest = exchangedRunContext.testsToRun.some(
+        const isSuitableTest = exchangedLaunchContext.testsToRun.some(
           (item: {
             id: number;
             name: string;
@@ -40,6 +40,6 @@ export const recursiveTestsTraversal = (suite: Suite, exchangedRunContext: Excha
         return false;
       });
     }
-    recursiveTestsTraversal(res, exchangedRunContext);
+    recursiveTestsTraversal(res, exchangedLaunchContext);
   }
 };

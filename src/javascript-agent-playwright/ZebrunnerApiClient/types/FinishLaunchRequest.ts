@@ -1,4 +1,4 @@
-export class FinishTestRunRequest {
+export class FinishLaunchRequest {
   endedAt: Date;
 
   constructor() {

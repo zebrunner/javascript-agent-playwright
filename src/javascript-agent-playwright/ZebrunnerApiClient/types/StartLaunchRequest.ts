@@ -9,7 +9,7 @@ export interface NotificationTarget {
   value: string;
 }
 
-export class StartTestRunRequest {
+export class StartLaunchRequest {
   uuid?: string;
   name: string;
   startedAt: Date;

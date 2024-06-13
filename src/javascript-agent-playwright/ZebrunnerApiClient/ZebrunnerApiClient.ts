@@ -2,18 +2,20 @@ import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig } from 'axios';
 import log from 'loglevel';
 import { ZEBRUNNER_PATHS } from './paths';
 import { ReportingConfig } from '../ReportingConfig';
-import { ExchangedRunContext } from './types/ExchangedRunContext';
-import { FinishTestRunRequest } from './types/FinishTestRunRequest';
-import { RefreshTokenRequest } from './types/RefreshTokenRequest';
-import { StartTestRunRequest } from './types/StartTestRunRequest';
-import { UpdateTcmConfigsRequest } from './types/UpdateTcmConfigsRequest';
-import { TestStep, ZbrTestCase } from '../types';
-import { AttachLabelsRequest } from './types/AttachLabelsRequest';
-import { AttachArtifactReferencesRequest } from './types/AttachArtifactReferencesRequest';
-import { StartOrUpdateTestRequest } from './types/StartOrUpdateTestRequest';
-import { StartTestSessionRequest } from './types/StartTestSessionRequest';
-import { FinishTestSessionRequest } from './types/FinishTestSessionRequest';
-import { FinishTestRequest } from './types/FinishTestRequest';
+import {
+  AttachArtifactReferencesRequest,
+  AttachLabelsRequest,
+  ExchangedLaunchContext,
+  FinishTestRequest,
+  FinishLaunchRequest,
+  FinishTestSessionRequest,
+  RefreshTokenRequest,
+  StartOrUpdateTestRequest,
+  StartLaunchRequest,
+  StartTestSessionRequest,
+  UpdateTcmConfigsRequest,
+} from './types';
+import { TestLog, ZbrTestCase } from '../types';
 
 export class ZebrunnerApiClient {
   private readonly logger = log.getLogger('zebrunner.api-client');
@@ -79,10 +81,10 @@ export class ZebrunnerApiClient {
     }
   }
 
-  async startTestRun(projectKey: string, request: StartTestRunRequest): Promise<number> {
+  async startLaunch(projectKey: string, request: StartLaunchRequest): Promise<number> {
     await this.authenticateIfRequired();
     try {
-      const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST_RUN(), request, {
+      const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_LAUNCH(), request, {
         params: { projectKey },
       });
 
@@ -93,36 +95,36 @@ export class ZebrunnerApiClient {
     }
   }
 
-  async startTest(testRunId: number, request: StartOrUpdateTestRequest): Promise<number> {
+  async startTest(launchId: number, request: StartOrUpdateTestRequest): Promise<number> {
     await this.authenticateIfRequired();
-    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST(testRunId), request);
+    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST(launchId), request);
 
     return response.data.id as number;
   }
 
-  async restartTest(testRunId: number, testId: number, request: StartOrUpdateTestRequest): Promise<number> {
+  async restartTest(launchId: number, testId: number, request: StartOrUpdateTestRequest): Promise<number> {
     await this.authenticateIfRequired();
-    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.RESTART_TEST(testRunId, testId), request);
+    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.RESTART_TEST(launchId, testId), request);
 
     return response.data.id as number;
   }
 
-  async updateTest(testRunId: number, testId: number, request: StartOrUpdateTestRequest): Promise<number> {
+  async updateTest(launchId: number, testId: number, request: StartOrUpdateTestRequest): Promise<number> {
     await this.authenticateIfRequired();
-    const response = await this.axiosInstance.patch(ZEBRUNNER_PATHS.UPDATE_TEST(testRunId, testId), request);
+    const response = await this.axiosInstance.patch(ZEBRUNNER_PATHS.UPDATE_TEST(launchId, testId), request);
 
     return response.data.id as number;
   }
 
-  async startTestSession(testRunId: number, request: StartTestSessionRequest): Promise<number> {
+  async startTestSession(launchId: number, request: StartTestSessionRequest): Promise<number> {
     await this.authenticateIfRequired();
-    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST_SESSION(testRunId), request);
+    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.START_TEST_SESSION(launchId), request);
 
     return response.data.id as number;
   }
 
   async uploadSessionArtifact(
-    testRunId: number,
+    launchId: number,
     testSessionId: number,
     contentTypeHeader: string,
     fileSize: number,
@@ -136,41 +138,37 @@ export class ZebrunnerApiClient {
       },
     };
 
-    return this.axiosInstance.post(
-      ZEBRUNNER_PATHS.UPLOAD_TEST_SESSION_ARTIFACT(testRunId, testSessionId),
-      file,
-      config,
-    );
+    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_TEST_SESSION_ARTIFACT(launchId, testSessionId), file, config);
   }
 
   async finishTestSession(
-    testRunId: number,
+    launchId: number,
     testSessionId: number,
     request: FinishTestSessionRequest,
   ): Promise<AxiosResponse> {
-    return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST_SESSION(testRunId, testSessionId), request);
+    return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST_SESSION(launchId, testSessionId), request);
   }
 
-  async finishTest(testRunId: number, testId: number, request: FinishTestRequest): Promise<AxiosResponse> {
-    return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST(testRunId, testId), request);
+  async finishTest(launchId: number, testId: number, request: FinishTestRequest): Promise<AxiosResponse> {
+    return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST(launchId, testId), request);
   }
 
-  async attachTestLabels(testRunId: number, testId: number, request: AttachLabelsRequest): Promise<AxiosResponse> {
+  async attachTestLabels(launchId: number, testId: number, request: AttachLabelsRequest): Promise<AxiosResponse> {
     if (request?.items?.length) {
-      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(testRunId, testId), request);
+      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_LABELS(launchId, testId), request);
     }
   }
 
-  async uploadTestScreenshot(testRunId: number, testId: number, screenshot: Buffer, timestamp?: number): Promise<void> {
+  async uploadTestScreenshot(launchId: number, testId: number, screenshot: Buffer, timestamp?: number): Promise<void> {
     const config: AxiosRequestConfig = {
       headers: { 'x-zbr-screenshot-captured-at': timestamp || new Date().getTime() },
     };
 
-    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_SCREENSHOT(testRunId, testId), screenshot, config);
+    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_SCREENSHOT(launchId, testId), screenshot, config);
   }
 
   async uploadTestArtifact(
-    testRunId: number,
+    launchId: number,
     testId: number,
     contentTypeHeader: string,
     file: import('form-data'),
@@ -182,11 +180,11 @@ export class ZebrunnerApiClient {
       },
     };
 
-    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_TEST_ARTIFACT(testRunId, testId), file, config);
+    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_TEST_ARTIFACT(launchId, testId), file, config);
   }
 
-  async uploadTestRunArtifact(
-    testRunId: number,
+  async uploadLaunchArtifact(
+    launchId: number,
     contentTypeHeader: string,
     file: import('form-data') | Buffer,
   ): Promise<void> {
@@ -197,64 +195,64 @@ export class ZebrunnerApiClient {
       },
     };
 
-    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_TEST_RUN_ARTIFACT(testRunId), file, config);
+    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPLOAD_LAUNCH_ARTIFACT(launchId), file, config);
   }
 
-  async sendLogs(testRunId: number, logs: TestStep[]): Promise<AxiosResponse> {
+  async sendLogs(launchId: number, logs: TestLog[]): Promise<AxiosResponse> {
     if (logs?.length) {
-      return this.axiosInstance.post(ZEBRUNNER_PATHS.SEND_LOGS(testRunId), logs);
+      return this.axiosInstance.post(ZEBRUNNER_PATHS.SEND_LOGS(launchId), logs);
     }
   }
 
-  async finishTestRun(id: number, request: FinishTestRunRequest): Promise<AxiosResponse> {
-    return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_TEST_RUN(id), request);
+  async finishLaunch(id: number, request: FinishLaunchRequest): Promise<AxiosResponse> {
+    return this.axiosInstance.put(ZEBRUNNER_PATHS.FINISH_LAUNCH(id), request);
   }
 
-  async exchangeRunContext(runContext: string): Promise<ExchangedRunContext> {
+  async exchangeLaunchContext(launchContext: string): Promise<ExchangedLaunchContext> {
     await this.authenticateIfRequired();
-    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.EXCHANGE_RUN_CONTEXT(), runContext);
+    const response = await this.axiosInstance.post(ZEBRUNNER_PATHS.EXCHANGE_LAUNCH_CONTEXT(), launchContext);
 
-    return new ExchangedRunContext(response.data);
+    return new ExchangedLaunchContext(response.data);
   }
 
-  async updateTcmConfigs(testRunId: number, request: UpdateTcmConfigsRequest): Promise<AxiosResponse> {
-    return this.axiosInstance.patch(ZEBRUNNER_PATHS.UPDATE_TCM_CONFIGS(testRunId), request);
+  async updateTcmConfigs(launchId: number, request: UpdateTcmConfigsRequest): Promise<AxiosResponse> {
+    return this.axiosInstance.patch(ZEBRUNNER_PATHS.UPDATE_TCM_CONFIGS(launchId), request);
   }
 
   async upsertTestTestCases(
-    testRunId: number,
+    launchId: number,
     testId: number,
     request: { items: ZbrTestCase[] },
   ): Promise<AxiosResponse> {
-    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPSERT_TEST_TEST_CASES(testRunId, testId), request);
+    return this.axiosInstance.post(ZEBRUNNER_PATHS.UPSERT_TEST_TEST_CASES(launchId, testId), request);
   }
 
-  async attachTestRunLabels(testRunId: number, request: AttachLabelsRequest): Promise<AxiosResponse> {
+  async attachLaunchLabels(launchId: number, request: AttachLabelsRequest): Promise<AxiosResponse> {
     if (request?.items?.length) {
-      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_RUN_LABELS(testRunId), request);
+      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_LAUNCH_LABELS(launchId), request);
     }
   }
 
-  async attachTestRunArtifactReferences(
-    testRunId: number,
+  async attachLaunchArtifactReferences(
+    launchId: number,
     request: AttachArtifactReferencesRequest,
   ): Promise<AxiosResponse> {
     if (request?.items?.length) {
-      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_RUN_ARTIFACT_REFERENCES(testRunId), request);
+      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_LAUNCH_ARTIFACT_REFERENCES(launchId), request);
     }
   }
 
   async attachTestArtifactReferences(
-    testRunId: number,
+    launchId: number,
     testId: number,
     request: AttachArtifactReferencesRequest,
   ): Promise<AxiosResponse> {
     if (request?.items?.length) {
-      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_ARTIFACT_REFERENCES(testRunId, testId), request);
+      return this.axiosInstance.put(ZEBRUNNER_PATHS.ATTACH_TEST_ARTIFACT_REFERENCES(launchId, testId), request);
     }
   }
 
-  async revertTestRegistration(testRunId: number, testId: number): Promise<AxiosResponse> {
-    return this.axiosInstance.delete(ZEBRUNNER_PATHS.REVERT_TEST_REGISTRATION(testRunId, testId));
+  async revertTestRegistration(launchId: number, testId: number): Promise<AxiosResponse> {
+    return this.axiosInstance.delete(ZEBRUNNER_PATHS.REVERT_TEST_REGISTRATION(launchId, testId));
   }
 }

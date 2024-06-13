@@ -1,1 +1,0 @@
-{"version":3,"file":"FinishTestRunRequest.js","sourceRoot":"","sources":["../../../../src/javascript-agent-playwright/ZebrunnerApiClient/types/FinishTestRunRequest.ts"],"names":[],"mappings":";;;AAAA,MAAa,oBAAoB;IAC/B,OAAO,CAAO;IAEd;QACE,IAAI,CAAC,OAAO,GAAG,IAAI,IAAI,EAAE,CAAC;IAC5B,CAAC;CACF;AAND,oDAMC"}

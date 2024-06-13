@@ -26,7 +26,7 @@ exports.CurrentLaunch = {
             return isNotBlank;
         });
         if ((0, type_utils_1.isNotEmptyArray)(values)) {
-            process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_RUN_LABELS, payload: { key, values } }));
+            process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_LAUNCH_LABELS, payload: { key, values } }));
         }
     },
     attachArtifactReference: (name, value) => {
@@ -38,7 +38,7 @@ exports.CurrentLaunch = {
             (0, helpers_1.stdoutErrorEvent)('CurrentLaunch.attachArtifactReference', `Artifact reference value must be a not blank string. Provided value for name '${value}' is '${value}'`);
             return;
         }
-        process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_TEST_RUN_ARTIFACT_REFERENCES, payload: { name, value } }));
+        process.stdout.write(JSON.stringify({ eventType: events_1.EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT_REFERENCES, payload: { name, value } }));
     },
     attachArtifact: (pathOrBuffer, name) => {
         const timestamp = new Date().getTime();
@@ -50,7 +50,7 @@ exports.CurrentLaunch = {
             (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachArtifact', `fileName must not be a blank string. Provided value is '${name}'`);
         }
         process.stdout.write(JSON.stringify({
-            eventType: events_1.EVENT_NAMES.ATTACH_RUN_ARTIFACT,
+            eventType: events_1.EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT,
             payload: { pathOrBuffer, timestamp, name },
         }));
     },
