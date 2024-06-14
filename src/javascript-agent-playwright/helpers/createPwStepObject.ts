@@ -1,10 +1,16 @@
-export const createPwStepObject = (timestamp: number, title: string, level = 'INFO') => {
+export const createPwStepObject = (
+  timestamp: number,
+  title: string,
+  action: string,
+  screenshotPathOrBuffer?: string | Buffer,
+) => {
   return {
     startTime: new Date(timestamp),
     title,
     duration: new Date().getTime() - timestamp,
-    category: `zebrunner:log:${level}`,
+    category: `zebrunner:${action}`,
     steps: [],
-    titlePath: () => [`zebrunner:log:${level}`],
+    titlePath: () => [`zebrunner:${action}`],
+    screenshotPathOrBuffer,
   };
 };

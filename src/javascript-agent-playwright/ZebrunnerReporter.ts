@@ -26,7 +26,6 @@ import {
   isJsonString,
   getErrorsStringFromMap,
   getCustomArtifactObject,
-  getCustomScreenshotObject,
   createPwStepObject,
 } from './helpers';
 
@@ -119,7 +118,6 @@ class ZebrunnerReporter implements Reporter {
 
     pwTest.artifactReferences = [];
     pwTest.customArtifacts = [];
-    pwTest.customScreenshots = [];
     pwTest.labels = getTestLabelsFromTitle(pwTest.title) || [];
 
     await until(() => !!this.zbrLaunchId); // zebrunner launch initialized
@@ -148,7 +146,7 @@ class ZebrunnerReporter implements Reporter {
       if (pwTest) {
         const prevStep = pwTestResult.steps[pwTestResult.steps.length - 1];
         pwTestResult.steps.push(
-          createPwStepObject(prevStep.startTime.getTime(), `console.log("${chunk.trim()}");`),
+          createPwStepObject(prevStep.startTime.getTime(), `console.log('${chunk.trim()}');`, 'log:INFO'),
         );
       }
       return;
@@ -184,7 +182,7 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_MAINTAINER) {
       pwTest.maintainer = payload;
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_LOG) {
-      pwTestResult.steps.push(createPwStepObject(payload.timestamp, payload.message, payload.level));
+      pwTestResult.steps.push(createPwStepObject(payload.timestamp, payload.message, `log:${payload.level}`));
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES) {
       const index = pwTest.artifactReferences.findIndex((ar) => ar.name === payload.name);
       if (index === -1) {
@@ -197,7 +195,14 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.REVERT_TEST_REGISTRATION) {
       pwTest.shouldBeReverted = true;
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_SCREENSHOT) {
-      pwTest.customScreenshots.push(getCustomScreenshotObject(payload));
+      pwTestResult.steps.push(
+        createPwStepObject(
+          payload.timestamp,
+          'CurrentTest.attachScreenshot()',
+          'screenshot',
+          payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer,
+        ),
+      );
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT) {
       pwTest.customArtifacts.push(getCustomArtifactObject(payload));
     }
@@ -219,17 +224,14 @@ class ZebrunnerReporter implements Reporter {
       await this.revertTestRegistration(this.zbrLaunchId, zbrTestId);
       this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
     } else {
-      await this.attachTestCases(this.zbrLaunchId, zbrTestId, pwTest.testCases, pwTestResult.status);
-      await this.attachTestMaintainer(this.zbrLaunchId, zbrTestId, pwTest.maintainer);
       await this.attachTestLabels(this.zbrLaunchId, zbrTestId, pwTest.labels);
+      await this.attachTestLogs(this.zbrLaunchId, getTestLogs(pwTestResult.steps, zbrTestId));
+      await this.attachTestMaintainer(this.zbrLaunchId, zbrTestId, pwTest.maintainer);
+      await this.attachTestCases(this.zbrLaunchId, zbrTestId, pwTest.testCases, pwTestResult.status);
       const testAttachments = await processAttachments(pwTestResult.attachments);
-      await this.attachTestScreenshots(this.zbrLaunchId, zbrTestId, [
-        ...testAttachments.screenshots,
-        ...pwTest.customScreenshots,
-      ]);
       await this.attachTestFiles(this.zbrLaunchId, zbrTestId, [...testAttachments.files, ...pwTest.customArtifacts]);
       await this.attachTestArtifactReferences(this.zbrLaunchId, zbrTestId, pwTest.artifactReferences);
-      await this.attachTestLogs(this.zbrLaunchId, getTestLogs(pwTestResult.steps, zbrTestId));
+      await this.attachTestScreenshots(this.zbrLaunchId, zbrTestId, testAttachments.screenshots);
 
       if (testAttachments.videos.length) {
         const sessionStartedAt = new Date(pwTestResult.startTime);
@@ -589,7 +591,15 @@ class ZebrunnerReporter implements Reporter {
 
   private async attachTestLogs(zbrLaunchId: number, zbrLogEntries: TestLog[]) {
     try {
-      await this.apiClient.sendLogs(zbrLaunchId, zbrLogEntries);
+      for (const log of zbrLogEntries) {
+        if (log.type === 'screenshot') {
+          await this.attachTestScreenshots(zbrLaunchId, log.testId, [
+            { timestamp: log.timestamp, pathOrBuffer: log.screenshotPathOrBuffer },
+          ]);
+        } else {
+          await this.apiClient.sendLogs(zbrLaunchId, [log]);
+        }
+      }
     } catch (error) {
       this.logError('attachTestLogs', error);
     }

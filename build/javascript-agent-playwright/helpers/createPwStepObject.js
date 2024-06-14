@@ -1,14 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createPwStepObject = void 0;
-const createPwStepObject = (timestamp, title, level = 'INFO') => {
+const createPwStepObject = (timestamp, title, action, screenshotPathOrBuffer) => {
     return {
         startTime: new Date(timestamp),
         title,
         duration: new Date().getTime() - timestamp,
-        category: `zebrunner:log:${level}`,
+        category: `zebrunner:${action}`,
         steps: [],
-        titlePath: () => [`zebrunner:log:${level}`],
+        titlePath: () => [`zebrunner:${action}`],
+        screenshotPathOrBuffer,
     };
 };
 exports.createPwStepObject = createPwStepObject;

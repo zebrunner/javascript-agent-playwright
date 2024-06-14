@@ -6,7 +6,9 @@ export type TestLog = {
   level: LogLevel;
   timestamp: number;
   message: string;
-  testId?: number;
+  type: 'log' | 'screenshot';
+  testId: number;
+  screenshotPathOrBuffer?: string | Buffer;
 };
 
 export type TcmType = 'TEST_RAIL' | 'ZEPHYR' | 'XRAY' | 'ZEBRUNNER';
@@ -31,5 +33,4 @@ export interface ExtendedPwTestCase extends PwTestCase {
   shouldBeReverted: boolean;
   artifactReferences: { name: string; value: string }[];
   customArtifacts: FileArtifact[];
-  customScreenshots: FileArtifact[];
 }

@@ -26,7 +26,6 @@ export const processAttachments = async (attachments) => {
         attachmentObj.screenshots.push({
           pathOrBuffer: attachment.path || attachment.body,
           timestamp: Date.now(),
-          contentType: attachment.contentType,
         });
       }
     }
