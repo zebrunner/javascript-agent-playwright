@@ -177,12 +177,14 @@ class ZebrunnerReporter implements Reporter {
 
     // handle actions related to test:
     if (!pwTest) return;
+    const prevStepTimestamp = pwTestResult.steps[pwTestResult.steps.length - 1].startTime.getTime();
+
     if (eventType === EVENT_NAMES.ATTACH_TEST_CASE) {
       this.addTestCase(pwTest, payload);
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_MAINTAINER) {
       pwTest.maintainer = payload;
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_LOG) {
-      pwTestResult.steps.push(createPwStepObject(payload.timestamp, payload.message, `log:${payload.level}`));
+      pwTestResult.steps.push(createPwStepObject(prevStepTimestamp, payload.message, `log:${payload.level}`));
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES) {
       const index = pwTest.artifactReferences.findIndex((ar) => ar.name === payload.name);
       if (index === -1) {
@@ -197,7 +199,7 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_SCREENSHOT) {
       pwTestResult.steps.push(
         createPwStepObject(
-          payload.timestamp,
+          prevStepTimestamp,
           'CurrentTest.attachScreenshot()',
           'screenshot',
           payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer,
@@ -241,7 +243,7 @@ class ZebrunnerReporter implements Reporter {
         await this.attachSessionVideos(this.zbrLaunchId, zbrSessionId, testAttachments.videos);
       }
 
-      await this.finishTest(this.zbrLaunchId, zbrTestId, pwTestResult, pwTest.maintainer);
+      await this.finishTest(this.zbrLaunchId, zbrTestId, pwTestResult);
 
       console.log(`Finished uploading test "${fullTestName}" data to Zebrunner.`);
 
@@ -570,7 +572,7 @@ class ZebrunnerReporter implements Reporter {
     }
   }
 
-  private async finishTest(zbrLaunchId: number, zbrTestId: number, pwTestResult: PwTestResult, maintainer: string) {
+  private async finishTest(zbrLaunchId: number, zbrTestId: number, pwTestResult: PwTestResult) {
     try {
       const startedAt = new Date(pwTestResult.startTime);
       let endedAt = new Date(startedAt.getTime() + pwTestResult.duration);

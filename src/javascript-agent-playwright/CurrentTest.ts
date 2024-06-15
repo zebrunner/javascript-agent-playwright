@@ -19,13 +19,11 @@ export const CurrentTest = {
    * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
    */
   addLog: (message: string, level: LogLevel = 'INFO'): void => {
-    const timestamp = new Date().getTime();
-
     if (isNotBlankString(message) && isNotBlankString(level)) {
       process.stdout.write(
         JSON.stringify({
           eventType: EVENT_NAMES.ATTACH_TEST_LOG,
-          payload: { message, timestamp, level },
+          payload: { message, level },
         }),
       );
     } else {
@@ -115,8 +113,6 @@ export const CurrentTest = {
   },
 
   attachScreenshot: (pathOrBuffer: Buffer | string) => {
-    const timestamp = new Date().getTime();
-
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
         'CurrentTest.attachScreenshot',
@@ -128,7 +124,7 @@ export const CurrentTest = {
     process.stdout.write(
       JSON.stringify({
         eventType: EVENT_NAMES.ATTACH_TEST_SCREENSHOT,
-        payload: { pathOrBuffer, timestamp },
+        payload: { pathOrBuffer },
       }),
     );
   },
