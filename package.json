@@ -1,6 +1,6 @@
 {
   "name": "javascript-agent-playwright-beta",
-  "version": "0.2.0-beta.31",
+  "version": "0.2.0-beta.32",
   "main": "build/javascript-agent-playwright/index.js",
   "license": "MIT",
   "description": "Zebrunner Agent for Playwright",

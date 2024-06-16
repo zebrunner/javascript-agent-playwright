@@ -20,11 +20,10 @@ exports.CurrentTest = {
      * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
      */
     addLog: (message, level = 'INFO') => {
-        const timestamp = new Date().getTime();
         if ((0, helpers_1.isNotBlankString)(message) && (0, helpers_1.isNotBlankString)(level)) {
             process.stdout.write(JSON.stringify({
                 eventType: events_1.EVENT_NAMES.ATTACH_TEST_LOG,
-                payload: { message, timestamp, level },
+                payload: { message, level },
             }));
         }
         else {
@@ -77,14 +76,13 @@ exports.CurrentTest = {
         }));
     },
     attachScreenshot: (pathOrBuffer) => {
-        const timestamp = new Date().getTime();
         if (!Buffer.isBuffer(pathOrBuffer) && !fs_1.default.existsSync(pathOrBuffer)) {
             (0, helpers_1.stdoutErrorEvent)('CurrentTest.attachScreenshot', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`);
             return;
         }
         process.stdout.write(JSON.stringify({
             eventType: events_1.EVENT_NAMES.ATTACH_TEST_SCREENSHOT,
-            payload: { pathOrBuffer, timestamp },
+            payload: { pathOrBuffer },
         }));
     },
     revertRegistration: () => {

@@ -149,6 +149,7 @@ class ZebrunnerReporter {
         // handle actions related to test:
         if (!pwTest)
             return;
+        const prevStepTimestamp = pwTestResult.steps[pwTestResult.steps.length - 1].startTime.getTime();
         if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_CASE) {
             this.addTestCase(pwTest, payload);
         }
@@ -156,7 +157,7 @@ class ZebrunnerReporter {
             pwTest.maintainer = payload;
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_LOG) {
-            pwTestResult.steps.push((0, helpers_1.createPwStepObject)(payload.timestamp, payload.message, `log:${payload.level}`));
+            pwTestResult.steps.push((0, helpers_1.createPwStepObject)(prevStepTimestamp, payload.message, `log:${payload.level}`));
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES) {
             const index = pwTest.artifactReferences.findIndex((ar) => ar.name === payload.name);
@@ -174,7 +175,7 @@ class ZebrunnerReporter {
             pwTest.shouldBeReverted = true;
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_SCREENSHOT) {
-            pwTestResult.steps.push((0, helpers_1.createPwStepObject)(payload.timestamp, 'CurrentTest.attachScreenshot()', 'screenshot', payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer));
+            pwTestResult.steps.push((0, helpers_1.createPwStepObject)(prevStepTimestamp, 'CurrentTest.attachScreenshot()', 'screenshot', payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer));
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT) {
             pwTest.customArtifacts.push((0, helpers_1.getCustomArtifactObject)(payload));
@@ -208,7 +209,7 @@ class ZebrunnerReporter {
                 await this.finishTestSession(this.zbrLaunchId, zbrSessionId, sessionEndedAt);
                 await this.attachSessionVideos(this.zbrLaunchId, zbrSessionId, testAttachments.videos);
             }
-            await this.finishTest(this.zbrLaunchId, zbrTestId, pwTestResult, pwTest.maintainer);
+            await this.finishTest(this.zbrLaunchId, zbrTestId, pwTestResult);
             console.log(`Finished uploading test "${fullTestName}" data to Zebrunner.`);
             this.mapPwTestIdToStatus.set(pwTest.id, 'finished');
         }
@@ -453,7 +454,7 @@ class ZebrunnerReporter {
             this.logError('finishTestSession', error);
         }
     }
-    async finishTest(zbrLaunchId, zbrTestId, pwTestResult, maintainer) {
+    async finishTest(zbrLaunchId, zbrTestId, pwTestResult) {
         try {
             const startedAt = new Date(pwTestResult.startTime);
             let endedAt = new Date(startedAt.getTime() + pwTestResult.duration);
