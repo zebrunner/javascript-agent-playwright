@@ -11,7 +11,7 @@ export class ExchangedLaunchContext {
   fullExecutionPlanContext: string;
 
   constructor(response: any) {
-    this.launchUuid = response.launchUuid;
+    this.launchUuid = response.testRunUuid;
     this.mode = response.mode;
 
     this.runAllowed = response.runAllowed;

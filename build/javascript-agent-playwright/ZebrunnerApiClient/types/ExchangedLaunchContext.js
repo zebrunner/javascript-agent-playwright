@@ -10,7 +10,7 @@ class ExchangedLaunchContext {
     testsToRun;
     fullExecutionPlanContext;
     constructor(response) {
-        this.launchUuid = response.launchUuid;
+        this.launchUuid = response.testRunUuid;
         this.mode = response.mode;
         this.runAllowed = response.runAllowed;
         this.reason = response.reason;
