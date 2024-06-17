@@ -81,7 +81,21 @@ The following configuration options allow you to configure accompanying informat
 | `REPORTING_LAUNCH_DISPLAY_NAME`<br/>`launch.displayName`                     | Display name of the launch in Zebrunner. The default value is `Default Suite`.                                                                                                                                                                |
 | `REPORTING_LAUNCH_BUILD`<br/>`launch.build`                                  | Build number associated with the launch. It can reflect either the test build number or the build number of the application under test.                                                                                                       |
 | `REPORTING_LAUNCH_ENVIRONMENT`<br/>`launch.environment`                      | Represents the target environment in which the tests were run. For example, `stage` or `prod`.                                                                                                                                                |
+| `REPORTING_LAUNCH_LOCALE`<br/>`launch.locale`                                | Locale that will be displayed for the automation launch in Zebrunner. For example, `en_US`.                                                                                                                                                   |
 | `REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES`<br/>`launch.treatSkipsAsFailures` | If the value is set to true, skipped tests will be treated as failures when the result of the entire launch is calculated. For example, launch with all passed tests but one skipped will be considered a failure. The default value is true. |
+
+#### Test logs
+
+Zebrunner provides log capabilities for automation launch test results. The following options configure log rules.
+
+| Env var / Reporter config                                                     | Description                                                                                                                                                                              |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REPORTING_LOGS_IGNORE_PLAYWRIGHT_STEPS`<br/>`logs.ignorePlaywrightSteps`     | Determines whether the agent should ignore test steps collected by Playwright when sending logs to Zebrunner. The default value is `false`.                                              |
+| `REPORTING_LOGS_USE_LINES_FROM_SOURCE_CODE`<br/>`logs.useLinesFromSourceCode` | Determines whether the agent should replace Playwright step names with real lines from test source code when sending logs to Zebrunner. The default value is `true`.                     |
+| `REPORTING_LOGS_IGNORE_CONSOLE`<br/>`logs.ignoreConsole`                      | Determines whether the agent should ignore `console.log()`'s from test source code when sending logs to Zebrunner. The default value is `false`.                                         |
+| `REPORTING_LOGS_IGNORE_MANUAL`<br/>`logs.ignoreCustom`                        | Determines whether the agent should ignore logs added to test manually with `CurrentTest.attachLog()` when sending logs to Zebrunner. The default value is `false`.                      |
+| `REPORTING_LOGS_IGNORE_CUSTOM_SCREENSHOTS`<br/>`logs.ignoreManualScreenshots` | Determines whether the agent should ignore screenshots attached with `CurrentTest.attachScreenshot()` when sending logs to Zebrunner. The default value is `false`.                      |
+| `REPORTING_LOGS_IGNORE_AUTO_SCREENSHOTS`<br/>`logs.ignoreAutoScreenshots`     | Determines whether the agent should ignore screenshots that are automatically collected and attached to test by Playwright when sending logs to Zebrunner. The default value is `false`. |
 
 #### Milestone
 
@@ -165,10 +179,10 @@ One of the examples of such cases is when a test case result status does not cor
 
 Another example is custom Result Statuses in the target TCM system. In this case, we cannot anticipate the correct status and simply skip the test execution. In order to tackle this, Zebrunner allows you to configure default status for passed and failed test executions.
 
-| Env var / Reporter config                                                | Description                                                                                              |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| `REPORTING_TCM_TEST_CASE_STATUS_ON_PASS`<br/>`tcm.testCaseStatus.onPass` | The default status that will be assigned to passed test executions when they are pushed to a TCM system. |
-| `REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL`<br/>`tcm.testCaseStatus.onFail` | The default status that will be assigned to failed test executions when they are pushed to a TCM system. |
+| Env var / Reporter config                                                | Description                                                                                               |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `REPORTING_TCM_TEST_CASE_STATUS_ON_PASS`<br/>`tcm.testCaseStatus.onPass` | The default status that will be assigned to passed test executions when they are pushed to a TCM system.  |
+| `REPORTING_TCM_TEST_CASE_STATUS_ON_FAIL`<br/>`tcm.testCaseStatus.onFail` | The default status that will be assigned to failed test executions when they are pushed to a TCM system.  |
 | `REPORTING_TCM_TEST_CASE_STATUS_ON_SKIP`<br/>`tcm.testCaseStatus.onSkip` | The default status that will be assigned to skipped test executions when they are pushed to a TCM system. |
 
 When pushing results to a TCM system, Zebrunner derives the Result Status in the following order:
@@ -192,7 +206,15 @@ The following code snippet is a list of all configuration environment variables 
    REPORTING_LAUNCH_DISPLAY_NAME=Nightly Regression
    REPORTING_LAUNCH_BUILD=2.41.2.2431-SNAPSHOT
    REPORTING_LAUNCH_ENVIRONMENT=QA
+   REPORTING_LAUNCH_LOCALE=en_US
    REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES=TRUE
+
+   REPORTING_LOGS_IGNORE_PLAYWRIGHT_STEPS=FALSE
+   REPORTING_LOGS_USE_LINES_FROM_SOURCE_CODE=TRUE
+   REPORTING_LOGS_IGNORE_CONSOLE=FALSE
+   REPORTING_LOGS_IGNORE_MANUAL=FALSE
+   REPORTING_LOGS_IGNORE_CUSTOM_SCREENSHOTS=FALSE
+   REPORTING_LOGS_IGNORE_AUTO_SCREENSHOTS=FALSE
 
    REPORTING_MILESTONE_ID=1
    REPORTING_MILESTONE_NAME=Release 1.0.0
@@ -244,12 +266,22 @@ export default defineConfig({
         projectKey: 'DEF',
         server: {
           hostname: 'https://mycompany.zebrunner.com',
-          accessToken: 'somesecretaccesstoken',
+          accessToken: 'someSecretAccessToken',
         },
         launch: {
           displayName: 'Playwright launch',
           build: '1.0.0',
           environment: 'Local',
+          locale: 'en_US',
+          treatSkipsAsFailures: true,
+        },
+        logs: {
+          ignorePlaywrightSteps: false,
+          useLinesFromSourceCode: true,
+          ignoreConsole: false,
+          ignoreCustom: false,
+          ignoreManualScreenshots: false,
+          ignoreAutoScreenshots: false,
         },
         milestone: {
           id: null,
@@ -433,24 +465,24 @@ Labels with `customLabelName` key, `smoke_test` and `slow` values will be added 
 
 You may want to add custom test logs displayed in Zebrunner.
 
-The Agent comes with the `addLog()` method of the `CurrentTest` object. This method accepts the `message` as first parameter, `level` (optional) as second parameter and should be used in the scope of the test method. Valid values for `level` are `'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE'` or custom `string`, default is `'INFO'`.
+The Agent comes with the `attachLog()` method of the `CurrentTest` object. This method accepts the `message` as first parameter, `level` (optional) as second parameter and should be used in the scope of the test method. Valid values for `level` are `'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE'` or custom `string`, default is `'INFO'`.
 
 ```ts
 import { CurrentTest } from '@zebrunner/javascript-agent-playwright';
 
 test.describe('Test suite', () => {
   test('first test', async ({ page }) => {
-    CurrentTest.addLog('INFO level log message on test start');
+    CurrentTest.attachLog('INFO level log message on test start');
     // ...
 
-    CurrentTest.addLog('INFO level log message', 'INFO');
-    CurrentTest.addLog('ERROR level log message', 'ERROR');
-    CurrentTest.addLog('WARN level log message', 'WARN');
-    CurrentTest.addLog('FATAL level log message', 'FATAL');
-    CurrentTest.addLog('DEBUG level log message', 'DEBUG');
-    CurrentTest.addLog('TRACE level log message', 'TRACE');
+    CurrentTest.attachLog('INFO level log message', 'INFO');
+    CurrentTest.attachLog('ERROR level log message', 'ERROR');
+    CurrentTest.attachLog('WARN level log message', 'WARN');
+    CurrentTest.attachLog('FATAL level log message', 'FATAL');
+    CurrentTest.attachLog('DEBUG level log message', 'DEBUG');
+    CurrentTest.attachLog('TRACE level log message', 'TRACE');
 
-    CurrentTest.addLog('CUSTOM string level log message', 'CUSTOM');
+    CurrentTest.attachLog('CUSTOM string level log message', 'CUSTOM');
     // ...
   });
 });

@@ -18,7 +18,7 @@ export const CurrentTest = {
   /**
    * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
    */
-  addLog: (message: string, level: LogLevel = 'INFO'): void => {
+  attachLog: (message: string, level: LogLevel = 'INFO'): void => {
     if (isNotBlankString(message) && isNotBlankString(level)) {
       process.stdout.write(
         JSON.stringify({
@@ -28,7 +28,7 @@ export const CurrentTest = {
       );
     } else {
       stdoutErrorEvent(
-        'CurrentTest.addLog',
+        'CurrentTest.attachLog',
         `Message and level parameters must not be a blank string, provided parameters are '${message}' and '${level}'.`,
       );
     }

@@ -38,7 +38,16 @@ export default defineConfig({
           displayName: 'Playwright launch',
           build: '1.0.0',
           environment: 'Local',
+          locale: 'en_US',
           treatSkipsAsFailures: true,
+        },
+        logs: {
+          ignorePlaywrightSteps: false,
+          useLinesFromSourceCode: true,
+          ignoreConsole: false,
+          ignoreCustom: false,
+          ignoreManualScreenshots: false,
+          ignoreAutoScreenshots: false,
         },
         milestone: {
           id: null,

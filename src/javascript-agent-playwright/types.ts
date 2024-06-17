@@ -9,6 +9,7 @@ export type TestLog = {
   type: 'log' | 'screenshot';
   testId: number;
   screenshotPathOrBuffer?: string | Buffer;
+  isPwTestStep?: boolean;
 };
 
 export type TcmType = 'TEST_RAIL' | 'ZEPHYR' | 'XRAY' | 'ZEBRUNNER';

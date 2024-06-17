@@ -15,9 +15,9 @@ test.describe('nested foo', () => {
   test('Get started link (with console.log() and custom screenshots and logs)', async ({ page }, testInfo) => {
     CurrentTest.setMaintainer('edovnar');
 
-    CurrentTest.addLog('INFO level log message on test start', 'INFO');
+    CurrentTest.attachLog('INFO level log message on test start', 'INFO');
 
-    CurrentTest.addLog('Navigating to Google...', 'INFO');
+    CurrentTest.attachLog('Navigating to Google...', 'INFO');
 
     await page.goto('https://www.google.com/');
     CurrentTest.attachScreenshot(await page.screenshot());
@@ -31,9 +31,9 @@ test.describe('nested foo', () => {
     // Expects page to have a heading with the name of Installation.
     await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
 
-    CurrentTest.addLog('BEFORE Attaching screenshot via PATH on disk', 'WARN');
+    CurrentTest.attachLog('BEFORE Attaching screenshot via PATH on disk', 'WARN');
     CurrentTest.attachScreenshot(await page.screenshot());
-    //CurrentTest.addLog('AFTER Attaching screenshot via PATH on disk', 'WARN');
+    //CurrentTest.attachLog('AFTER Attaching screenshot via PATH on disk', 'WARN');
 
     console.log('Log should be 1');
     console.log('Log should be 2');
@@ -41,18 +41,42 @@ test.describe('nested foo', () => {
     console.log('Log should be 4');
     console.log('Log should be 5');
 
-    CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt')
+    CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
+    CurrentTest.attachArtifactReference('referenceT.txt', 'https://google.com');
 
-    CurrentTest.addLog('INFO level log message 1', 'INFO');
-    CurrentTest.addLog('ERROR level log message 2', 'ERROR');
-    CurrentTest.addLog('WARN level log message 3', 'WARN');
-    CurrentTest.addLog('FATAL level log message 4', 'FATAL');
-    CurrentTest.addLog('DEBUG level log message 5', 'DEBUG');
-    CurrentTest.addLog('TRACE level log message 6', 'TRACE');
+    CurrentTest.attachLog('INFO level log message 1', 'INFO');
+    CurrentTest.attachLog('ERROR level log message 2', 'ERROR');
+    CurrentTest.attachLog('WARN level log message 3', 'WARN');
+    CurrentTest.attachLog('FATAL level log message 4', 'FATAL');
+    CurrentTest.attachLog('DEBUG level log message 5', 'DEBUG');
+    CurrentTest.attachLog('TRACE level log message 6', 'TRACE');
 
-    CurrentTest.addLog('CUSTOM string level log message 7', 'CUSTOM');
+    CurrentTest.attachLog('CUSTOM string level log message 7', 'CUSTOM');
 
-    CurrentTest.addLog('Custom log message example on test finish (without log level, by default should be INFO 8)');
+    CurrentTest.attachLog('Custom log message example on test finish (without log level, by default should be INFO 8)');
+  });
+
+  test('Skipped inside in test', async ({ page }, testInfo) => {
+    CurrentLaunch.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
+    CurrentTest.attachArtifact('C:\\Users\\Mr_Fi\\Desktop\\Zebrunner\\TEST_ARTIFACT.txt');
+    CurrentTest.attachLabel('type', 'smoke');
+    CurrentTest.setMaintainer('edovnar');
+
+    await page.goto('https://example.com');
+    CurrentTest.attachLog('This test should be skipped!)', 'WARN');
+    const conditionToSkip = true;
+
+    if (conditionToSkip) {
+      testInfo.annotations.push({
+        type: 'skip',
+        description: 'Test skipped due to condition',
+      });
+      test.skip();
+    }
+
+    await page.goto('https://example.com');
+    const title = await page.title();
+    expect(title).toBe('Example Domain');
   });
 
   // test('test running in Chrome @ff @smoke_test @slow', async ({ page }, testInfo) => {
@@ -61,16 +85,16 @@ test.describe('nested foo', () => {
   //   const page1 = await browser.newPage('https://github.com');
 
   //   console.log('Custom Message from console.log');
-  //   // CurrentTest.addLog('NO PARAMETER custom log message');
+  //   // CurrentTest.attachLog('NO PARAMETER custom log message');
 
-  //   // CurrentTest.addLog('INFO level log message', 'INFO');
-  //   // CurrentTest.addLog('DEBUG level log message', 'DEBUG');
-  //   // CurrentTest.addLog('ERROR level log message', 'ERROR');
-  //   // CurrentTest.addLog('WARN level log message', 'WARN');
-  //   // CurrentTest.addLog('TRACE level log message', 'TRACE');
-  //   CurrentTest.addLog('FATAL level log message', 'FATAL');
+  //   // CurrentTest.attachLog('INFO level log message', 'INFO');
+  //   // CurrentTest.attachLog('DEBUG level log message', 'DEBUG');
+  //   // CurrentTest.attachLog('ERROR level log message', 'ERROR');
+  //   // CurrentTest.attachLog('WARN level log message', 'WARN');
+  //   // CurrentTest.attachLog('TRACE level log message', 'TRACE');
+  //   CurrentTest.attachLog('FATAL level log message', 'FATAL');
 
-  //   CurrentTest.addLog('CUSTOM string level log message', 'CUSTOM');
+  //   CurrentTest.attachLog('CUSTOM string level log message', 'CUSTOM');
 
   //   zebrunner.testCaseKey('DEF-1231');
   //   zebrunner.testCaseStatus('DEF-1249', 'Retest');

@@ -1,118 +1,14 @@
 import { isNotBlankString } from '../helpers';
-
-interface ServerConfig {
-  readonly hostname: string;
-  readonly accessToken: string;
-}
-
-interface LaunchConfig {
-  readonly displayName: string;
-  readonly build: string;
-  readonly environment: string;
-  readonly treatSkipsAsFailures: boolean;
-}
-
-interface MilestoneConfig {
-  readonly idFromConfig: number;
-  readonly idFromEnv: number;
-  readonly nameFromConfig: string;
-  readonly nameFromEnv: string;
-}
-
-interface NotificationsConfig {
-  readonly notifyOnEachFailure: boolean;
-
-  readonly slackChannels: string;
-  readonly teamsChannels: string;
-  readonly emails: string;
-}
-
-interface Tcm {
-  readonly testCaseStatus: TestCaseStatus;
-
-  readonly zebrunner: ZebrunnerTcm;
-  readonly testRail: TestRailTcm;
-  readonly xray: XrayTcm;
-  readonly zephyr: ZephyrTcm;
-}
-
-interface TestCaseStatus {
-  readonly onPass: string;
-  readonly onFail: string;
-  readonly onSkip: string;
-}
-
-interface ZebrunnerTcm {
-  readonly pushResults: boolean;
-  readonly pushInRealTime: boolean;
-
-  readonly testRunId: number;
-}
-
-interface TestRailTcm {
-  readonly pushResults: boolean;
-  readonly pushInRealTime: boolean;
-
-  readonly suiteId: number;
-  readonly runId: number;
-
-  readonly includeAllTestCasesInNewRun: boolean;
-  readonly runName: string;
-  readonly milestoneName: string;
-  readonly assignee: string;
-}
-
-interface XrayTcm {
-  readonly pushResults: boolean;
-  readonly pushInRealTime: boolean;
-
-  readonly executionKey: string;
-}
-
-interface ZephyrTcm {
-  readonly pushResults: boolean;
-  readonly pushInRealTime: boolean;
-
-  readonly jiraProjectKey: string;
-  readonly testCycleKey: string;
-}
-
-function getString(envVar: string, configValue: any, defaultValue: string = null): string {
-  const value = process.env[envVar] as string;
-
-  return isNotBlankString(value) ? value : isNotBlankString(configValue) ? configValue : defaultValue;
-}
-
-function getBoolean(envVar: string, configValue: any, defaultValue = false): boolean {
-  if (process.env[envVar]?.toLowerCase?.() === 'false') {
-    return false;
-  }
-
-  return (
-    process.env[envVar]?.toLowerCase?.() === 'true' ||
-    configValue === true ||
-    configValue?.toLowerCase?.() === 'true' ||
-    defaultValue
-  );
-}
-
-function getNumber(envVar: string, configValue: any, defaultValue: number = null): number {
-  return parseInt(process.env[envVar], 10) || parseInt(configValue, 10) || defaultValue;
-}
+import { getBoolean, getNumber, getString } from './helpers';
 
 export class ReportingConfig {
   readonly enabled: boolean;
-
   readonly projectKey: string;
-
   readonly server: ServerConfig;
-
   readonly launch: LaunchConfig;
-
+  readonly logs: LogsConfig;
   readonly milestone: MilestoneConfig;
-
   readonly notifications: NotificationsConfig;
-
   readonly tcm: Tcm;
 
   constructor(config: any) {
@@ -135,10 +31,36 @@ export class ReportingConfig {
       ),
       build: getString('REPORTING_LAUNCH_BUILD', config?.launch?.build),
       environment: getString('REPORTING_LAUNCH_ENVIRONMENT', config?.launch?.environment),
+      locale: getString('REPORTING_LAUNCH_LOCALE', config?.launch?.locale),
       treatSkipsAsFailures: getBoolean(
         'REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES',
         config?.launch?.treatSkipsAsFailures,
         true,
+      ),
+    };
+
+    this.logs = {
+      ignorePlaywrightSteps: getBoolean(
+        'REPORTING_LOGS_IGNORE_PLAYWRIGHT_STEPS',
+        config?.logs?.ignorePlaywrightSteps,
+        false,
+      ),
+      useLinesFromSourceCode: getBoolean(
+        'REPORTING_LOGS_USE_LINES_FROM_SOURCE_CODE',
+        config?.logs?.useLinesFromSourceCode,
+        true,
+      ),
+      ignoreConsole: getBoolean('REPORTING_LOGS_IGNORE_CONSOLE', config?.logs?.ignoreConsole, false),
+      ignoreCustom: getBoolean('REPORTING_LOGS_IGNORE_MANUAL', config?.logs?.ignoreCustom, false),
+      ignoreManualScreenshots: getBoolean(
+        'REPORTING_LOGS_IGNORE_CUSTOM_SCREENSHOTS',
+        config?.logs?.ignoreManualScreenshots,
+        false,
+      ),
+      ignoreAutoScreenshots: getBoolean(
+        'REPORTING_LOGS_IGNORE_AUTO_SCREENSHOTS',
+        config?.logs?.ignoreAutoScreenshots,
+        false,
       ),
     };
 

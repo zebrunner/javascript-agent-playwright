@@ -1,5 +1,10 @@
-import { ReporterDescription } from '@playwright/test';
-import { FullConfig, Reporter, Suite, TestResult as PwTestResult } from '@playwright/test/reporter';
+import { ReporterDescription as PwReporterDescription } from '@playwright/test';
+import {
+  FullConfig as PwFullConfig,
+  Reporter as PwReporter,
+  Suite as PwSuite,
+  TestResult as PwTestResult,
+} from '@playwright/test/reporter';
 import * as fs from 'fs';
 import { AxiosResponse } from 'axios';
 import FormData from 'form-data';
@@ -11,6 +16,7 @@ import { ExchangedLaunchContext } from './ZebrunnerApiClient/types/ExchangedLaun
 import { StartLaunchRequest } from './ZebrunnerApiClient/types/StartLaunchRequest';
 import { UpdateTcmConfigsRequest } from './ZebrunnerApiClient/types/UpdateTcmConfigsRequest';
 import { ZbrTestCase, TestLog, ExtendedPwTestCase, FileArtifact } from './types';
+import { Labels } from './constants/labels';
 import {
   cleanseReason,
   determineStatus,
@@ -27,9 +33,10 @@ import {
   getErrorsStringFromMap,
   getCustomArtifactObject,
   createPwStepObject,
+  isNotBlankString,
 } from './helpers';
 
-class ZebrunnerReporter implements Reporter {
+class ZebrunnerReporter implements PwReporter {
   private reportingConfig: ReportingConfig;
   private apiClient: ZebrunnerApiClient;
 
@@ -46,7 +53,7 @@ class ZebrunnerReporter implements Reporter {
 
   private exchangedLaunchContext: ExchangedLaunchContext;
 
-  async onBegin(config: FullConfig, suite: Suite) {
+  async onBegin(config: PwFullConfig, suite: PwSuite) {
     if (!suite.allTests().length) {
       console.log('No tests found.');
       process.exit();
@@ -54,8 +61,8 @@ class ZebrunnerReporter implements Reporter {
 
     const launchStartTime = new Date();
 
-    const reporters: ReporterDescription[] = config.reporter;
-    const zebrunnerReporter: ReporterDescription = reporters.find((reporterAndConfig) =>
+    const reporters: PwReporterDescription[] = config.reporter;
+    const zebrunnerReporter: PwReporterDescription = reporters.find((reporterAndConfig) =>
       reporterAndConfig[0].includes('javascript-agent-playwright'),
     );
 
@@ -67,6 +74,12 @@ class ZebrunnerReporter implements Reporter {
     }
 
     this.zbrLaunchLabels = [];
+    if (isNotBlankString(this.reportingConfig.launch.locale)) {
+      this.zbrLaunchLabels.push({
+        key: Labels.LOCALE,
+        value: this.reportingConfig.launch.locale,
+      });
+    }
     this.zbrLaunchArtifactReferences = [];
     this.zbrLaunchArtifacts = [];
 
@@ -83,7 +96,7 @@ class ZebrunnerReporter implements Reporter {
     await this.saveLaunchTcmConfigs(this.zbrLaunchId);
   }
 
-  private async rerunResolver(suite: Suite) {
+  private async rerunResolver(suite: PwSuite) {
     try {
       if (!process.env.REPORTING_RUN_CONTEXT) {
         return suite;
@@ -143,7 +156,7 @@ class ZebrunnerReporter implements Reporter {
     if (!isJsonString(chunk)) {
       // handle console.log's from tests source code
       console.log(chunk.trim());
-      if (pwTest) {
+      if (pwTest && !this.reportingConfig.logs.ignoreConsole) {
         const prevStep = pwTestResult.steps[pwTestResult.steps.length - 1];
         pwTestResult.steps.push(
           createPwStepObject(prevStep.startTime.getTime(), `console.log('${chunk.trim()}');`, 'log:INFO'),
@@ -184,7 +197,9 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_MAINTAINER) {
       pwTest.maintainer = payload;
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_LOG) {
-      pwTestResult.steps.push(createPwStepObject(prevStepTimestamp, payload.message, `log:${payload.level}`));
+      if (!this.reportingConfig.logs.ignoreCustom) {
+        pwTestResult.steps.push(createPwStepObject(prevStepTimestamp, payload.message, `log:${payload.level}`));
+      }
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES) {
       const index = pwTest.artifactReferences.findIndex((ar) => ar.name === payload.name);
       if (index === -1) {
@@ -197,14 +212,16 @@ class ZebrunnerReporter implements Reporter {
     } else if (eventType === EVENT_NAMES.REVERT_TEST_REGISTRATION) {
       pwTest.shouldBeReverted = true;
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_SCREENSHOT) {
-      pwTestResult.steps.push(
-        createPwStepObject(
-          prevStepTimestamp,
-          'CurrentTest.attachScreenshot()',
-          'screenshot',
-          payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer,
-        ),
-      );
+      if (!this.reportingConfig.logs.ignoreManualScreenshots) {
+        pwTestResult.steps.push(
+          createPwStepObject(
+            prevStepTimestamp,
+            'CurrentTest.attachScreenshot()',
+            'screenshot',
+            payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer,
+          ),
+        );
+      }
     } else if (eventType === EVENT_NAMES.ATTACH_TEST_ARTIFACT) {
       pwTest.customArtifacts.push(getCustomArtifactObject(payload));
     }
@@ -227,13 +244,23 @@ class ZebrunnerReporter implements Reporter {
       this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
     } else {
       await this.attachTestLabels(this.zbrLaunchId, zbrTestId, pwTest.labels);
-      await this.attachTestLogs(this.zbrLaunchId, getTestLogs(pwTestResult.steps, zbrTestId));
+      await this.attachTestLogs(
+        this.zbrLaunchId,
+        getTestLogs(
+          pwTestResult.steps,
+          zbrTestId,
+          this.reportingConfig.logs.ignorePlaywrightSteps,
+          this.reportingConfig.logs.useLinesFromSourceCode,
+        ),
+      );
       await this.attachTestMaintainer(this.zbrLaunchId, zbrTestId, pwTest.maintainer);
       await this.attachTestCases(this.zbrLaunchId, zbrTestId, pwTest.testCases, pwTestResult.status);
       const testAttachments = await processAttachments(pwTestResult.attachments);
       await this.attachTestFiles(this.zbrLaunchId, zbrTestId, [...testAttachments.files, ...pwTest.customArtifacts]);
       await this.attachTestArtifactReferences(this.zbrLaunchId, zbrTestId, pwTest.artifactReferences);
-      await this.attachTestScreenshots(this.zbrLaunchId, zbrTestId, testAttachments.screenshots);
+      if (!this.reportingConfig.logs.ignoreAutoScreenshots) {
+        await this.attachTestScreenshots(this.zbrLaunchId, zbrTestId, testAttachments.screenshots);
+      }
 
       if (testAttachments.videos.length) {
         const sessionStartedAt = new Date(pwTestResult.startTime);
@@ -593,6 +620,10 @@ class ZebrunnerReporter implements Reporter {
 
   private async attachTestLogs(zbrLaunchId: number, zbrLogEntries: TestLog[]) {
     try {
+      if (!zbrLogEntries.length) {
+        return;
+      }
+
       for (const log of zbrLogEntries) {
         if (log.type === 'screenshot') {
           await this.attachTestScreenshots(zbrLaunchId, log.testId, [
