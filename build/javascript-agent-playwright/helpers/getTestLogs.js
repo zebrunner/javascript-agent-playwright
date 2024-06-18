@@ -28,7 +28,6 @@ const cleanseReason_1 = require("./cleanseReason");
 const fs = __importStar(require("fs"));
 const getTestLogs = (steps, zbrTestId, ignorePlaywrightSteps, useLinesFromSourceCode) => {
     const testSteps = [];
-    console.log(ignorePlaywrightSteps, useLinesFromSourceCode);
     for (const testStep of steps) {
         if (!(ignorePlaywrightSteps && !testStep.category.includes('zebrunner'))) {
             if (testStep.category === 'zebrunner:screenshot') {

@@ -9,7 +9,6 @@ export const getTestLogs = (
   useLinesFromSourceCode: boolean,
 ): TestLog[] => {
   const testSteps = [];
-  console.log(ignorePlaywrightSteps, useLinesFromSourceCode);
 
   for (const testStep of steps) {
     if (!(ignorePlaywrightSteps && !testStep.category.includes('zebrunner'))) {
