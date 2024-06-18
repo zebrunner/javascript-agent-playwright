@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createPwStepObject = exports.getCustomArtifactObject = exports.stdoutErrorEvent = exports.getErrorsStringFromMap = exports.isJsonString = exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestLogs = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
+exports.getFinishedTestCount = exports.createPwStepObject = exports.getCustomArtifactObject = exports.stdoutErrorEvent = exports.getErrorsStringFromMap = exports.isJsonString = exports.recursiveTestsTraversal = exports.isNotEmptyArray = exports.isArray = exports.isPromise = exports.isFunction = exports.isBuffer = exports.isNotBlankString = exports.isString = exports.until = exports.processAttachments = exports.parseBrowserCapabilities = exports.getTestLabelsFromTitle = exports.getTestLogs = exports.getFullSuiteName = exports.getFileSizeInBytes = exports.determineStatus = exports.convertVideo = exports.cleanseReason = void 0;
 var cleanseReason_1 = require("./cleanseReason");
 Object.defineProperty(exports, "cleanseReason", { enumerable: true, get: function () { return cleanseReason_1.cleanseReason; } });
 var convertVideo_1 = require("./convertVideo");
@@ -41,4 +41,6 @@ var getCustomArtifactObject_1 = require("./getCustomArtifactObject");
 Object.defineProperty(exports, "getCustomArtifactObject", { enumerable: true, get: function () { return getCustomArtifactObject_1.getCustomArtifactObject; } });
 var createPwStepObject_1 = require("./createPwStepObject");
 Object.defineProperty(exports, "createPwStepObject", { enumerable: true, get: function () { return createPwStepObject_1.createPwStepObject; } });
+var getFinishedTestCount_1 = require("./getFinishedTestCount");
+Object.defineProperty(exports, "getFinishedTestCount", { enumerable: true, get: function () { return getFinishedTestCount_1.getFinishedTestCount; } });
 //# sourceMappingURL=index.js.map

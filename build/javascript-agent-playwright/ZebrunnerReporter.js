@@ -45,8 +45,9 @@ class ZebrunnerReporter {
     zbrLaunchArtifacts;
     errors;
     totalTestCount;
-    mapPwTestIdToZbrTestId;
-    mapPwTestIdToStatus;
+    pwTestIdToZbrTestId;
+    pwTestIdToZbrStartedTry; // number is an index of pw test try which was started/restarted in Zebrunner
+    pwTestIdToZbrFinishedTry; // number is an index of pw test try which was finished in Zebrunner
     exchangedLaunchContext;
     async onBegin(config, suite) {
         if (!suite.allTests().length) {
@@ -62,21 +63,24 @@ class ZebrunnerReporter {
             return;
         }
         this.zbrLaunchLabels = [];
-        if ((0, helpers_1.isNotBlankString)(this.reportingConfig.launch.locale)) {
-            this.zbrLaunchLabels.push({
-                key: labels_1.Labels.LOCALE,
-                value: this.reportingConfig.launch.locale,
-            });
-        }
         this.zbrLaunchArtifactReferences = [];
         this.zbrLaunchArtifacts = [];
-        this.mapPwTestIdToZbrTestId = new Map();
-        this.mapPwTestIdToStatus = new Map();
         this.errors = new Map();
+        this.pwTestIdToZbrTestId = new Map();
+        this.pwTestIdToZbrStartedTry = new Map();
+        this.pwTestIdToZbrFinishedTry = new Map();
         this.apiClient = new ZebrunnerApiClient_1.ZebrunnerApiClient(this.reportingConfig);
         suite = await this.rerunResolver(suite);
         this.totalTestCount = suite.allTests().length;
         this.zbrLaunchId = await this.startLaunchAndGetId(launchStartTime);
+        if ((0, helpers_1.isNotBlankString)(this.reportingConfig.launch.locale)) {
+            await this.attachLaunchLabels(this.zbrLaunchId, [
+                {
+                    key: labels_1.Labels.LOCALE,
+                    value: this.reportingConfig.launch.locale,
+                },
+            ]);
+        }
         await this.saveLaunchTcmConfigs(this.zbrLaunchId);
     }
     async rerunResolver(suite) {
@@ -101,7 +105,7 @@ class ZebrunnerReporter {
     }
     async onTestBegin(pwTest, pwTestResult) {
         const fullTestName = `${(0, helpers_1.getFullSuiteName)(pwTest)} > ${pwTest.title}`;
-        console.log(`Started test "${fullTestName}".`);
+        console.log(`${pwTestResult.retry > 0 ? 'Restarted' : 'Started'} test "${fullTestName}".`);
         if (!this.reportingConfig.enabled) {
             return;
         }
@@ -109,12 +113,17 @@ class ZebrunnerReporter {
         pwTest.customArtifacts = [];
         pwTest.labels = (0, helpers_1.getTestLabelsFromTitle)(pwTest.title) || [];
         await (0, helpers_1.until)(() => !!this.zbrLaunchId); // zebrunner launch initialized
+        if (pwTestResult.retry > 0) {
+            this.totalTestCount += 1;
+            await (0, helpers_1.until)(() => pwTestResult.retry - this.pwTestIdToZbrFinishedTry.get(pwTest.id) === 1); // previous test try finished
+        }
         const testStartedAt = new Date(pwTestResult.startTime);
-        const zbrTestId = this.exchangedLaunchContext?.mode === 'RERUN'
+        const zbrTestId = pwTestResult.retry > 0 && this.pwTestIdToZbrTestId.has(pwTest.id) // test restarted and not reverted in Zebrunner
             ? await this.restartTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt)
             : await this.startTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt);
-        this.mapPwTestIdToZbrTestId.set(pwTest.id, zbrTestId);
-        this.mapPwTestIdToStatus.set(pwTest.id, 'started');
+        // [OLD] Needed for rerun?: this.exchangedLaunchContext?.mode === 'RERUN'
+        this.pwTestIdToZbrTestId.set(pwTest.id, zbrTestId);
+        this.pwTestIdToZbrStartedTry.set(pwTest.id, pwTestResult.retry);
     }
     onStdOut(chunk, pwTest, pwTestResult) {
         // onStdOut must NOT be async function because it must always finish before onTestEnd
@@ -198,11 +207,11 @@ class ZebrunnerReporter {
         if (!this.reportingConfig.enabled) {
             return;
         }
-        await (0, helpers_1.until)(() => this.mapPwTestIdToStatus.get(pwTest.id) === 'started'); // zebrunner test initialized
-        const zbrTestId = this.mapPwTestIdToZbrTestId.get(pwTest.id);
+        await (0, helpers_1.until)(() => this.pwTestIdToZbrStartedTry.get(pwTest.id) === pwTestResult.retry); // zebrunner test started/restarted
+        const zbrTestId = this.pwTestIdToZbrTestId.get(pwTest.id);
         if (pwTest.shouldBeReverted) {
             await this.revertTestRegistration(this.zbrLaunchId, zbrTestId);
-            this.mapPwTestIdToStatus.set(pwTest.id, 'reverted');
+            this.pwTestIdToZbrTestId.delete(pwTest.id);
         }
         else {
             await this.attachTestLabels(this.zbrLaunchId, zbrTestId, pwTest.labels);
@@ -224,15 +233,15 @@ class ZebrunnerReporter {
             }
             await this.finishTest(this.zbrLaunchId, zbrTestId, pwTestResult);
             console.log(`Finished uploading test "${fullTestName}" data to Zebrunner.`);
-            this.mapPwTestIdToStatus.set(pwTest.id, 'finished');
         }
+        this.pwTestIdToZbrFinishedTry.set(pwTest.id, pwTestResult.retry);
     }
     async onEnd() {
         if (!this.reportingConfig.enabled) {
             console.log('All tests finished.');
             return;
         }
-        await (0, helpers_1.until)(() => Array.from(this.mapPwTestIdToStatus.values()).every((status) => status === 'finished' || status === 'reverted') && this.mapPwTestIdToStatus.size === this.totalTestCount); // all zebrunner tests finished
+        await (0, helpers_1.until)(() => (0, helpers_1.getFinishedTestCount)(this.pwTestIdToZbrFinishedTry) === this.totalTestCount); // all zebrunner tests finished (including retries)
         await this.attachLaunchArtifactReferences(this.zbrLaunchId, this.zbrLaunchArtifactReferences);
         await this.attachLaunchLabels(this.zbrLaunchId, this.zbrLaunchLabels);
         await this.attachLaunchFiles(this.zbrLaunchId, this.zbrLaunchArtifacts);
@@ -297,17 +306,30 @@ class ZebrunnerReporter {
         try {
             const fullSuiteName = (0, helpers_1.getFullSuiteName)(pwTest);
             const browserCapabilities = (0, helpers_1.parseBrowserCapabilities)(pwTest.parent.project());
-            const testToRerun = this.exchangedLaunchContext.testsToRun.filter((el) => {
+            /* Needed for rerun?:
+            const testToRerun = this.exchangedLaunchContext.testsToRun.filter(
+              (el: {
+                id: number;
+                name: string;
+                correlationData: string;
+                status: string;
+                startedAt: string;
+                endedAt: string;
+              }) => {
                 const { browser, version, os } = JSON.parse(el.correlationData);
-                if (el.name === `${fullSuiteName} > ${pwTest.title}` &&
-                    browser === browserCapabilities.browser.name &&
-                    version === browserCapabilities.browser.version &&
-                    os === browserCapabilities.os.name) {
-                    return true;
+                if (
+                  el.name === `${fullSuiteName} > ${pwTest.title}` &&
+                  browser === browserCapabilities.browser.name &&
+                  version === browserCapabilities.browser.version &&
+                  os === browserCapabilities.os.name
+                ) {
+                  return true;
                 }
                 return false;
-            })[0];
-            const zbrTestId = await this.apiClient.restartTest(zbrLaunchId, testToRerun.id, {
+              },
+            )[0];
+            */
+            const zbrTestId = await this.apiClient.restartTest(zbrLaunchId, this.pwTestIdToZbrTestId.get(pwTest.id), {
                 name: `${fullSuiteName} > ${pwTest.title}`,
                 className: fullSuiteName,
                 methodName: `${fullSuiteName} > ${pwTest.title}`,

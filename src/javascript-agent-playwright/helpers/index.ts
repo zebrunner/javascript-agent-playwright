@@ -15,3 +15,4 @@ export { getErrorsStringFromMap } from './getErrorsStringFromMap';
 export { stdoutErrorEvent } from './stdoutErrorEvent';
 export { getCustomArtifactObject } from './getCustomArtifactObject';
 export { createPwStepObject } from './createPwStepObject';
+export { getFinishedTestCount } from './getFinishedTestCount';
