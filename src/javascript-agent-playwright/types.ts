@@ -34,4 +34,5 @@ export interface ExtendedPwTestCase extends PwTestCase {
   shouldBeReverted: boolean;
   artifactReferences: { name: string; value: string }[];
   customArtifacts: FileArtifact[];
+  _projectId: string;
 }

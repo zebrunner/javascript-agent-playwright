@@ -43,7 +43,7 @@ exports.CurrentLaunch = {
     attachArtifact: (pathOrBuffer, name) => {
         const timestamp = new Date().getTime();
         if (!Buffer.isBuffer(pathOrBuffer) && !fs_1.default.existsSync(pathOrBuffer)) {
-            (0, helpers_1.stdoutErrorEvent)('CurrentLaunch.attachArtifact', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation, file not found`);
+            (0, helpers_1.stdoutErrorEvent)('CurrentLaunch.attachArtifact', `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`);
             return;
         }
         if (name && !name.trim().length) {

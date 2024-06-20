@@ -129,7 +129,9 @@ class ZebrunnerReporter implements PwReporter {
   }
 
   async onTestBegin(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
-    const fullTestName = `${getFullSuiteName(pwTest)} > ${pwTest.title}`;
+    const fullTestName = `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${getFullSuiteName(pwTest)} > ${
+      pwTest.title
+    }`;
     console.log(`${pwTestResult.retry > 0 ? 'Restarted' : 'Started'} test "${fullTestName}".`);
 
     if (!this.reportingConfig.enabled) {
@@ -240,7 +242,9 @@ class ZebrunnerReporter implements PwReporter {
   }
 
   async onTestEnd(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
-    const fullTestName = `${getFullSuiteName(pwTest)} > ${pwTest.title}`;
+    const fullTestName = `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${getFullSuiteName(pwTest)} > ${
+      pwTest.title
+    }`;
     console.log(`Finished test "${fullTestName}": ${pwTestResult.status}.`);
 
     if (!this.reportingConfig.enabled) {
@@ -351,9 +355,9 @@ class ZebrunnerReporter implements PwReporter {
       const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
       const zbrTestId = await this.apiClient.startTest(zbrLaunchId, {
-        name: `${fullSuiteName} > ${pwTest.title}`,
+        name: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
         className: fullSuiteName,
-        methodName: `${fullSuiteName} > ${pwTest.title}`,
+        methodName: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
         startedAt: testStartedAt,
         correlationData: JSON.stringify({
           browser: browserCapabilities.browser.name,
@@ -398,9 +402,9 @@ class ZebrunnerReporter implements PwReporter {
       */
 
       const zbrTestId = await this.apiClient.restartTest(zbrLaunchId, this.pwTestIdToZbrTestId.get(pwTest.id), {
-        name: `${fullSuiteName} > ${pwTest.title}`,
+        name: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
         className: fullSuiteName,
-        methodName: `${fullSuiteName} > ${pwTest.title}`,
+        methodName: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
         startedAt: testStartedAt,
         correlationData: JSON.stringify({
           browser: browserCapabilities.browser.name,

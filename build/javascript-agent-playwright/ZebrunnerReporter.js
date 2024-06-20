@@ -104,7 +104,7 @@ class ZebrunnerReporter {
         }
     }
     async onTestBegin(pwTest, pwTestResult) {
-        const fullTestName = `${(0, helpers_1.getFullSuiteName)(pwTest)} > ${pwTest.title}`;
+        const fullTestName = `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${(0, helpers_1.getFullSuiteName)(pwTest)} > ${pwTest.title}`;
         console.log(`${pwTestResult.retry > 0 ? 'Restarted' : 'Started'} test "${fullTestName}".`);
         if (!this.reportingConfig.enabled) {
             return;
@@ -202,7 +202,7 @@ class ZebrunnerReporter {
         }
     }
     async onTestEnd(pwTest, pwTestResult) {
-        const fullTestName = `${(0, helpers_1.getFullSuiteName)(pwTest)} > ${pwTest.title}`;
+        const fullTestName = `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${(0, helpers_1.getFullSuiteName)(pwTest)} > ${pwTest.title}`;
         console.log(`Finished test "${fullTestName}": ${pwTestResult.status}.`);
         if (!this.reportingConfig.enabled) {
             return;
@@ -286,9 +286,9 @@ class ZebrunnerReporter {
             const fullSuiteName = (0, helpers_1.getFullSuiteName)(pwTest);
             const browserCapabilities = (0, helpers_1.parseBrowserCapabilities)(pwTest.parent.project());
             const zbrTestId = await this.apiClient.startTest(zbrLaunchId, {
-                name: `${fullSuiteName} > ${pwTest.title}`,
+                name: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
                 className: fullSuiteName,
-                methodName: `${fullSuiteName} > ${pwTest.title}`,
+                methodName: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
                 startedAt: testStartedAt,
                 correlationData: JSON.stringify({
                     browser: browserCapabilities.browser.name,
@@ -306,7 +306,7 @@ class ZebrunnerReporter {
         try {
             const fullSuiteName = (0, helpers_1.getFullSuiteName)(pwTest);
             const browserCapabilities = (0, helpers_1.parseBrowserCapabilities)(pwTest.parent.project());
-            /* Needed for rerun?:
+            /* [OLD] Needed for rerun?:
             const testToRerun = this.exchangedLaunchContext.testsToRun.filter(
               (el: {
                 id: number;
@@ -330,9 +330,9 @@ class ZebrunnerReporter {
             )[0];
             */
             const zbrTestId = await this.apiClient.restartTest(zbrLaunchId, this.pwTestIdToZbrTestId.get(pwTest.id), {
-                name: `${fullSuiteName} > ${pwTest.title}`,
+                name: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
                 className: fullSuiteName,
-                methodName: `${fullSuiteName} > ${pwTest.title}`,
+                methodName: `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${fullSuiteName} > ${pwTest.title}`,
                 startedAt: testStartedAt,
                 correlationData: JSON.stringify({
                     browser: browserCapabilities.browser.name,

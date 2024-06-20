@@ -62,7 +62,7 @@ export const CurrentLaunch = {
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
         'CurrentLaunch.attachArtifact',
-        `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation, file not found`,
+        `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`,
       );
       return;
     }
