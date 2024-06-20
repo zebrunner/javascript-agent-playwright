@@ -87,5 +87,8 @@ dist
 
 playwright-report/
 test-results/
-build/
 results.json
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -1,32 +1,42 @@
 {
   "name": "@zebrunner/javascript-agent-playwright",
-  "version": "0.1.0",
-  "main": "build/src/lib/index.js",
-  "license": "MIT",
+  "version": "1.0.0",
+  "main": "build/javascript-agent-playwright/index.js",
+  "license": "Apache-2.0",
   "description": "Zebrunner Agent for Playwright",
   "scripts": {
     "clean": "rimraf ./build",
     "build": "tsc -p ./tsconfig.json",
     "lint": "eslint **/*.ts",
-    "test": "npx playwright test"
+    "test": "npx playwright test",
+    "test:api": "npx playwright test tests/api/api-test.spec.ts --project='API Tests'",
+    "test:api-2-descr": "playwright test tests/api/api-test-2-descr.spec.js --project='API Tests'",
+    "test:api-all-pass-skip": "playwright test tests/api/api-all-pass-skip.spec.js --project='API Tests'",
+    "test:web": "playwright test tests/example.spec.js",
+    "test:demo": "playwright test tests/demo-todo-app.spec.js",
+    "test:tcm-zbr-web": "playwright test tests/tcm-zbr-web.spec.js",
+    "test:tcm-testrail-web": "playwright test tests/tcm-testrail-web.spec.js",
+    "test:tcm-xray-web": "playwright test tests/tcm-xray-web.spec.js",
+    "test:tcm-zephyr-web": "playwright test tests/tcm-zephyr-web.spec.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.44.1",
+    "@types/node": "^20.14.6",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
-    "@playwright/test": "^1.37.1",
-    "playwright": "^1.18.1",
-    "prettier": "^2.5.1",
     "eslint": "^8.32.0",
     "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.5.3",
     "eslint-plugin-import": "^2.27.5",
+    "playwright": "^1.18.1",
+    "prettier": "^2.5.1",
     "rimraf": "^5.0.1",
     "typescript": "^4.5.5"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@slack/web-api": "^6.6.0",
-    "@supercharge/promise-pool": "^2.1.0",
     "axios": "^0.25.0",
     "dotenv": "^16.3.1",
     "fluent-ffmpeg": "^2.1.2",
@@ -48,5 +58,5 @@
     "type": "git",
     "url": "git+https://github.com/zebrunner/javascript-agent-playwright"
   },
-  "author": "https://github.com/ryanrosello-og"
+  "author": "https://github.com/zebrunner"
 }

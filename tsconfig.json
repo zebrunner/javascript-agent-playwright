@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
-      "target": "ESNext",
+      "target": "es2022",
       "module": "commonjs",
       "moduleResolution": "node",
       "sourceMap": true,
-      "outDir": "./build",
+      "outDir": "./build/javascript-agent-playwright",
       "esModuleInterop": true,
-  }
+  },
+  "include": ["src/javascript-agent-playwright"]
 }
