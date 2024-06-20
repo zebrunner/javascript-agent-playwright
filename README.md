@@ -291,7 +291,7 @@ export default defineConfig({
           notifyOnEachFailure: false,
           slackChannels: 'dev, qa',
           teamsChannels: 'dev-channel, management',
-          emails: 'dkazak@zebrunner.com',
+          emails: 'name@company.com',
         },
         tcm: {
           testCaseStatus: {
