@@ -1,18 +1,27 @@
 {
-  "name": "javascript-agent-playwright-beta",
-  "version": "0.2.0-beta.37",
+  "name": "@zebrunner/javascript-agent-playwright",
+  "version": "1.0.0",
   "main": "build/javascript-agent-playwright/index.js",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "description": "Zebrunner Agent for Playwright",
   "scripts": {
     "clean": "rimraf ./build",
     "build": "tsc -p ./tsconfig.json",
     "lint": "eslint **/*.ts",
     "test": "npx playwright test",
-    "test:1": "playwright test tests/pw_nested_testsuite.spec.ts"
+    "test:api": "npx playwright test tests/api/api-test.spec.ts --project='API Tests'",
+    "test:api-2-descr": "playwright test tests/api/api-test-2-descr.spec.js --project='API Tests'",
+    "test:api-all-pass-skip": "playwright test tests/api/api-all-pass-skip.spec.js --project='API Tests'",
+    "test:web": "playwright test tests/example.spec.js",
+    "test:demo": "playwright test tests/demo-todo-app.spec.js",
+    "test:tcm-zbr-web": "playwright test tests/tcm-zbr-web.spec.js",
+    "test:tcm-testrail-web": "playwright test tests/tcm-testrail-web.spec.js",
+    "test:tcm-xray-web": "playwright test tests/tcm-xray-web.spec.js",
+    "test:tcm-zephyr-web": "playwright test tests/tcm-zephyr-web.spec.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.37.1",
+    "@playwright/test": "^1.44.1",
+    "@types/node": "^20.14.6",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
     "eslint": "^8.32.0",
@@ -49,5 +58,5 @@
     "type": "git",
     "url": "git+https://github.com/zebrunner/javascript-agent-playwright"
   },
-  "author": "https://github.com/ryanrosello-og"
+  "author": "https://github.com/zebrunner"
 }

@@ -373,7 +373,7 @@ class ZebrunnerReporter implements PwReporter {
       const fullSuiteName = getFullSuiteName(pwTest);
       const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
-      /* Needed for rerun?:
+      /* [OLD] Needed for rerun?:
       const testToRerun = this.exchangedLaunchContext.testsToRun.filter(
         (el: {
           id: number;

@@ -88,3 +88,7 @@ dist
 playwright-report/
 test-results/
 results.json
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
