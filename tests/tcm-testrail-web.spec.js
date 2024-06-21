@@ -1,6 +1,6 @@
 // @ts-check
 import { pseudoRandomBytes } from 'crypto';
-import { CurrentTest, testRail, CurrentLaunch } from '../src/javascript-agent-playwright/index';
+import { currentTest, testRail, currentLaunch } from '../src/javascript-agent-playwright/index';
 
 const { test, expect } = require('@playwright/test');
 
@@ -16,17 +16,17 @@ const passed_case_key = 'C1';
 test.describe('Web Testing with Playwright', () => {
   test.beforeAll(async () => {
     // will be attached to the entire run
-    CurrentLaunch.attachLabel('automation-type', automation_type);
-    CurrentLaunch.attachLabel('TCM', 'Testrail');
-    CurrentLaunch.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
+    currentLaunch.attachLabel('automation-type', automation_type);
+    currentLaunch.attachLabel('TCM', 'Testrail');
+    currentLaunch.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
   });
 
   test(`Test should be passed, but result for test case ${failed_case_key} should be imported as ${failed}`, async ({
     page,
   }) => {
-    CurrentTest.setMaintainer(maintainer);
-    CurrentTest.attachLog('Custom log message example on test start');
-    CurrentTest.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
+    currentTest.setMaintainer(maintainer);
+    currentTest.log.info('Custom log message example on test start');
+    currentTest.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
 
     testRail.testCaseId('C2', failed_case_key);
     testRail.testCaseStatus(failed_case_key, failed);
@@ -35,26 +35,26 @@ test.describe('Web Testing with Playwright', () => {
     console.log('Maintainer should be ' + maintainer);
 
     await page.goto('https://playwright.dev/');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.attachScreenshot(await page.screenshot());
 
     // Expect a title "to contain" a substring.
     await expect(page).toHaveTitle(/Playwright/);
 
-    CurrentTest.attachLog('Custom log message example on test finish');
+    currentTest.log.info('Custom log message example on test finish');
   });
 
   test('Test should be passed (with console.log() and custom screenshot)', async ({ page }) => {
-    CurrentTest.setMaintainer(maintainer);
+    currentTest.setMaintainer(maintainer);
     testRail.testCaseId('C4', 'C5');
 
-    CurrentTest.attachLog('INFO level log message on test start', 'INFO');
-    CurrentTest.attachLog('Navigating to Google...', 'INFO');
+    currentTest.log.info('INFO level log message on test start');
+    currentTest.log.info('Navigating to Google...');
 
     await page.goto('https://www.google.com/');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.attachScreenshot(await page.screenshot());
 
     await page.goto('https://playwright.dev/');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.attachScreenshot(await page.screenshot());
 
     // Click the get started link.
     await page.getByRole('link', { name: 'Get started' }).click();
@@ -62,59 +62,59 @@ test.describe('Web Testing with Playwright', () => {
     // Expects page to have a heading with the name of Installation.
     await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
 
-    CurrentTest.attachLog('Attaching screenshot via PATH on disk', 'WARN');
-    CurrentTest.attachScreenshot('artifacts/zeb.png');
+    currentTest.log.warn('Attaching screenshot via PATH on disk');
+    currentTest.attachScreenshot('artifacts/zeb.png');
 
     console.log('Log should be 1');
-    CurrentTest.attachLog('INFO level log message 1', 'INFO');
+    currentTest.log.info('INFO level log message 1');
     console.log('Log should be 2');
-    CurrentTest.attachLog('ERROR level log message 2', 'ERROR');
+    currentTest.log.error('ERROR level log message 2');
     console.log('Log should be 3');
-    CurrentTest.attachLog('WARN level log message 3', 'WARN');
+    currentTest.log.warn('WARN level log message 3');
     console.log('Log should be 4');
-    CurrentTest.attachLog('FATAL level log message 4', 'FATAL');
+    currentTest.log.fatal('FATAL level log message 4');
     console.log('Log should be 5');
-    CurrentTest.attachLog('DEBUG level log message 5', 'DEBUG');
+    currentTest.log.debug('DEBUG level log message 5');
 
-    CurrentTest.attachLog('Attaching screenshot after log mesage 5', 'WARN');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.log.warn('Attaching screenshot after log mesage 5');
+    currentTest.attachScreenshot(await page.screenshot());
 
-    CurrentTest.attachLog('TRACE level log message 6', 'TRACE');
-    CurrentTest.attachLog('CUSTOM string level log message 7', 'CUSTOM');
+    currentTest.log.trace('TRACE level log message 6');
+    currentTest.log.custom('CUSTOM string level log message 7', 'CUSTOM');
 
     console.log('Log should be 1.1');
     console.log('Log should be 1.2');
     console.log('Log should be 1.3');
 
-    CurrentTest.attachLog('Custom log message example on test finish (without log level, by default should be INFO 8)');
-    CurrentTest.attachLog('Attaching screenshot after all logs', 'INFO');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.log.info('Custom log message example on test finish (without log level, by default should be INFO 8)');
+    currentTest.log.info('Attaching screenshot after all logs');
+    currentTest.attachScreenshot(await page.screenshot());
   });
 
   test(`Test should be @failed but result for case ${passed_case_key} should be ${passed}`, async ({ page }) => {
-    CurrentTest.setMaintainer(maintainer);
-    CurrentTest.attachLog('Custom log message example on test start');
-    CurrentTest.attachLabel('reporting', 'Zebrunner');
+    currentTest.setMaintainer(maintainer);
+    currentTest.log.info('Custom log message example on test start');
+    currentTest.attachLabel('reporting', 'Zebrunner');
 
     testRail.testCaseId('C6');
     testRail.testCaseStatus(passed_case_key, passed);
 
     await page.goto('https://playwright.dev/');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.attachScreenshot(await page.screenshot());
 
     // Click the get started link.
     await expect(page.getByRole('link', { name: 'Get started - Oops!' })).toBeVisible();
 
-    CurrentTest.attachLog('Custom log message example on test finish');
+    currentTest.log.info('Custom log message example on test finish');
   });
 
   test('Get started link incorrect - should be @aborted', async ({ page }, testInfo) => {
-    CurrentTest.setMaintainer(maintainer);
-    CurrentTest.attachLabel('type', 'smoke', 'regression');
+    currentTest.setMaintainer(maintainer);
+    currentTest.attachLabel('type', 'smoke', 'regression');
     testRail.testCaseId('C7');
 
     await page.goto('https://playwright.dev/');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.attachScreenshot(await page.screenshot());
 
     // Click the get started link.
     await page.getByRole('link', { name: 'Get started - Oops!' }).click();
@@ -128,16 +128,16 @@ test.describe('Web Testing with Playwright', () => {
 
     // Click the get started link.
     await page.getByRole('link', { name: 'Get started' }).click();
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.attachScreenshot(await page.screenshot());
 
     // Expects page to have a heading with the name of Installation.
     await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
 
-    CurrentTest.attachLog('Custom log message example on test finish');
+    currentTest.log.info('Custom log message example on test finish');
   });
 
   test('Not an important test (This test should not be reported in Zebrunner)', async ({ request }) => {
-    CurrentTest.revertRegistration();
+    currentTest.revertRegistration();
     testRail.testCaseId('C83');
   });
 
@@ -145,7 +145,7 @@ test.describe('Web Testing with Playwright', () => {
     testRail.testCaseId('C8');
 
     await page.goto('https://example.com');
-    CurrentTest.attachScreenshot(await page.screenshot());
+    currentTest.attachScreenshot(await page.screenshot());
     const conditionToSkip = true;
 
     if (conditionToSkip) {

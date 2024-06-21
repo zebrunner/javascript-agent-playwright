@@ -230,7 +230,7 @@ class ZebrunnerReporter implements PwReporter {
         pwTestResult.steps.push(
           createPwStepObject(
             prevStepTimestamp,
-            'CurrentTest.attachScreenshot()',
+            'currentTest.attachScreenshot()',
             'screenshot',
             payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer,
           ),

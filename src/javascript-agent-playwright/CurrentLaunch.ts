@@ -3,16 +3,16 @@ import { stdoutErrorEvent } from './helpers';
 import { isNotBlankString, isNotEmptyArray } from './helpers/type-utils';
 import fs from 'fs';
 
-export const CurrentLaunch = {
+export const currentLaunch = {
   attachLabel: (key: string, ...values: string[]) => {
     if (!isNotBlankString(key)) {
-      stdoutErrorEvent('CurrentLaunch.attachLabel', `Label key must be a not blank string. Provided value is '${key}'`);
+      stdoutErrorEvent('currentLaunch.attachLabel', `Label key must be a not blank string. Provided value is '${key}'`);
       return;
     }
 
     if (!isNotEmptyArray(values)) {
       stdoutErrorEvent(
-        'CurrentLaunch.attachLabel',
+        'currentLaunch.attachLabel',
         `You must provide at least one label value. The label with the key '${key}' has none`,
       );
       return;
@@ -22,7 +22,7 @@ export const CurrentLaunch = {
       const isNotBlank = isNotBlankString(value);
       if (!isNotBlank) {
         stdoutErrorEvent(
-          'CurrentLaunch.attachLabel',
+          'currentLaunch.attachLabel',
           `Label value must be a not blank string. Provided value for key '${key}' is '${value}'`,
         );
       }
@@ -37,7 +37,7 @@ export const CurrentLaunch = {
   attachArtifactReference: (name: string, value: string) => {
     if (!isNotBlankString(name)) {
       stdoutErrorEvent(
-        'CurrentLaunch.attachArtifactReference',
+        'currentLaunch.attachArtifactReference',
         `Artifact reference name must be a not blank string. Provided value is '${name}'`,
       );
       return;
@@ -45,7 +45,7 @@ export const CurrentLaunch = {
 
     if (!isNotBlankString(value)) {
       stdoutErrorEvent(
-        'CurrentLaunch.attachArtifactReference',
+        'currentLaunch.attachArtifactReference',
         `Artifact reference value must be a not blank string. Provided value for name '${value}' is '${value}'`,
       );
       return;
@@ -61,7 +61,7 @@ export const CurrentLaunch = {
 
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
-        'CurrentLaunch.attachArtifact',
+        'currentLaunch.attachArtifact',
         `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`,
       );
       return;
@@ -69,7 +69,7 @@ export const CurrentLaunch = {
 
     if (name && !name.trim().length) {
       stdoutErrorEvent(
-        'CurrentTest.attachArtifact',
+        'currentTest.attachArtifact',
         `fileName must not be a blank string. Provided value is '${name}'`,
       );
     }

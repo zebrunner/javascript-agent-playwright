@@ -194,7 +194,7 @@ class ZebrunnerReporter {
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_SCREENSHOT) {
             if (!this.reportingConfig.logs.ignoreManualScreenshots) {
-                pwTestResult.steps.push((0, helpers_1.createPwStepObject)(prevStepTimestamp, 'CurrentTest.attachScreenshot()', 'screenshot', payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer));
+                pwTestResult.steps.push((0, helpers_1.createPwStepObject)(prevStepTimestamp, 'currentTest.attachScreenshot()', 'screenshot', payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer));
             }
         }
         else if (eventType === events_1.EVENT_NAMES.ATTACH_TEST_ARTIFACT) {

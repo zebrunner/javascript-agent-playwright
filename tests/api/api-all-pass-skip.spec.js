@@ -1,6 +1,6 @@
 import {
-  CurrentTest,
-  CurrentLaunch,
+  currentTest,
+  currentLaunch,
   zebrunner,
   testRail,
 } from '../../src/javascript-agent-playwright/index';
@@ -15,22 +15,22 @@ function timeout(ms) {
 }
 
 test.describe('API Testing with Playwright', () => {
-  CurrentLaunch.attachLabel('automation-type', automation_type);
-  CurrentLaunch.attachLabel('reporting', 'Zebrunner');
-  CurrentLaunch.attachLabel('TCM', 'Zebrunner');
+  currentLaunch.attachLabel('automation-type', automation_type);
+  currentLaunch.attachLabel('reporting', 'Zebrunner');
+  currentLaunch.attachLabel('TCM', 'Zebrunner');
 
-  CurrentLaunch.attachArtifact('./artifacts/zeb.png');
-  CurrentLaunch.attachArtifact('./artifacts/txt.txt');
+  currentLaunch.attachArtifact('./artifacts/zeb.png');
+  currentLaunch.attachArtifact('./artifacts/txt.txt');
 
-  CurrentLaunch.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
+  currentLaunch.attachArtifactReference('Zebrunner', 'https://zebrunner.com');
 
   test('GET /users - should return a list of users (with maintainer)', async ({
     request,
   }) => {
     console.log('Maintainer should be ' + maintainer);
 
-    CurrentTest.attachLog('Maintainer should be ' + maintainer);
-    CurrentTest.setMaintainer(maintainer);
+    currentTest.log.info('Maintainer should be ' + maintainer);
+    currentTest.setMaintainer(maintainer);
 
     zebrunner.testCaseKey('DEF-4408', 'KEY-2001');
 
@@ -46,10 +46,10 @@ test.describe('API Testing with Playwright', () => {
   test.skip('GET /users/1 - should return a single user (with console.log())', async ({
     request,
   }) => {
-    CurrentTest.attachLog('Maintainer should be ' + maintainer);
-    CurrentTest.setMaintainer(maintainer);
+    currentTest.log.info('Maintainer should be ' + maintainer);
+    currentTest.setMaintainer(maintainer);
 
-    CurrentTest.attachArtifact('./artifacts/zeb.png');
+    currentTest.attachArtifact('./artifacts/zeb.png');
 
     testRail.testCaseId('C4', 'C5');
 
@@ -70,7 +70,7 @@ test.describe('API Testing with Playwright', () => {
   });
 
   test.skip('POST /users - should create a new user', async ({ request }) => {
-    CurrentTest.attachLabel('type', 'smoke', 'regression');
+    currentTest.attachLabel('type', 'smoke', 'regression');
 
     const newUser = {
       name: 'John Doe',
@@ -87,11 +87,11 @@ test.describe('API Testing with Playwright', () => {
     expect(createdUser.id).toBeDefined();
     expect(createdUser.name).toBe(newUser.name);
 
-    CurrentTest.attachLog('Custom log message example on test finish');
+    currentTest.log.info('Custom log message example on test finish');
   });
 
   test.skip('POST /users - should be @failed', async ({ request }) => {
-    CurrentTest.attachLog('Custom log message example on test start');
+    currentTest.log.info('Custom log message example on test start');
 
     console.log('This code executes?');
 
@@ -113,7 +113,7 @@ test.describe('API Testing with Playwright', () => {
     expect(createdUser.id).toBeDefined();
     expect(createdUser.name).toBe(newUser.name);
 
-    CurrentTest.attachLog('Custom log message example on test finish');
+    currentTest.log.info('Custom log message example on test finish');
   });
 
   test.skip('GET /users/1 - should be @skipped', async ({ request }) => {
@@ -128,6 +128,6 @@ test.describe('API Testing with Playwright', () => {
   test('Not an important test (This test should not be reported in Zebrunner)', async ({
     request,
   }) => {
-    CurrentTest.revertRegistration();
+    currentTest.revertRegistration();
   });
 });

@@ -3,46 +3,56 @@ import { isNotBlankString, isNotEmptyArray, stdoutErrorEvent } from './helpers';
 import fs from 'fs';
 import { LogLevel } from './types';
 
-export const CurrentTest = {
+/**
+ * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
+ */
+const attachLog = (message: string, level: LogLevel = 'INFO') => {
+  if (isNotBlankString(message) && isNotBlankString(level)) {
+    process.stdout.write(
+      JSON.stringify({
+        eventType: EVENT_NAMES.ATTACH_TEST_LOG,
+        payload: { message, level },
+      }),
+    );
+  } else {
+    stdoutErrorEvent(
+      'currentTest.log',
+      `Message and level parameters must not be a blank string, provided parameters are '${message}' and '${level}'.`,
+    );
+  }
+};
+
+export const currentTest = {
   setMaintainer: (maintainer: string): void => {
     if (isNotBlankString(maintainer)) {
       process.stdout.write(JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_MAINTAINER, payload: maintainer }));
     } else {
       stdoutErrorEvent(
-        'CurrentTest.setMaintainer',
+        'currentTest.setMaintainer',
         `Maintainer must not be a blank string. Provided value is '${maintainer}'`,
       );
     }
   },
 
-  /**
-   * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
-   */
-  attachLog: (message: string, level: LogLevel = 'INFO'): void => {
-    if (isNotBlankString(message) && isNotBlankString(level)) {
-      process.stdout.write(
-        JSON.stringify({
-          eventType: EVENT_NAMES.ATTACH_TEST_LOG,
-          payload: { message, level },
-        }),
-      );
-    } else {
-      stdoutErrorEvent(
-        'CurrentTest.attachLog',
-        `Message and level parameters must not be a blank string, provided parameters are '${message}' and '${level}'.`,
-      );
-    }
+  log: {
+    info: (message: string) => attachLog(message, 'INFO'),
+    error: (message: string) => attachLog(message, 'ERROR'),
+    warn: (message: string) => attachLog(message, 'WARN'),
+    fatal: (message: string) => attachLog(message, 'FATAL'),
+    debug: (message: string) => attachLog(message, 'DEBUG'),
+    trace: (message: string) => attachLog(message, 'TRACE'),
+    custom: (message: string, level: string) => attachLog(message, level),
   },
 
   attachLabel: (key: string, ...values: string[]) => {
     if (!isNotBlankString(key)) {
-      stdoutErrorEvent('CurrentTest.attachLabel', `Label key must not be a blank string. Provided value is '${key}'`);
+      stdoutErrorEvent('currentTest.attachLabel', `Label key must not be a blank string. Provided value is '${key}'`);
       return;
     }
 
     if (!isNotEmptyArray(values)) {
       stdoutErrorEvent(
-        'CurrentTest.attachLabel',
+        'currentTest.attachLabel',
         `You must provide at least one label value. The label with the key '${key}' has none`,
       );
       return;
@@ -52,7 +62,7 @@ export const CurrentTest = {
       const isNotBlank = isNotBlankString(value);
       if (!isNotBlank) {
         stdoutErrorEvent(
-          'CurrentTest.attachLabel',
+          'currentTest.attachLabel',
           `Label value must not be a blank string. Provided value for key '${key}' is '${value}'`,
         );
       }
@@ -67,7 +77,7 @@ export const CurrentTest = {
   attachArtifactReference: (name: string, value: string) => {
     if (!isNotBlankString(name)) {
       stdoutErrorEvent(
-        'CurrentTest.attachArtifactReference',
+        'currentTest.attachArtifactReference',
         `Artifact reference name must not be a blank string. Provided value is '${name}'`,
       );
       return;
@@ -75,7 +85,7 @@ export const CurrentTest = {
 
     if (!isNotBlankString(value)) {
       stdoutErrorEvent(
-        'CurrentTest.attachArtifactReference',
+        'currentTest.attachArtifactReference',
         `Artifact reference value must not be a blank string. Provided value for name '${value}' is '${value}'`,
       );
       return;
@@ -91,7 +101,7 @@ export const CurrentTest = {
 
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
-        'CurrentTest.attachArtifact',
+        'currentTest.attachArtifact',
         `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`,
       );
       return;
@@ -99,7 +109,7 @@ export const CurrentTest = {
 
     if (name && !name.trim().length) {
       stdoutErrorEvent(
-        'CurrentTest.attachArtifact',
+        'currentTest.attachArtifact',
         `fileName must not be a blank string. Provided value is '${name}'`,
       );
     }
@@ -115,7 +125,7 @@ export const CurrentTest = {
   attachScreenshot: (pathOrBuffer: Buffer | string) => {
     if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
       stdoutErrorEvent(
-        'CurrentTest.attachScreenshot',
+        'currentTest.attachScreenshot',
         `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`,
       );
       return;
