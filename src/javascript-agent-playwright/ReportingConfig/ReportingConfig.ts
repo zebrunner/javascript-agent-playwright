@@ -1,5 +1,15 @@
 import { isNotBlankString } from '../helpers';
 import { getBoolean, getNumber, getString } from './helpers';
+import {
+  LaunchConfig,
+  LogsConfig,
+  MilestoneConfig,
+  NotificationsConfig,
+  ServerConfig,
+  Tcm,
+  ZebrunnerLogFormat,
+  ZebrunnerReporterOptions,
+} from './types';
 
 export class ReportingConfig {
   readonly enabled: boolean;
@@ -11,7 +21,7 @@ export class ReportingConfig {
   readonly notifications: NotificationsConfig;
   readonly tcm: Tcm;
 
-  constructor(config: any) {
+  constructor(config?: ZebrunnerReporterOptions) {
     this.enabled = getBoolean('REPORTING_ENABLED', config?.enabled);
     this.projectKey = getString('REPORTING_PROJECT_KEY', config?.projectKey, 'DEF');
     this.server = {
@@ -39,17 +49,49 @@ export class ReportingConfig {
       ),
     };
 
+    const useLinesFromSourceCode = getBoolean(
+      'REPORTING_LOGS_USE_LINES_FROM_SOURCE_CODE',
+      config?.logs?.useLinesFromSourceCode,
+      true,
+    );
+    const legacyFormatConfigured =
+      process.env.REPORTING_LOGS_USE_LINES_FROM_SOURCE_CODE !== undefined ||
+      config?.logs?.useLinesFromSourceCode !== undefined;
+    const requestedFormat = getString('REPORTING_LOGS_FORMAT', config?.logs?.format);
+    const supportedFormats = ['structured', 'playwright-title', 'source-line'];
+    let format = 'structured';
+    if (supportedFormats.includes(requestedFormat)) {
+      format = requestedFormat;
+    } else if (legacyFormatConfigured) {
+      format = useLinesFromSourceCode ? 'source-line' : 'playwright-title';
+    }
+
+    // A sub-second flush interval would spam the logs API without making the UI any more live.
+    const requestedFlushIntervalMs = getNumber(
+      'REPORTING_LOGS_FLUSH_INTERVAL_MS',
+      config?.logs?.flushIntervalMs,
+      0,
+    );
+
     this.logs = {
       ignorePlaywrightSteps: getBoolean(
         'REPORTING_LOGS_IGNORE_PLAYWRIGHT_STEPS',
         config?.logs?.ignorePlaywrightSteps,
         false,
       ),
-      useLinesFromSourceCode: getBoolean(
-        'REPORTING_LOGS_USE_LINES_FROM_SOURCE_CODE',
-        config?.logs?.useLinesFromSourceCode,
-        true,
+      includeHooks: getBoolean('REPORTING_LOGS_INCLUDE_HOOKS', config?.logs?.includeHooks, false),
+      includeFixtures: getBoolean('REPORTING_LOGS_INCLUDE_FIXTURES', config?.logs?.includeFixtures, false),
+      includeBridgeActions: getBoolean(
+        'REPORTING_LOGS_INCLUDE_BRIDGE_ACTIONS',
+        config?.logs?.includeBridgeActions,
+        false,
       ),
+      useLinesFromSourceCode,
+      format: format as ZebrunnerLogFormat,
+      includeDuration: getBoolean('REPORTING_LOGS_INCLUDE_DURATION', config?.logs?.includeDuration, true),
+      includeLocation: getBoolean('REPORTING_LOGS_INCLUDE_LOCATION', config?.logs?.includeLocation, true),
+      maxSourceLines: getNumber('REPORTING_LOGS_MAX_SOURCE_LINES', config?.logs?.maxSourceLines, 3),
+      maxMessageLength: getNumber('REPORTING_LOGS_MAX_MESSAGE_LENGTH', config?.logs?.maxMessageLength, 8000),
       ignoreConsole: getBoolean('REPORTING_LOGS_IGNORE_CONSOLE', config?.logs?.ignoreConsole, false),
       ignoreCustom: getBoolean('REPORTING_LOGS_IGNORE_MANUAL', config?.logs?.ignoreCustom, false),
       ignoreManualScreenshots: getBoolean(
@@ -62,6 +104,7 @@ export class ReportingConfig {
         config?.logs?.ignoreAutoScreenshots,
         false,
       ),
+      flushIntervalMs: requestedFlushIntervalMs > 0 ? Math.max(requestedFlushIntervalMs, 1000) : 0,
     };
 
     this.milestone = {

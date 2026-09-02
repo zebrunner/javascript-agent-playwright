@@ -3,9 +3,16 @@
       "target": "es2022",
       "module": "commonjs",
       "moduleResolution": "node",
+      "ignoreDeprecations": "6.0",
+      "types": ["node"],
       "sourceMap": true,
+      "declaration": true,
       "outDir": "./build/javascript-agent-playwright",
+      "rootDir": "./src/javascript-agent-playwright",
       "esModuleInterop": true,
+      "strict": false,
+      "strictNullChecks": false,
+      "strictPropertyInitialization": false,
   },
   "include": ["src/javascript-agent-playwright"]
 }

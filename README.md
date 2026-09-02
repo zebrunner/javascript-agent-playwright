@@ -1,9 +1,15 @@
 # Zebrunner Playwright reporting agent
 
-To learn how to get started and explore available features, please refer to the official Zebrunner Playwright agent [documentation](https://zebrunner.com/documentation/reporting/playwright/) for more information.
+This package sends Playwright test results, logs, and artifacts to Zebrunner.
+It also provides optional helpers for runtime actions and remote session data.
 
-Feel free to support the development with a [**donation**](https://www.paypal.com/donate/?hosted_button_id=MNHYYCYHAKUVA) for the next improvements.
+```bash
+npm install --save-dev @zebrunner/javascript-agent-playwright
+```
 
-<p align="center">
-  <a href="https://zebrunner.com/"><img alt="Zebrunner" src="https://github.com/zebrunner/zebrunner/raw/master/docs/img/zebrunner_intro.png"></a>
-</p>
+Use the official
+[Zebrunner Playwright documentation](https://zebrunner.com/documentation/reporting/playwright/)
+for the standard setup and test case management features.
+
+Read the [reporter guide](docs/reporting.md) for configuration options, runtime
+helpers, log formats, resource guidance, and shutdown timeouts.
