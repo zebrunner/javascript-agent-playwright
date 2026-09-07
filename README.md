@@ -2,6 +2,7 @@
 
 This package sends Playwright test results, logs, and artifacts to Zebrunner.
 It also provides optional helpers for runtime actions and remote session data.
+The optional browser fixture selects a local or remote browser session.
 
 ```bash
 npm install --save-dev @zebrunner/javascript-agent-playwright
@@ -13,3 +14,6 @@ for the standard setup and test case management features.
 
 Read the [reporter guide](docs/reporting.md) for configuration options, runtime
 helpers, log formats, resource guidance, and shutdown timeouts.
+
+Read the [remote fixture guide](docs/remote-browser.md) to run the standard `page`
+fixture on a Zebrunner remote browser.

@@ -156,8 +156,8 @@ type SessionCapabilities = {
 const isOrchestratorConfigured = (): boolean =>
   Boolean(
     isNotBlankString(process.env.PWM_ORCHESTRATOR) ||
-      isNotBlankString(process.env.IOS_WS_ENDPOINT) ||
-      isNotBlankString(process.env.ANDROID_WS_ENDPOINT),
+    isNotBlankString(process.env.IOS_WS_ENDPOINT) ||
+    isNotBlankString(process.env.ANDROID_WS_ENDPOINT),
   );
 
 const resolveSessionProvider = (overrideCapabilities?: SessionCapabilities): string | undefined => {
@@ -171,7 +171,7 @@ const resolveSessionProvider = (overrideCapabilities?: SessionCapabilities): str
     return fromEnv;
   }
 
-  // Redundant: ESG does not inject PLAYWRIGHT_WS_ENDPOINT, and the URL host is not inspected.
+  // Redundant: The remote launcher does not inject PLAYWRIGHT_WS_ENDPOINT, and the URL host is not inspected.
   if (isNotBlankString(process.env.PLAYWRIGHT_WS_ENDPOINT)) {
     return 'ZEBRUNNER';
   }
@@ -411,11 +411,7 @@ class ZebrunnerReporter implements PwReporter {
   }
 
   // Zebrunner binds the provider session when reporting starts, so do not wait for test end.
-  private startLiveTestSession(
-    pwTest: ExtendedPwTestCase,
-    pwTestResult: PwTestResult,
-    state: PwTestAttemptState,
-  ) {
+  private startLiveTestSession(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult, state: PwTestAttemptState) {
     if (!this.reportingConfig.enabled || !this.pwTestIdToZbrTestId || state.sessionStartPromise || state.zbrSessionId) {
       return;
     }
@@ -497,11 +493,7 @@ class ZebrunnerReporter implements PwReporter {
     return pwTestResult.status !== pwTest.expectedStatus && pwTestResult.retry < maxRetries;
   }
 
-  private markTimedOutOperationFailed(
-    pwTestResult: PwTestResult,
-    state: PwTestAttemptState,
-    endedAt: Date,
-  ): void {
+  private markTimedOutOperationFailed(pwTestResult: PwTestResult, state: PwTestAttemptState, endedAt: Date): void {
     if (pwTestResult.status !== 'timedOut') return;
 
     const resultError = pwTestResult.errors?.[0] || pwTestResult.error;
@@ -535,9 +527,7 @@ class ZebrunnerReporter implements PwReporter {
       }
     };
     collectPendingSteps(pwTestResult.steps as MutableStep[]);
-    const pendingStep = pendingSteps.sort(
-      (left, right) => right.startTime.getTime() - left.startTime.getTime(),
-    )[0];
+    const pendingStep = pendingSteps.sort((left, right) => right.startTime.getTime() - left.startTime.getTime())[0];
     if (!pendingStep) return;
 
     pendingStep.duration = Math.max(0, endedAt.getTime() - pendingStep.startTime.getTime());
@@ -787,11 +777,7 @@ class ZebrunnerReporter implements PwReporter {
     }
   }
 
-  private async reportTestEnd(
-    pwTest: ExtendedPwTestCase,
-    pwTestResult: PwTestResult,
-    state: PwTestAttemptState,
-  ) {
+  private async reportTestEnd(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult, state: PwTestAttemptState) {
     const fullTestName = buildTestIdentity(pwTest).name;
     const style = STATUS_STYLE[pwTestResult.status] || {
       label: `[${String(pwTestResult.status).toUpperCase()}]`,
@@ -878,9 +864,7 @@ class ZebrunnerReporter implements PwReporter {
         );
         await this.attachTestFiles(this.zbrLaunchId, zbrTestId, testFiles);
         const artifactReferences = state.artifactReferences.map((reference) =>
-          prefixAttemptArtifacts
-            ? { ...reference, name: `attempt-${state.attempt + 1}-${reference.name}` }
-            : reference,
+          prefixAttemptArtifacts ? { ...reference, name: `attempt-${state.attempt + 1}-${reference.name}` } : reference,
         );
         await this.attachTestArtifactReferences(this.zbrLaunchId, zbrTestId, artifactReferences);
         if (!this.reportingConfig.logs.ignoreAutoScreenshots) {
@@ -977,11 +961,7 @@ class ZebrunnerReporter implements PwReporter {
       return;
     }
 
-    const errors = pwTestResult.errors?.length
-      ? pwTestResult.errors
-      : pwTestResult.error
-      ? [pwTestResult.error]
-      : [];
+    const errors = pwTestResult.errors?.length ? pwTestResult.errors : pwTestResult.error ? [pwTestResult.error] : [];
 
     for (const error of errors) {
       const text = cleanseReason(error?.message || error?.value || error?.stack || '').trim();
@@ -1411,12 +1391,7 @@ class ZebrunnerReporter implements PwReporter {
     }
   }
 
-  private async finishTest(
-    zbrLaunchId: number,
-    zbrTestId: number,
-    pwTestResult: PwTestResult,
-    attemptEndedAt: Date,
-  ) {
+  private async finishTest(zbrLaunchId: number, zbrTestId: number, pwTestResult: PwTestResult, attemptEndedAt: Date) {
     try {
       const startedAt = new Date(pwTestResult.startTime);
       const endedAt =

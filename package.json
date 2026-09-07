@@ -7,10 +7,15 @@
     ".": {
       "types": "./build/javascript-agent-playwright/index.d.ts",
       "default": "./build/javascript-agent-playwright/index.js"
+    },
+    "./remote": {
+      "types": "./build/javascript-agent-playwright/remote-browser/index.d.ts",
+      "default": "./build/javascript-agent-playwright/remote-browser/index.js"
     }
   },
   "files": [
-    "build"
+    "build",
+    "docs"
   ],
   "engines": {
     "node": ">=18"
@@ -23,6 +28,7 @@
     "prepare": "npm run build",
     "prepublishOnly": "npm run clean && npm run build",
     "lint": "eslint src",
+    "test:unit": "npm run build && tsc -p unit-test/tsconfig.json && node --test unit-test/*.test.js && playwright test --list --config=unit-test/playwright.config.js",
     "test": "npx playwright test",
     "test:api": "npx playwright test tests/api/api-test.spec.ts --project='API Tests'",
     "test:api-2-descr": "playwright test tests/api/api-test-2-descr.spec.js --project='API Tests'",
@@ -62,6 +68,9 @@
     "form-data": "^4.0.6",
     "loglevel": "^1.9.2",
     "ua-parser-js": "^1.0.41"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.58.2"
   },
   "homepage": "https://github.com/zebrunner/javascript-agent-playwright#readme",
   "bugs": {
