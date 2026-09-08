@@ -1,14 +1,14 @@
 import playwrightPackage from '@playwright/test/package.json';
 
-import type { RemoteCapabilities, RemoteOptions } from './types';
+import type { SessionCapabilities, SessionOptions } from './types';
 
 /** Fully resolved remote config: host, credentials, capabilities, timeouts, and viewport. */
-export type ResolvedRemoteConfig = {
+export type ResolvedSessionConfig = {
   host: URL;
   webSocketBaseUrl: URL;
   username: string;
   password: string;
-  capabilities: RemoteCapabilities;
+  capabilities: SessionCapabilities;
   createTimeoutMs: number;
   connectTimeoutMs: number;
   refreshTimeoutMs: number;
@@ -17,11 +17,11 @@ export type ResolvedRemoteConfig = {
 };
 
 /** Resolves the full remote config from options, environment, and the Playwright browser and headless values. */
-export function resolveRemoteConfig(
-  options: RemoteOptions = {},
+export function resolveSessionConfig(
+  options: SessionOptions = {},
   playwrightBrowserName = 'chromium',
   playwrightHeadless = false,
-): ResolvedRemoteConfig {
+): ResolvedSessionConfig {
   const environmentCapabilities = parseCapabilities(optionalEnv('ZEBRUNNER_CAPABILITIES'));
   const explicitCapabilities = options.capabilities || {};
   const playwrightVersion =
@@ -50,7 +50,7 @@ export function resolveRemoteConfig(
   const browserName =
     stringValue(explicitCapabilities.browserName) ||
     stringValue(environmentCapabilities.browserName) ||
-    optionalEnv('REMOTE_PLAYWRIGHT_BROWSER_NAME') ||
+    optionalEnv('SESSION_BROWSER_NAME') ||
     playwrightBrowserName;
   const platformName =
     stringValue(explicitCapabilities.platformName) || stringValue(environmentCapabilities.platformName) || 'playwright';
@@ -69,7 +69,7 @@ export function resolveRemoteConfig(
     ) ??
     optionalNumberEnv('REMOTE_IDLE_TIMEOUT') ??
     300;
-  const capabilities: RemoteCapabilities = {
+  const capabilities: SessionCapabilities = {
     ...environmentCapabilities,
     ...explicitCapabilities,
     platformName,
@@ -101,8 +101,33 @@ export function resolveRemoteConfig(
   };
 }
 
-/** Reports whether to run on a remote browser. Uses `options.remote`, then `REMOTE`, then the presence of a host. */
-export function useRemoteBrowser(options: RemoteOptions = {}): boolean {
+/**
+ * Playwright engine to launch for a LOCAL run. Mirrors the remote browser
+ * resolution (capabilities, then env) so a config that selects the browser via
+ * `sessionOptions.capabilities.browserName` is respected locally too, instead of
+ * always launching Playwright's default. Falls back to the Playwright
+ * `browserName`. Chrome/Edge map to the chromium engine.
+ */
+export function resolveLocalBrowserName(
+  options: SessionOptions = {},
+  playwrightBrowserName: 'chromium' | 'firefox' | 'webkit' = 'chromium',
+): 'chromium' | 'firefox' | 'webkit' {
+  const explicitCapabilities = options.capabilities || {};
+  const environmentCapabilities = parseCapabilities(optionalEnv('ZEBRUNNER_CAPABILITIES'));
+  const raw =
+    stringValue(explicitCapabilities.browserName) ||
+    stringValue(environmentCapabilities.browserName) ||
+    optionalEnv('SESSION_BROWSER_NAME') ||
+    playwrightBrowserName;
+  const name = raw.replace(/^playwright-/, '').toLowerCase();
+  if (name === 'chromium' || name === 'chrome' || name === 'edge' || name === 'microsoftedge') return 'chromium';
+  if (name === 'firefox') return 'firefox';
+  if (name === 'webkit' || name === 'safari') return 'webkit';
+  return playwrightBrowserName;
+}
+
+/** Reports whether to run on a remote session. Uses `options.remote`, then `REMOTE`, then the presence of a host. */
+export function useRemoteSession(options: SessionOptions = {}): boolean {
   if (options.remote !== undefined) return options.remote;
   const remote = optionalBooleanEnv('REMOTE');
   if (remote !== undefined) return remote;
@@ -110,14 +135,14 @@ export function useRemoteBrowser(options: RemoteOptions = {}): boolean {
 }
 
 /** Reports whether to reuse one session per worker and refresh it. Uses `options.refresh`, then `REMOTE_REFRESH`. */
-export function useSessionRefresh(options: RemoteOptions = {}): boolean {
+export function useSessionRefresh(options: SessionOptions = {}): boolean {
   if (options.refresh !== undefined) return options.refresh;
   return optionalBooleanEnv('REMOTE_REFRESH') ?? false;
 }
 
-/** Returns the worker-fixture timeout that bounds session create and refresh. Default 780000 ms. */
+/** Returns the worker-fixture timeout for the local browser launch or the remote session create and refresh. Default 780000 ms. */
 export function sessionFixtureTimeoutMs(): number {
-  return timeoutValue(undefined, 'REMOTE_SESSION_FIXTURE_TIMEOUT_MS', 780_000);
+  return timeoutValue(undefined, 'SESSION_FIXTURE_TIMEOUT_MS', 780_000);
 }
 
 function optionalEnv(name: string): string | undefined {
@@ -201,7 +226,7 @@ function decodeUrlPart(value?: string): string | undefined {
   }
 }
 
-function parseCapabilities(raw?: string): RemoteCapabilities {
+function parseCapabilities(raw?: string): SessionCapabilities {
   if (!raw) return {};
   let parsed: unknown;
   try {
@@ -212,7 +237,7 @@ function parseCapabilities(raw?: string): RemoteCapabilities {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('ZEBRUNNER_CAPABILITIES must be a JSON object.');
   }
-  return parsed as RemoteCapabilities;
+  return parsed as SessionCapabilities;
 }
 
 function timeoutValue(explicit: number | undefined, envName: string, fallback: number): number {

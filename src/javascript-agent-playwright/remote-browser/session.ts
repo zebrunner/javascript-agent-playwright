@@ -1,7 +1,7 @@
 import type { Browser, BrowserContext, BrowserContextOptions, BrowserType } from '@playwright/test';
 
-import { resolveRemoteConfig, type ResolvedRemoteConfig } from './config';
-import type { ManagedRemoteSession, RemoteOptions, RemoteRefreshOptions, RemoteRefreshResult } from './types';
+import { resolveSessionConfig, type ResolvedSessionConfig } from './config';
+import type { ManagedRemoteSession, SessionOptions, RemoteRefreshOptions, RemoteRefreshResult } from './types';
 
 type RemoteResponse = Record<string, unknown>;
 
@@ -22,11 +22,11 @@ type ManagedSessionState = {
 /** Creates an ESG session, connects Playwright over the WebSocket, and returns the managed session. */
 export async function createRemoteSession(
   playwright: PlaywrightApi,
-  options: RemoteOptions = {},
+  options: SessionOptions = {},
   playwrightBrowserName = 'chromium',
   playwrightHeadless = false,
 ): Promise<ManagedRemoteSession> {
-  const config = resolveRemoteConfig(options, playwrightBrowserName, playwrightHeadless);
+  const config = resolveSessionConfig(options, playwrightBrowserName, playwrightHeadless);
   const sessionUrl = endpoint(config.host, 'session');
   const response = await fetch(sessionUrl, {
     method: 'POST',
@@ -68,7 +68,7 @@ class ManagedRemoteSessionImpl implements ManagedRemoteSession {
 
   constructor(
     private readonly playwright: PlaywrightApi,
-    private readonly config: ResolvedRemoteConfig,
+    private readonly config: ResolvedSessionConfig,
     private readonly state: ManagedSessionState,
   ) {}
 

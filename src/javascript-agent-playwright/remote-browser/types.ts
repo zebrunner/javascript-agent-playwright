@@ -4,7 +4,7 @@ import type { Browser, BrowserContextOptions } from '@playwright/test';
  * ESG session capabilities. Extra keys pass through to the create request, and
  * `zebrunner:options` carries the Zebrunner-specific settings.
  */
-export type RemoteCapabilities = Record<string, unknown> & {
+export type SessionCapabilities = Record<string, unknown> & {
   /** Engine to request: `chromium`, `firefox`, or `webkit`. */
   browserName?: string;
   /** Playwright image tag, for example `1.58.2`. Defaults to the installed `@playwright/test` version. */
@@ -17,8 +17,8 @@ export type RemoteCapabilities = Record<string, unknown> & {
   'zebrunner:options'?: Record<string, unknown>;
 };
 
-/** Per-run remote configuration. Every field falls back to an environment variable when omitted. */
-export type RemoteOptions = {
+/** Per-run session configuration. Every field falls back to an environment variable when omitted. */
+export type SessionOptions = {
   /** Force remote (`true`) or local (`false`). Defaults from `REMOTE`, then from the presence of a host. */
   remote?: boolean;
   /** Reuse one session per worker and refresh it between tests. Defaults from `REMOTE_REFRESH`. */
@@ -26,7 +26,7 @@ export type RemoteOptions = {
   /** Remote host with the credentials in the URL. Defaults from `ZEBRUNNER_HUB_URL`, then `REMOTE_HOST`. */
   host?: string;
   /** Capabilities merged into the create request. */
-  capabilities?: RemoteCapabilities;
+  capabilities?: SessionCapabilities;
   /** Timeout for `POST /session`, in milliseconds. */
   createTimeoutMs?: number;
   /** Timeout for the WebSocket connect, in milliseconds. */
@@ -94,16 +94,16 @@ export interface ManagedRemoteSession extends RemoteSession {
   close(): Promise<void>;
 }
 
-/** Worker-scoped test option that configures the remote session. */
-export type RemoteTestOptions = {
-  /** The remote configuration for the run. Set it per project or with `test.use`. */
-  remoteOptions: RemoteOptions;
+/** Worker-scoped test option that configures the session for the run (local or remote). */
+export type SessionTestOptions = {
+  /** The session configuration for the run. Set it per project or with `test.use`. */
+  sessionOptions: SessionOptions;
 };
 
-/** Fixtures the remote `test` adds. */
-export type RemoteTestFixtures = {
+/** Fixtures the session `test` adds. */
+export type SessionTestFixtures = {
   /** The live ESG session. Throws during a local run. */
   remoteSession: RemoteSession;
-  /** The connected remote browser. Use it for `newContext` in device emulation. */
-  remoteBrowser: Browser;
+  /** The browser under test: a local browser locally, or the remote browser on the grid. */
+  sessionBrowser: Browser;
 };

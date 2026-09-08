@@ -378,6 +378,11 @@ The session ID is optional. The `zebrunner:provider` capability sets display
 metadata only. A compatible remote service can use the session ID to associate
 available logs or video with the test.
 
+The local and remote fixture calls this function for you. A remote run attaches
+the grid session browser and session id. A local run attaches the local browser
+and the host operating system. Call the function yourself only for a custom
+provider that the fixture does not manage.
+
 The reporter resets session data and artifacts for each retry. Data from an
 earlier attempt does not enter the next attempt.
 
@@ -409,6 +414,27 @@ options.
 
 If a test times out during an unfinished action, the reporter completes that
 action with an `ERROR` result. It keeps the Playwright timeout reason.
+
+## Reruns
+
+Zebrunner can rerun only the failed tests of a launch. For a rerun, Zebrunner
+sets `REPORTING_RUN_CONTEXT`. The reporter exchanges this context to learn which
+tests to run again.
+
+Playwright fixes its run plan before the reporter starts, so the reporter cannot
+narrow the run on its own. The agent scopes the rerun earlier, before Playwright
+parses its command line. Preload the agent module with `NODE_OPTIONS` so it can
+add a `--test-list` argument:
+
+```bash
+NODE_OPTIONS="--import ./node_modules/@zebrunner/javascript-agent-playwright/build/javascript-agent-playwright/preload.mjs" \
+  npx playwright test
+```
+
+The preload reads `REPORTING_RUN_CONTEXT`, gets the tests to run again, and adds
+the `--test-list` argument. It scopes the run correctly for a named project, no
+project, and a duplicated project name. Without the preload, a rerun runs the
+full suite. A normal run (no `REPORTING_RUN_CONTEXT`) is not affected.
 
 ## Reporter shutdown timeouts
 

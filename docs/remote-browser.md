@@ -24,9 +24,9 @@ Use the normal Playwright project options:
 
 ```ts
 import { defineConfig } from '@playwright/test';
-import type { RemoteTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
+import type { SessionTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
 
-export default defineConfig<RemoteTestOptions>({
+export default defineConfig<SessionTestOptions>({
   use: {
     browserName: 'chromium',
     headless: false,
@@ -34,7 +34,7 @@ export default defineConfig<RemoteTestOptions>({
 });
 ```
 
-A Zebrunner launch supplies the remote connection and session capabilities. You do not need to add `remoteOptions` unless you want to override some capabilities.
+A Zebrunner launch supplies the remote connection and session capabilities. You do not need to add `sessionOptions` unless you want to override some capabilities.
 
 ## Run locally
 
@@ -70,19 +70,65 @@ Outside a Zebrunner launch, set an authenticated `REMOTE_HOST`:
 REMOTE_HOST=https://user:password@engine.example.com/wd/hub npx playwright test
 ```
 
+## Local and remote parity
+
+You write one test and one config. The `page` and `context` fixtures apply the
+same Playwright options in both modes. A `REMOTE=true` run and a `REMOTE=false`
+run behave the same for the standard cases.
+
+### Context options
+
+The fixture builds the context, so it forwards the standard `use.*` context
+options in both modes: `userAgent`, `locale`, `timezoneId`, `geolocation`,
+`permissions`, `colorScheme`, `deviceScaleFactor`, `ignoreHTTPSErrors`,
+`httpCredentials`, `extraHTTPHeaders`, `offline`, `storageState`, `baseURL`,
+`proxy`, `serviceWorkers`, `isMobile`, `hasTouch`, `javaScriptEnabled`,
+`acceptDownloads`, `bypassCSP`, and the raw `contextOptions` object.
+
+The fixture sets two options itself, and these win over your values:
+
+- `viewport`. A remote session uses its own session viewport. A local run uses
+  your `viewport`.
+- `recordVideo`. A local run wires this for video. See the next part.
+
+A test that builds its own context with `sessionBrowser.newContext(...)` records
+video too on a local run. The fixture wraps the browser and attaches the video.
+
+### Video
+
+- Remote. Zebrunner shows the grid server-side session recording. The fixture
+  does not record a second Playwright video.
+- Local. There is no grid recording, so the fixture honors `use.video`. It
+  records the Playwright video and attaches the file. The reporter uploads it.
+
+### Browser type
+
+`capabilities.browserName` selects the engine in both modes. A remote run
+requests that engine from the grid. A local run launches the matching Playwright
+engine (`chromium`, `firefox`, or `webkit`). Chrome and Edge map to `chromium`.
+Safari maps to `webkit`. When you set no `browserName`, the fixture uses the
+Playwright `browserName`.
+
+### Reported browser and platform
+
+The reporter shows the real browser and platform for each mode. A remote run
+reports the grid session browser and links the session id for the video and the
+VNC view. A local run reports the local browser name and version and the host
+operating system.
+
 ## Override remote capabilities
 
 Usually, Zebrunner supplies the remote capabilities. Use
-`remoteOptions.capabilities` only when you must override them.
+`sessionOptions.capabilities` only when you must override them.
 
 ```ts
 import { defineConfig } from '@playwright/test';
-import type { RemoteTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
+import type { SessionTestOptions } from '@zebrunner/javascript-agent-playwright/remote';
 
-export default defineConfig<RemoteTestOptions>({
+export default defineConfig<SessionTestOptions>({
   use: {
     browserName: 'chromium',
-    remoteOptions: {
+    sessionOptions: {
       capabilities: {
         playwrightVersion: '1.58.2',
         'zebrunner:options': {
@@ -113,12 +159,13 @@ must match the installed `@playwright/test` version.
 
 The fixture resolves each value from four sources. A higher source wins.
 
-1. Code options. These are `remoteOptions.capabilities`, `remoteOptions.host`,
-   and the `remoteOptions` timeouts. Set them in a project `use` or in `test.use`.
+1. Code options. These are `sessionOptions.capabilities`, `sessionOptions.host`,
+   and the `sessionOptions` timeouts. Set them in a project `use` or in `test.use`.
 2. `ZEBRUNNER_CAPABILITIES`. This is the JSON capabilities that a Zebrunner launch
    injects.
-3. `REMOTE_*` environment variables. Examples are `REMOTE_PLAYWRIGHT_BROWSER_NAME`,
-   `REMOTE_PLAYWRIGHT_HEADLESS`, and the `REMOTE_BROWSER_*` values.
+3. Environment variables. The dual-mode `SESSION_BROWSER_NAME` selects the engine
+   for a local or a remote run. The `REMOTE_*` variables apply to a remote session
+   only. Examples are `REMOTE_PLAYWRIGHT_HEADLESS` and the `REMOTE_BROWSER_*` values.
 4. Playwright options and built-in defaults. Examples are `browserName`,
    `headless`, and the installed `@playwright/test` version.
 
@@ -127,9 +174,9 @@ capability wins over a launch capability.
 
 Two values follow a separate order:
 
-- Host. The order is `remoteOptions.host`, then `ZEBRUNNER_HUB_URL`, then
+- Host. The order is `sessionOptions.host`, then `ZEBRUNNER_HUB_URL`, then
   `REMOTE_HOST`. The host is not a capability.
-- Timeouts. The order is the `remoteOptions` timeout, then the
+- Timeouts. The order is the `sessionOptions` timeout, then the
   `REMOTE_*_TIMEOUT_MS` variable, then the default.
 
 The `zebrunner:options` block merges in the same order. A code option overrides a
@@ -140,14 +187,47 @@ launch option. A launch option overrides the `REMOTE_BROWSER_*` default.
 set. The resolved version must match the installed `@playwright/test` version, or
 the fixture throws.
 
-## Select the mode explicitly
+## Viewport
 
-Use `remoteOptions.remote` for one project:
+The viewport resolves differently from the other context options.
+
+- A local run (`REMOTE=false`) uses the Playwright `use.viewport`.
+- A remote run replaces `use.viewport` with the session viewport. The session
+  viewport comes from the `zebrunner:options.screenResolution` capability
+  (default `1920x1080`). This keeps the grid screen, the VNC view, the video, and
+  the context viewport at one size, so `use.viewport` does not desync them.
+
+To force an exact viewport on both a local and a remote run, create the context
+yourself with `sessionBrowser.newContext({ viewport })`. That call does not pass
+through the fixture, so the session viewport does not replace it.
 
 ```ts
-export default defineConfig<RemoteTestOptions>({
+const context = await sessionBrowser.newContext({ viewport: { width: 800, height: 600 } });
+```
+
+To change the remote screen (and therefore the remote viewport), set
+`screenResolution` through a capability:
+
+```ts
+use: {
+  sessionOptions: {
+    capabilities: { 'zebrunner:options': { screenResolution: '1280x720x24' } },
+  },
+},
+```
+
+You can also set `REMOTE_BROWSER_SCREEN_RESOLUTION` or inject
+`ZEBRUNNER_CAPABILITIES`. Note: headed Chromium uses no fixed viewport -- the
+window maximizes to the screen, so the viewport still equals `screenResolution`.
+
+## Select the mode explicitly
+
+Use `sessionOptions.remote` for one project:
+
+```ts
+export default defineConfig<SessionTestOptions>({
   use: {
-    remoteOptions: {
+    sessionOptions: {
       remote: false,
     },
   },
@@ -165,7 +245,7 @@ run creates one remote session for each running test.
 
 ### Reuse one session per worker
 
-Set `REMOTE_REFRESH=true` (or `remoteOptions.refresh: true`) to reuse one remote
+Set `REMOTE_REFRESH=true` (or `sessionOptions.refresh: true`) to reuse one remote
 session for a whole worker. In this mode, each worker creates one remote session
 before its first test. Before each later test, the fixture refreshes the browser
 in the same remote session. After the worker finishes its last test, the fixture
@@ -176,9 +256,9 @@ REMOTE_REFRESH=true npx playwright test
 ```
 
 ```ts
-export default defineConfig<RemoteTestOptions>({
+export default defineConfig<SessionTestOptions>({
   use: {
-    remoteOptions: {
+    sessionOptions: {
       refresh: true,
     },
   },
@@ -191,14 +271,16 @@ export default defineConfig<RemoteTestOptions>({
 | --------------- | ---------------------------------------------------------- |
 | `page`          | Standard Playwright page in the local or remote browser    |
 | `context`       | Standard Playwright context in the local or remote browser |
-| `remoteBrowser` | Local or remote Playwright `Browser` for the current test  |
+| `sessionBrowser` | Local or remote Playwright `Browser` for the current test  |
 | `remoteSession` | Remote session IDs, clipboard, and download operations     |
-| `remoteOptions` | Options for `test.use()` or project `use`                  |
+| `sessionOptions` | Options for `test.use()` or project `use`                  |
 
-Use `remoteBrowser` when a test needs the browser object. Do not request the
+Use `sessionBrowser` when a test needs the browser object. Do not request the
 standard `browser` fixture.
 
-`remoteSession` is available only in remote mode.
+`sessionBrowser` resolves in both modes. In a local run, it is the local browser.
+`remoteSession` is available only in remote mode. It stops with an error in a
+local run.
 
 ## Use the clipboard and downloads
 
@@ -239,24 +321,30 @@ Each value resolves by the precedence above: code option, then
 
 | Option / variable | Purpose | Default |
 | --- | --- | --- |
-| `remoteOptions.host` / `ZEBRUNNER_HUB_URL` / `REMOTE_HOST` | Remote host with the credentials in the URL. The URL can include `/wd/hub` or the host only. | none (required for a remote run) |
-| `remoteOptions.remote` / `REMOTE` | Force remote (`true`) or local (`false`). | remote when a host is set |
-| `remoteOptions.refresh` / `REMOTE_REFRESH` | Reuse one session per worker and refresh it between tests. | `false` |
+| `sessionOptions.host` / `ZEBRUNNER_HUB_URL` / `REMOTE_HOST` | Remote host with the credentials in the URL. The URL can include `/wd/hub` or the host only. | none (required for a remote run) |
+| `sessionOptions.remote` / `REMOTE` | Force remote (`true`) or local (`false`). | remote when a host is set |
+| `sessionOptions.refresh` / `REMOTE_REFRESH` | Reuse one session per worker and refresh it between tests. | `false` |
 | `ZEBRUNNER_CAPABILITIES` | JSON capabilities that a Zebrunner launch injects. | none |
 
 ### Capabilities
 
-These go in the create request. Set them in `remoteOptions.capabilities`.
+These go in the create request. Set them in `sessionOptions.capabilities`.
 
 | Capability | Environment variable | Default |
 | --- | --- | --- |
-| `browserName` | `REMOTE_PLAYWRIGHT_BROWSER_NAME` | the Playwright `browserName`, else `chromium` |
+| `browserName` | `SESSION_BROWSER_NAME` (local and remote) | the Playwright `browserName`, else `chromium` |
 | `platformName` | none | `playwright` |
 | `headless` | `REMOTE_PLAYWRIGHT_HEADLESS` | the Playwright `headless`, else `false` |
 | `playwrightVersion` (or `browserVersion`) | `REMOTE_PLAYWRIGHT_VERSION` | the installed `@playwright/test` version; must match it |
 | `zebrunner:idleTimeout` | `REMOTE_IDLE_TIMEOUT` | `300` (seconds) |
 
 Any other top-level capability passes through to the create request unchanged.
+
+`browserName` applies in both modes. `headless` applies only to a remote launch.
+A local launch reads the Playwright `headless` value (`use.headless`, the
+`--headed` flag), not the capability. Set `headless` in `use` for a local run.
+Set `headless: true` for a local run in a container with no display, or a headed
+browser stops with "Missing X server or $DISPLAY".
 
 ### `zebrunner:options`
 
@@ -289,7 +377,7 @@ it.
 
 ### Timeouts
 
-Set these in `remoteOptions` or with the environment variable. All values are in
+Set these in `sessionOptions` or with the environment variable. All values are in
 milliseconds.
 
 | Option | Environment variable | Default |
@@ -298,7 +386,7 @@ milliseconds.
 | `connectTimeoutMs` | `REMOTE_PLAYWRIGHT_CONNECT_TIMEOUT_MS` | `120000` (WebSocket connect) |
 | `refreshTimeoutMs` | `REMOTE_PLAYWRIGHT_REFRESH_TIMEOUT_MS` | `150000` (refresh) |
 | `deleteTimeoutMs` | `REMOTE_SESSION_DELETE_TIMEOUT_MS` | `30000` (`DELETE /session`) |
-| none | `REMOTE_SESSION_FIXTURE_TIMEOUT_MS` | `780000` (worker fixture budget for create and refresh) |
+| none | `SESSION_FIXTURE_TIMEOUT_MS` | `780000` (worker fixture budget: local launch, or remote create and refresh) |
 
-Keep each per-operation timeout below `REMOTE_SESSION_FIXTURE_TIMEOUT_MS`, which
-bounds the worker fixture.
+Keep each per-operation timeout below `SESSION_FIXTURE_TIMEOUT_MS`, which
+bounds the worker fixture on both a local and a remote run.
