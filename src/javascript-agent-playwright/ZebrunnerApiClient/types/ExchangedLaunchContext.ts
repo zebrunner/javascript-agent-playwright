@@ -6,7 +6,11 @@ export class ExchangedLaunchContext {
   runOnlySpecificTests: boolean;
   testsToRun: {
     id: number;
+    name: string;
     correlationData: string;
+    status: string;
+    startedAt: string;
+    endedAt: string;
   }[];
   fullExecutionPlanContext: string;
 

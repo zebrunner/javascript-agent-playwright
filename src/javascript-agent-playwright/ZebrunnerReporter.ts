@@ -28,13 +28,13 @@ import {
   getFileSizeInBytes,
   getTestLogs,
   getTestLabelsFromTitle,
+  getFullSuiteName,
   normalizeAttemptLabels,
   parseBrowserCapabilities,
   prepareAttemptArtifacts,
   processAttachments,
   until,
   isNotEmptyArray,
-  recursiveTestsTraversal,
   parseReporterEvent,
   getErrorsStringFromMap,
   getCustomArtifactObject,
@@ -316,8 +316,21 @@ class ZebrunnerReporter implements PwReporter {
         throw new Error(`${this.exchangedLaunchContext.reason}`);
       }
 
-      recursiveTestsTraversal(suite, this.exchangedLaunchContext);
-
+      // Deliberately not mutating the Suite here (this used to call
+      // recursiveTestsTraversal(suite, this.exchangedLaunchContext)). Playwright
+      // builds its dispatch plan (createPhasesTask) before reporter.onBegin
+      // (createReportBeginTask) ever runs, so no Suite mutation performed inside
+      // a reporter callback can change which tests actually execute — scoping a
+      // rerun down to specific tests has to happen before Playwright's CLI even
+      // parses argv (see preload.mjs's --test-list injection via NODE_OPTIONS).
+      // Beyond being ineffective, this mutation was actively harmful: onBegin
+      // computes totalTestCount from suite.allTests().length right after
+      // rerunResolver returns, and recursiveTestsTraversal matches tests by
+      // browser/os/version correlationData — any mismatch between that
+      // correlation and what was actually scoped upstream could silently strip
+      // tests from the Suite object and desync totalTestCount's baseline from
+      // what actually runs, which then hangs onEnd's finished-count guard
+      // forever (it can never observe the count it is waiting for).
       return suite;
     } catch (error) {
       this.logError('rerunResolver', error);
@@ -587,10 +600,32 @@ class ZebrunnerReporter implements PwReporter {
     this.pwTestResultToState.delete(pwTestResult);
   }
 
+  private findOriginalRerunTestId(pwTest: ExtendedPwTestCase): number | undefined {
+    if (!this.exchangedLaunchContext?.testsToRun) {
+      return undefined;
+    }
+    const fullTestName = `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${getFullSuiteName(pwTest)} > ${
+      pwTest.title
+    }`;
+    return this.exchangedLaunchContext.testsToRun.find((test) => test.name === fullTestName)?.id;
+  }
+
   async onTestBegin(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
     const fullTestName = buildTestIdentity(pwTest).name;
     const startLabel = pwTestResult.retry > 0 ? gray(`[RETRY #${pwTestResult.retry}]`) : gray('[START]');
     zinfo(`${startLabel} ${fullTestName}`);
+
+    if (pwTestResult.retry > 0) {
+      // Bump totalTestCount synchronously, before any await below. Playwright
+      // can dispatch and finish this retry (including starting the next retry,
+      // or finishing the whole run) faster than our own async/network-bound
+      // bookkeeping can catch up. Incrementing only after an await risks
+      // onEnd()'s getFinishedTestCount() === totalTestCount guard observing a
+      // stale snapshot that has not yet accounted for this already-dispatched
+      // retry, closing the launch early and leaving this retry's test record
+      // stuck with a stale, unfinished status.
+      this.totalTestCount += 1;
+    }
 
     if (!this.reportingConfig.enabled) {
       return;
@@ -600,17 +635,25 @@ class ZebrunnerReporter implements PwReporter {
 
     await until(() => !!this.zbrLaunchId); // zebrunner launch initialized
     if (pwTestResult.retry > 0) {
-      this.totalTestCount += 1;
       await until(() => pwTestResult.retry - this.pwTestIdToZbrFinishedTry.get(pwTest.id) === 1); // previous test try finished
     }
 
     const testStartedAt = new Date(pwTestResult.startTime);
 
-    const zbrTestId =
-      pwTestResult.retry > 0 && this.pwTestIdToZbrTestId.has(pwTest.id) // test restarted and not reverted in Zebrunner
-        ? await this.restartTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt)
+    const isKnownRestart = pwTestResult.retry > 0 && this.pwTestIdToZbrTestId.has(pwTest.id); // test restarted and not reverted in Zebrunner
+    // A rerun launch starts a brand new Playwright process, so pwTest.id here
+    // has no relation to any previous launch's pwTest.id — isKnownRestart can
+    // only ever be true for a retry within *this* process. For the first
+    // attempt of a test that Zebrunner already knows about from the exchanged
+    // rerun context, match it by name so we restart (and overwrite) that
+    // existing Zebrunner test record instead of creating a duplicate one.
+    const originalRerunTestId = !isKnownRestart ? this.findOriginalRerunTestId(pwTest) : undefined;
+
+    const zbrTestId = isKnownRestart
+      ? await this.restartTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt)
+      : originalRerunTestId !== undefined
+        ? await this.restartTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt, originalRerunTestId)
         : await this.startTestAndGetId(this.zbrLaunchId, pwTest, testStartedAt);
-    // [OLD] Needed for rerun?: this.exchangedLaunchContext?.mode === 'RERUN'
 
     this.pwTestIdToZbrTestId.set(pwTest.id, zbrTestId);
     this.pwTestIdToZbrStartedTry.set(pwTest.id, pwTestResult.retry);
@@ -1088,46 +1131,31 @@ class ZebrunnerReporter implements PwReporter {
     }
   }
 
-  private async restartTestAndGetId(zbrLaunchId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
+  private async restartTestAndGetId(
+    zbrLaunchId: number,
+    pwTest: ExtendedPwTestCase,
+    testStartedAt: Date,
+    targetZbrTestId?: number,
+  ) {
     try {
       const identity = buildTestIdentity(pwTest);
       const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
-      /* [OLD] Needed for rerun?:
-      const testToRerun = this.exchangedLaunchContext.testsToRun.filter(
-        (el: {
-          id: number;
-          name: string;
-          correlationData: string;
-          status: string;
-          startedAt: string;
-          endedAt: string;
-        }) => {
-          const { browser, version, os } = JSON.parse(el.correlationData);
-          if (
-            el.name === `${fullSuiteName} > ${pwTest.title}` &&
-            browser === browserCapabilities.browser.name &&
-            version === browserCapabilities.browser.version &&
-            os === browserCapabilities.os.name
-          ) {
-            return true;
-          }
-          return false;
+      const zbrTestId = await this.apiClient.restartTest(
+        zbrLaunchId,
+        targetZbrTestId ?? this.pwTestIdToZbrTestId.get(pwTest.id),
+        {
+          name: identity.name,
+          className: identity.className,
+          methodName: identity.methodName,
+          startedAt: testStartedAt,
+          correlationData: JSON.stringify({
+            browser: browserCapabilities.browser.name,
+            version: browserCapabilities.browser.version,
+            os: browserCapabilities.os.name,
+          }),
         },
-      )[0];
-      */
-
-      const zbrTestId = await this.apiClient.restartTest(zbrLaunchId, this.pwTestIdToZbrTestId.get(pwTest.id), {
-        name: identity.name,
-        className: identity.className,
-        methodName: identity.methodName,
-        startedAt: testStartedAt,
-        correlationData: JSON.stringify({
-          browser: browserCapabilities.browser.name,
-          version: browserCapabilities.browser.version,
-          os: browserCapabilities.os.name,
-        }),
-      });
+      );
 
       return zbrTestId;
     } catch (error) {

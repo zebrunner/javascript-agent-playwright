@@ -24,7 +24,8 @@
   "description": "Zebrunner Agent for Playwright",
   "scripts": {
     "clean": "rimraf ./build",
-    "build": "tsc -p ./tsconfig.json",
+    "copy:assets": "node -e \"require('fs').copyFileSync('src/javascript-agent-playwright/preload.mjs','build/javascript-agent-playwright/preload.mjs')\"",
+    "build": "tsc -p ./tsconfig.json && npm run copy:assets",
     "prepare": "npm run build",
     "prepublishOnly": "npm run clean && npm run build",
     "lint": "eslint src",
