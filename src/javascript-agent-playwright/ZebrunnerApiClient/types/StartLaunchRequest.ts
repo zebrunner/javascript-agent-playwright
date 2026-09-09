@@ -41,13 +41,8 @@ export class StartLaunchRequest {
       treatSkipsAsFailures: reportingConfig.launch.treatSkipsAsFailures,
     };
     this.milestone = {
-      // priorities: env var id > env var name > cfg var id > cfg var name
-      id: reportingConfig.milestone.idFromEnv
-        ? reportingConfig.milestone.idFromEnv
-        : reportingConfig.milestone.nameFromEnv
-        ? null
-        : reportingConfig.milestone.idFromConfig,
-      name: reportingConfig.milestone.nameFromEnv || reportingConfig.milestone.nameFromConfig,
+      id: reportingConfig.milestone.id,
+      name: reportingConfig.milestone.name,
     };
     this.notifications = {
       notifyOnEachFailure: reportingConfig.notifications.notifyOnEachFailure,

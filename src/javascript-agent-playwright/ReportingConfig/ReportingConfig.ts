@@ -1,15 +1,34 @@
 import { isNotBlankString } from '../helpers';
-import { getBoolean, getNumber, getString } from './helpers';
+import { getBoolean, getNonNegativeNumber, getNumber, getString } from './helpers';
 import {
+  ArtifactReference,
+  ConsoleConfig,
+  Label,
   LaunchConfig,
   LogsConfig,
   MilestoneConfig,
   NotificationsConfig,
   ServerConfig,
   Tcm,
+  TestSessionConfig,
+  ZebrunnerConsoleLogLevel,
   ZebrunnerLogFormat,
   ZebrunnerReporterOptions,
 } from './types';
+
+const CONSOLE_LOG_LEVELS: ZebrunnerConsoleLogLevel[] = ['silent', 'error', 'warn', 'info', 'debug', 'trace'];
+
+function parseLabels(labels: Record<string, string> = {}): Label[] {
+  return Object.keys(labels)
+    .filter((key) => isNotBlankString(labels[key]))
+    .map((key) => ({ key, value: labels[key] }));
+}
+
+function parseArtifactReferences(artifactReferences: Record<string, string> = {}): ArtifactReference[] {
+  return Object.keys(artifactReferences)
+    .filter((name) => isNotBlankString(artifactReferences[name]))
+    .map((name) => ({ name, value: artifactReferences[name] }));
+}
 
 export class ReportingConfig {
   readonly enabled: boolean;
@@ -17,8 +36,10 @@ export class ReportingConfig {
   readonly server: ServerConfig;
   readonly launch: LaunchConfig;
   readonly logs: LogsConfig;
+  readonly console: ConsoleConfig;
   readonly milestone: MilestoneConfig;
   readonly notifications: NotificationsConfig;
+  readonly testSession: TestSessionConfig;
   readonly tcm: Tcm;
 
   constructor(config?: ZebrunnerReporterOptions) {
@@ -27,6 +48,14 @@ export class ReportingConfig {
     this.server = {
       hostname: getString('REPORTING_SERVER_HOSTNAME', config?.server?.hostname),
       accessToken: getString('REPORTING_SERVER_ACCESS_TOKEN', config?.server?.accessToken),
+      request: {
+        retries: getNonNegativeNumber('REPORTING_SERVER_REQUEST_RETRIES', config?.server?.request?.retries, 2),
+        retryDelayMillis: getNonNegativeNumber(
+          'REPORTING_SERVER_REQUEST_RETRY_DELAY_MILLIS',
+          config?.server?.request?.retryDelayMillis,
+          1000,
+        ),
+      },
     };
 
     if (this.enabled === true && !this.server.hostname && !this.server.accessToken) {
@@ -46,6 +75,19 @@ export class ReportingConfig {
         'REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES',
         config?.launch?.treatSkipsAsFailures,
         true,
+      ),
+      labels: parseLabels(config?.launch?.labels),
+      artifactReferences: parseArtifactReferences(config?.launch?.artifactReferences),
+      context: getString('REPORTING_RUN_CONTEXT', config?.launch?.context),
+      finishTimeoutMillis: getNonNegativeNumber(
+        'REPORTING_LAUNCH_FINISH_TIMEOUT_MILLIS',
+        config?.launch?.finishTimeoutMillis,
+        60000,
+      ),
+      abortTimeoutMillis: getNonNegativeNumber(
+        'REPORTING_LAUNCH_ABORT_TIMEOUT_MILLIS',
+        config?.launch?.abortTimeoutMillis,
+        10000,
       ),
     };
 
@@ -67,9 +109,9 @@ export class ReportingConfig {
     }
 
     // A sub-second flush interval would spam the logs API without making the UI any more live.
-    const requestedFlushIntervalMs = getNumber(
-      'REPORTING_LOGS_FLUSH_INTERVAL_MS',
-      config?.logs?.flushIntervalMs,
+    const requestedFlushIntervalMillis = getNumber(
+      'REPORTING_LOGS_FLUSH_INTERVAL_MILLIS',
+      config?.logs?.flushIntervalMillis,
       0,
     );
 
@@ -93,9 +135,9 @@ export class ReportingConfig {
       maxSourceLines: getNumber('REPORTING_LOGS_MAX_SOURCE_LINES', config?.logs?.maxSourceLines, 3),
       maxMessageLength: getNumber('REPORTING_LOGS_MAX_MESSAGE_LENGTH', config?.logs?.maxMessageLength, 8000),
       ignoreConsole: getBoolean('REPORTING_LOGS_IGNORE_CONSOLE', config?.logs?.ignoreConsole, false),
-      ignoreCustom: getBoolean('REPORTING_LOGS_IGNORE_MANUAL', config?.logs?.ignoreCustom, false),
+      ignoreCustom: getBoolean('REPORTING_LOGS_IGNORE_CUSTOM', config?.logs?.ignoreCustom, false),
       ignoreManualScreenshots: getBoolean(
-        'REPORTING_LOGS_IGNORE_CUSTOM_SCREENSHOTS',
+        'REPORTING_LOGS_IGNORE_MANUAL_SCREENSHOTS',
         config?.logs?.ignoreManualScreenshots,
         false,
       ),
@@ -104,14 +146,30 @@ export class ReportingConfig {
         config?.logs?.ignoreAutoScreenshots,
         false,
       ),
-      flushIntervalMs: requestedFlushIntervalMs > 0 ? Math.max(requestedFlushIntervalMs, 1000) : 0,
+      flushIntervalMillis: requestedFlushIntervalMillis > 0 ? Math.max(requestedFlushIntervalMillis, 1000) : 0,
+      consoleOnlyPrefix: getString(
+        'REPORTING_LOGS_CONSOLE_ONLY_PREFIX',
+        config?.logs?.consoleOnlyPrefix,
+        'reporting-agent:',
+      ),
+    };
+
+    const requestedLogLevel = getString('REPORTING_CONSOLE_LOG_LEVEL', config?.console?.logLevel, 'info');
+    this.console = {
+      logLevel: CONSOLE_LOG_LEVELS.includes(requestedLogLevel as ZebrunnerConsoleLogLevel)
+        ? (requestedLogLevel as ZebrunnerConsoleLogLevel)
+        : 'info',
     };
 
     this.milestone = {
-      idFromConfig: config?.milestone?.id,
-      idFromEnv: getNumber('REPORTING_MILESTONE_ID', null),
-      nameFromConfig: config?.milestone?.name,
-      nameFromEnv: getString('REPORTING_MILESTONE_NAME', null),
+      id: getNumber('REPORTING_MILESTONE_ID', config?.milestone?.id),
+      name: getString('REPORTING_MILESTONE_NAME', config?.milestone?.name),
+    };
+
+    // Left unresolved on purpose: the reporter falls back to device farm autodetection and only
+    // then to ZEBRUNNER, so a default applied here would shadow the autodetection.
+    this.testSession = {
+      provider: getString('REPORTING_TEST_SESSION_PROVIDER', config?.testSession?.provider),
     };
 
     this.notifications = {

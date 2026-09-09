@@ -1,11 +1,11 @@
 export { cleanseReason } from './cleanseReason';
 export { stripTerminalCodes } from './stripTerminalCodes';
 export { buildTestIdentity } from './buildTestIdentity';
+export { CorrelationData, buildCorrelationData } from './correlationData';
 export { convertVideo } from './convertVideo';
 export { determineStatus, determineLogLevel } from './determineStatus';
 export { formatFailureReason } from './formatFailureReason';
 export { getFileSizeInBytes } from './getFileSizeInBytes';
-export { getFullSuiteName } from './getFullSuiteName';
 export { getTestLogs } from './getTestLogs';
 export { getTestLabelsFromTitle } from './getTestLabelsFromTitle';
 export { normalizeAttemptLabels } from './normalizeAttemptLabels';

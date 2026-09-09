@@ -18,12 +18,31 @@ export type ZebrunnerNumeric = number | string;
  */
 export type ZebrunnerLogFormat = 'structured' | 'playwright-title' | 'source-line';
 
+/** Verbosity of the agent's own output in the terminal. Does not affect what is reported to Zebrunner. */
+export type ZebrunnerConsoleLogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+
+/** How reporting requests that fail on a transient error are retried. */
+export interface ZebrunnerServerRequestOptions {
+  /**
+   * How many times a reporting request is retried after a transient failure (DNS and connection
+   * errors, or HTTP 502/503/504). Any other failure surfaces immediately. Defaults to `2`.
+   * Env: `REPORTING_SERVER_REQUEST_RETRIES`.
+   */
+  retries?: ZebrunnerNumeric;
+  /**
+   * Base delay for the exponential backoff between retries (`delay * 2 ** attempt`). `0` retries
+   * without waiting. Defaults to `1000`. Env: `REPORTING_SERVER_REQUEST_RETRY_DELAY_MILLIS`.
+   */
+  retryDelayMillis?: ZebrunnerNumeric;
+}
+
 /** Zebrunner instance the results are reported to. Required when `enabled` is `true`. */
 export interface ZebrunnerServerOptions {
   /** Zebrunner hostname, e.g. `https://mycompany.zebrunner.com`. Env: `REPORTING_SERVER_HOSTNAME`. */
   hostname?: string;
   /** Access token from the Zebrunner user profile page. Env: `REPORTING_SERVER_ACCESS_TOKEN`. */
   accessToken?: string;
+  request?: ZebrunnerServerRequestOptions;
 }
 
 export interface ZebrunnerLaunchOptions {
@@ -40,6 +59,26 @@ export interface ZebrunnerLaunchOptions {
   locale?: string;
   /** Report skipped tests as failures. Defaults to `true`. Env: `REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES`. */
   treatSkipsAsFailures?: ZebrunnerFlag;
+  /** Labels attached to the launch, e.g. `{ Team: 'Payments' }`. Blank values are dropped. */
+  labels?: Record<string, string>;
+  /** Artifact references attached to the launch, e.g. `{ Build: 'https://ci/job/42' }`. Blank values are dropped. */
+  artifactReferences?: Record<string, string>;
+  /**
+   * Rerun context issued by Zebrunner. Injected by the Zebrunner launcher as
+   * `REPORTING_RUN_CONTEXT` and normally never set by hand.
+   */
+  context?: string;
+  /**
+   * How long the reporter waits for every test to finish reporting before it closes the launch, in
+   * milliseconds. Defaults to `60000`. Env: `REPORTING_LAUNCH_FINISH_TIMEOUT_MILLIS`.
+   */
+  finishTimeoutMillis?: ZebrunnerNumeric;
+  /**
+   * How long the reporter delays process exit to close the launch after an abort (`SIGTERM`,
+   * `SIGHUP`, a crash), in milliseconds. Defaults to `10000`.
+   * Env: `REPORTING_LAUNCH_ABORT_TIMEOUT_MILLIS`.
+   */
+  abortTimeoutMillis?: ZebrunnerNumeric;
 }
 
 export interface ZebrunnerLogsOptions {
@@ -71,11 +110,11 @@ export interface ZebrunnerLogsOptions {
   maxMessageLength?: ZebrunnerNumeric;
   /** Do not attach `console.log` output from tests. Defaults to `false`. Env: `REPORTING_LOGS_IGNORE_CONSOLE`. */
   ignoreConsole?: ZebrunnerFlag;
-  /** Do not attach `currentTest.log.*` messages. Defaults to `false`. Env: `REPORTING_LOGS_IGNORE_MANUAL`. */
+  /** Do not attach `currentTest.log.*` messages. Defaults to `false`. Env: `REPORTING_LOGS_IGNORE_CUSTOM`. */
   ignoreCustom?: ZebrunnerFlag;
   /**
    * Do not upload `currentTest.attachScreenshot()` screenshots. Defaults to `false`.
-   * Env: `REPORTING_LOGS_IGNORE_CUSTOM_SCREENSHOTS`.
+   * Env: `REPORTING_LOGS_IGNORE_MANUAL_SCREENSHOTS`.
    */
   ignoreManualScreenshots?: ZebrunnerFlag;
   /**
@@ -87,9 +126,31 @@ export interface ZebrunnerLogsOptions {
    * Upload buffered test logs every N milliseconds while the test is still running, instead of
    * only at test end. `0` (default) keeps the end-of-test upload. Values below 1000 are raised to
    * 1000. Artifacts, screenshots, videos and the test result are always sent at test end.
-   * Env: `REPORTING_LOGS_FLUSH_INTERVAL_MS`.
+   * Env: `REPORTING_LOGS_FLUSH_INTERVAL_MILLIS`.
    */
-  flushIntervalMs?: ZebrunnerNumeric;
+  flushIntervalMillis?: ZebrunnerNumeric;
+  /**
+   * Test stdout lines starting with this prefix are printed in the run output but not attached as
+   * Zebrunner test logs. Defaults to `'reporting-agent:'`. Env: `REPORTING_LOGS_CONSOLE_ONLY_PREFIX`.
+   */
+  consoleOnlyPrefix?: string;
+}
+
+export interface ZebrunnerConsoleOptions {
+  /**
+   * Verbosity of the agent's own output and of its internal loggers. Defaults to `'info'`; use
+   * `'debug'` for upload timings and full stack traces. Env: `REPORTING_CONSOLE_LOG_LEVEL`.
+   */
+  logLevel?: ZebrunnerConsoleLogLevel;
+}
+
+export interface ZebrunnerTestSessionOptions {
+  /**
+   * Provider reported as the `zebrunner:provider` capability of a test session. Defaults to
+   * `'ZEBRUNNER'`, or to `'ZEBRUNNER_DEVICE_FARM'` when the run is orchestrated by Zebrunner Device
+   * Farm. Env: `REPORTING_TEST_SESSION_PROVIDER`.
+   */
+  provider?: string;
 }
 
 export interface ZebrunnerMilestoneOptions {
@@ -206,7 +267,7 @@ export interface TcmOptions {
  *   reporter: [zebrunnerReporter({
  *     enabled: true,
  *     projectKey: 'DEF',
- *     server: { hostname: 'https://mycompany.zebrunner.com', accessToken: process.env.ZBR_TOKEN },
+ *     server: { hostname: 'https://mycompany.zebrunner.com', accessToken: process.env.ZEBRUNNER_TOKEN },
  *   })],
  * });
  * ```
@@ -222,14 +283,32 @@ export interface ZebrunnerReporterOptions {
   server?: ZebrunnerServerOptions;
   launch?: ZebrunnerLaunchOptions;
   logs?: ZebrunnerLogsOptions;
+  console?: ZebrunnerConsoleOptions;
   milestone?: ZebrunnerMilestoneOptions;
   notifications?: ZebrunnerNotificationsOptions;
+  testSession?: ZebrunnerTestSessionOptions;
   tcm?: TcmOptions;
+}
+
+export interface ServerRequestConfig {
+  readonly retries: number;
+  readonly retryDelayMillis: number;
 }
 
 export interface ServerConfig {
   readonly hostname: string;
   readonly accessToken: string;
+  readonly request: ServerRequestConfig;
+}
+
+export interface Label {
+  readonly key: string;
+  readonly value: string;
+}
+
+export interface ArtifactReference {
+  readonly name: string;
+  readonly value: string;
 }
 
 export interface LaunchConfig {
@@ -238,6 +317,11 @@ export interface LaunchConfig {
   readonly environment: string;
   readonly locale: string;
   readonly treatSkipsAsFailures: boolean;
+  readonly labels: Label[];
+  readonly artifactReferences: ArtifactReference[];
+  readonly context: string;
+  readonly finishTimeoutMillis: number;
+  readonly abortTimeoutMillis: number;
 }
 
 export interface LogsConfig {
@@ -255,14 +339,22 @@ export interface LogsConfig {
   readonly ignoreCustom: boolean;
   readonly ignoreManualScreenshots: boolean;
   readonly ignoreAutoScreenshots: boolean;
-  readonly flushIntervalMs: number;
+  readonly flushIntervalMillis: number;
+  readonly consoleOnlyPrefix: string;
+}
+
+export interface ConsoleConfig {
+  readonly logLevel: ZebrunnerConsoleLogLevel;
+}
+
+export interface TestSessionConfig {
+  /** `null` when neither configured nor set through the environment, so autodetection still applies. */
+  readonly provider: string;
 }
 
 export interface MilestoneConfig {
-  readonly idFromConfig: number;
-  readonly idFromEnv: number;
-  readonly nameFromConfig: string;
-  readonly nameFromEnv: string;
+  readonly id: number;
+  readonly name: string;
 }
 
 export interface NotificationsConfig {

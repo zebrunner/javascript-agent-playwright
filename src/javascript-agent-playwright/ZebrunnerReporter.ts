@@ -4,22 +4,27 @@ import {
   FullResult as PwFullResult,
   Reporter as PwReporter,
   Suite as PwSuite,
+  TestCase as PwTestCase,
   TestResult as PwTestResult,
 } from '@playwright/test/reporter';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import { AxiosResponse } from 'axios';
 import FormData from 'form-data';
+import log from 'loglevel';
 import { ZebrunnerApiClient } from './ZebrunnerApiClient';
 import { EVENT_NAMES } from './constants/events';
 import { ReportingConfig } from './ReportingConfig';
+import { ZebrunnerConsoleLogLevel, ZebrunnerReporterOptions } from './ReportingConfig/types';
 import { ExchangedLaunchContext } from './ZebrunnerApiClient/types/ExchangedLaunchContext';
 import { StartLaunchRequest } from './ZebrunnerApiClient/types/StartLaunchRequest';
 import { UpdateTcmConfigsRequest } from './ZebrunnerApiClient/types/UpdateTcmConfigsRequest';
 import { ZbrTestCase, TestLog, TestLogOptions, ExtendedPwTestCase, FileArtifact, StructuredAction } from './types';
 import { Labels, isProviderSessionLabel } from './constants/labels';
 import {
+  buildCorrelationData,
   buildTestIdentity,
+  CorrelationData,
   cleanseReason,
   stripTerminalCodes,
   determineStatus,
@@ -28,7 +33,6 @@ import {
   getFileSizeInBytes,
   getTestLogs,
   getTestLabelsFromTitle,
-  getFullSuiteName,
   normalizeAttemptLabels,
   parseBrowserCapabilities,
   prepareAttemptArtifacts,
@@ -45,9 +49,30 @@ import {
 import { materializeStdoutArtifact } from './helpers/materializeStdoutArtifact';
 
 const ZBR_COLOR = !!process.stdout.isTTY && !process.env.NO_COLOR;
-const ZBR_VERBOSE = /^(1|true|yes|on)$/i.test(process.env.ZBR_LOG_VERBOSE || '');
-// stdout lines with this prefix are shown in the run output but not attached as Zebrunner test logs
-const ZBR_CONSOLE_ONLY_PREFIX = process.env.ZBR_CONSOLE_ONLY_PREFIX || 'reporting-agent:';
+
+// Reporter options are only available once Playwright hands them over, so the agent's own output
+// starts at the default level and is reconfigured as soon as the config is resolved.
+const CONSOLE_LOG_LEVEL_WEIGHTS: Record<ZebrunnerConsoleLogLevel, number> = {
+  trace: 0,
+  debug: 1,
+  info: 2,
+  warn: 3,
+  error: 4,
+  silent: 5,
+};
+let consoleLogLevel: ZebrunnerConsoleLogLevel = 'info';
+
+const isConsoleLevelEnabled = (level: ZebrunnerConsoleLogLevel): boolean =>
+  CONSOLE_LOG_LEVEL_WEIGHTS[level] >= CONSOLE_LOG_LEVEL_WEIGHTS[consoleLogLevel];
+
+const isDebugEnabled = () => isConsoleLevelEnabled('debug');
+
+const applyConsoleLogLevel = (level: ZebrunnerConsoleLogLevel) => {
+  consoleLogLevel = level;
+  log.setLevel(level);
+  // Named loggers created before this point keep their own level, so set them explicitly.
+  Object.values(log.getLoggers()).forEach((logger) => logger.setLevel(level));
+};
 
 const paint = (code: string, s: string) => (ZBR_COLOR ? `\x1b[${code}m${s}\x1b[0m` : s);
 const dim = (s: string) => paint('2', s);
@@ -59,9 +84,15 @@ const gray = (s: string) => paint('90', s);
 
 const ZBR_TAG = `${dim('[')}${cyan('zebrunner')}${dim(']')}`;
 
-const zinfo = (msg: string) => console.log(`${ZBR_TAG} ${msg}`);
-const zwarn = (msg: string) => console.log(`${ZBR_TAG} ${yellow('!')} ${msg}`);
-const zerror = (msg: string) => console.log(`${ZBR_TAG} ${red('ERROR')} ${msg}`);
+const zinfo = (msg: string) => {
+  if (isConsoleLevelEnabled('info')) console.log(`${ZBR_TAG} ${msg}`);
+};
+const zwarn = (msg: string) => {
+  if (isConsoleLevelEnabled('warn')) console.log(`${ZBR_TAG} ${yellow('!')} ${msg}`);
+};
+const zerror = (msg: string) => {
+  if (isConsoleLevelEnabled('error')) console.log(`${ZBR_TAG} ${red('ERROR')} ${msg}`);
+};
 
 // Forward the artifact's own contentType so text logs keep charset=utf-8 instead of
 // falling back to form-data's extension-based type (bare text/plain), which mojibakes UTF-8.
@@ -153,34 +184,61 @@ type SessionCapabilities = {
   'zebrunner:provider'?: string;
 };
 
-const isOrchestratorConfigured = (): boolean =>
+// Injected by Zebrunner Device Farm; any one of them means the run is orchestrated by it.
+const isDeviceFarmOrchestrated = (): boolean =>
   Boolean(
     isNotBlankString(process.env.PWM_ORCHESTRATOR) ||
     isNotBlankString(process.env.IOS_WS_ENDPOINT) ||
     isNotBlankString(process.env.ANDROID_WS_ENDPOINT),
   );
 
-const resolveSessionProvider = (overrideCapabilities?: SessionCapabilities): string | undefined => {
+const resolveSessionProvider = (
+  configuredProvider: string,
+  overrideCapabilities?: SessionCapabilities,
+): string => {
   const fromCaps = overrideCapabilities?.['zebrunner:provider']?.trim();
   if (fromCaps) {
     return fromCaps;
   }
 
-  const fromEnv = process.env.ZEBRUNNER_TESTING_PLATFORM?.trim();
-  if (fromEnv) {
-    return fromEnv;
+  if (isNotBlankString(configuredProvider)) {
+    return configuredProvider.trim();
   }
 
-  // Redundant: The remote launcher does not inject PLAYWRIGHT_WS_ENDPOINT, and the URL host is not inspected.
-  if (isNotBlankString(process.env.PLAYWRIGHT_WS_ENDPOINT)) {
-    return 'ZEBRUNNER';
-  }
-
-  if (isOrchestratorConfigured()) {
+  if (isDeviceFarmOrchestrated()) {
     return 'ZEBRUNNER_DEVICE_FARM';
   }
 
-  return undefined;
+  return 'ZEBRUNNER';
+};
+
+/**
+ * The slice of Playwright 1.62+'s `TestRun` the reporter uses. Declared here rather than imported
+ * so the agent keeps compiling against the 1.58 typings its peer range still allows.
+ */
+type PwTestRun = {
+  exclude(test: PwTestCase | PwSuite): void;
+};
+
+// `--list` builds the full suite only to print it. Exchanging the run context there would consume
+// a rerun context without running anything.
+const isListMode = (): boolean => process.argv.includes('--list');
+
+/**
+ * Names of the setup and teardown projects of this configuration. Playwright treats them as
+ * prerequisites of the projects that depend on them: they always run in full, and `testRun.exclude`
+ * refuses to touch their tests.
+ */
+const dependencyProjectNames = (config: PwFullConfig): Set<string> => {
+  const names = new Set<string>();
+  for (const project of config.projects || []) {
+    (project.dependencies || []).forEach((dependency) => names.add(dependency));
+    if (project.teardown) {
+      names.add(project.teardown);
+    }
+  }
+
+  return names;
 };
 
 type PwTestAttemptState = {
@@ -234,6 +292,9 @@ class ZebrunnerReporter implements PwReporter {
   private pwTestIdToCapabilities: Map<string, SessionCapabilities>;
 
   private exchangedLaunchContext: ExchangedLaunchContext;
+  private rerunExchange: Promise<ExchangedLaunchContext | undefined>;
+  private rerunTestIdByCorrelation: Map<string, number>;
+  private rerunScopeApplied = false;
 
   private launchFinished = false;
   private abortHandlersRegistered = false;
@@ -243,24 +304,70 @@ class ZebrunnerReporter implements PwReporter {
   private resultStats: Record<string, number> = {};
   private releasePlaywrightResults = false;
 
-  async onBegin(config: PwFullConfig, suite: PwSuite) {
-    if (!suite.allTests().length) {
-      zwarn('No tests found.');
-      process.exit();
+  /**
+   * Scopes a rerun down to the tests Zebrunner asked for.
+   *
+   * Playwright builds its dispatch plan (`createPhasesTask`) before `onBegin`
+   * (`createReportBeginTask`) ever runs, so no Suite mutation performed from a later reporter
+   * callback can change which tests execute. `preprocess` is the one hook that runs early enough:
+   * it is awaited while the root suite is still being assembled, and `testRun.exclude()` detaches
+   * a test so its body never runs and it never appears in the report.
+   *
+   * The hook only exists since Playwright 1.62. On 1.58-1.61 the same scoping is done by
+   * preload.mjs, which injects `--test-list` before Playwright's CLI parses argv.
+   */
+  async preprocess({ config, suite, testRun }: { config: PwFullConfig; suite: PwSuite; testRun: PwTestRun }) {
+    const reportingConfig = this.resolveReportingConfig(config);
+    if (!reportingConfig.enabled || !isNotBlankString(reportingConfig.launch.context) || isListMode()) {
+      return;
     }
 
+    try {
+      this.apiClient = this.apiClient || new ZebrunnerApiClient(reportingConfig);
+
+      const scope = this.rerunScope(await this.resolveRerunContext());
+      if (!scope) {
+        return;
+      }
+
+      // A setup or teardown project is a prerequisite of the tests being rerun, so Playwright runs
+      // it in full and refuses to exclude anything from it.
+      const alwaysRunProjects = dependencyProjectNames(config);
+      let excludedCount = 0;
+      for (const pwTest of suite.allTests()) {
+        const correlationData = buildCorrelationData(pwTest);
+        if (alwaysRunProjects.has(correlationData.projectName) || scope.has(correlationData.key())) {
+          continue;
+        }
+        testRun.exclude(pwTest);
+        excludedCount += 1;
+      }
+
+      this.rerunScopeApplied = true;
+      zinfo(`rerun - excluded ${excludedCount} test(s) outside the requested scope.`);
+    } catch (error) {
+      // Fail closed: running the full suite as a "rerun" overwrites results the user asked to keep.
+      this.logError('preprocess', error);
+      throw error;
+    }
+  }
+
+  async onBegin(config: PwFullConfig, suite: PwSuite) {
     const launchStartTime = new Date();
 
-    const reporters: PwReporterDescription[] = config.reporter;
-    const zebrunnerReporter: PwReporterDescription = reporters.find((reporterAndConfig) =>
-      reporterAndConfig[0].includes('javascript-agent-playwright'),
-    );
-    this.releasePlaywrightResults = reporters.length === 1;
-
-    this.reportingConfig = new ReportingConfig(zebrunnerReporter[1]);
+    this.resolveReportingConfig(config);
 
     if (!this.reportingConfig.enabled) {
       zinfo(`${dim('disabled')} - skipping results upload.`);
+      return;
+    }
+
+    if (!suite.allTests().length) {
+      // No launch to open, and no process.exit() either: whether an empty suite is an error is
+      // Playwright's call, and exiting here would override the exit code it is about to return.
+      zwarn('No tests found.');
+      this.totalTestCount = 0;
+      this.pwTestIdToZbrFinishedTry = new Map();
       return;
     }
 
@@ -277,8 +384,8 @@ class ZebrunnerReporter implements PwReporter {
     this.activeTestSessionIds = new Set();
     this.resultStats = {};
 
-    this.apiClient = new ZebrunnerApiClient(this.reportingConfig);
-    suite = await this.rerunResolver(suite);
+    this.apiClient = this.apiClient || new ZebrunnerApiClient(this.reportingConfig);
+    await this.resolveRerunScope();
     this.totalTestCount = suite.allTests().length;
 
     this.zbrLaunchId = await this.startLaunchAndGetId(launchStartTime);
@@ -287,53 +394,138 @@ class ZebrunnerReporter implements PwReporter {
 
     this.registerAbortHandlers();
 
+    const launchLabels = [...this.reportingConfig.launch.labels];
     if (isNotBlankString(this.reportingConfig.launch.locale)) {
-      await this.attachLaunchLabels(this.zbrLaunchId, [
-        {
-          key: Labels.LOCALE,
-          value: this.reportingConfig.launch.locale,
-        },
+      launchLabels.push({ key: Labels.LOCALE, value: this.reportingConfig.launch.locale });
+    }
+    if (launchLabels.length) {
+      await this.attachLaunchLabels(this.zbrLaunchId, launchLabels);
+    }
+    if (this.reportingConfig.launch.artifactReferences.length) {
+      await this.attachLaunchArtifactReferences(this.zbrLaunchId, [
+        ...this.reportingConfig.launch.artifactReferences,
       ]);
     }
 
     await this.saveLaunchTcmConfigs(this.zbrLaunchId);
   }
 
-  private async rerunResolver(suite: PwSuite) {
+  // Playwright hands the reporter options to onBegin, but preprocess needs them earlier, and both
+  // hooks must observe the same config instance and the same exchange result.
+  private resolveReportingConfig(config: PwFullConfig): ReportingConfig {
+    if (!this.reportingConfig) {
+      const reporters: PwReporterDescription[] = config.reporter;
+      const zebrunnerReporter = reporters.find((reporterAndConfig) =>
+        reporterAndConfig[0].includes('javascript-agent-playwright'),
+      );
+      this.releasePlaywrightResults = reporters.length === 1;
+      this.reportingConfig = new ReportingConfig(zebrunnerReporter?.[1] as ZebrunnerReporterOptions);
+      applyConsoleLogLevel(this.reportingConfig.console.logLevel);
+    }
+
+    return this.reportingConfig;
+  }
+
+  private resolveRerunContext(): Promise<ExchangedLaunchContext | undefined> {
+    if (!this.rerunExchange) {
+      this.rerunExchange = this.exchangeRerunContext();
+    }
+
+    return this.rerunExchange;
+  }
+
+  private async exchangeRerunContext(): Promise<ExchangedLaunchContext | undefined> {
+    const runContext = this.reportingConfig.launch.context;
+    if (!isNotBlankString(runContext) || isListMode()) {
+      return undefined;
+    }
+
+    // The context is a payload Zebrunner issued; it travels back as the opaque string it is.
+    const exchanged = await this.apiClient.exchangeLaunchContext(runContext);
+    if (!exchanged.runAllowed) {
+      throw new Error(`Zebrunner Reporting is not allowed. Reason: ${exchanged.reason}`);
+    }
+    this.exchangedLaunchContext = exchanged;
+
+    if (exchanged.mode !== 'NEW' && exchanged.runOnlySpecificTests) {
+      this.rerunTestIdByCorrelation = await this.buildRerunTestIdIndex(exchanged);
+    }
+
+    return exchanged;
+  }
+
+  /**
+   * Maps the correlation data of the original launch's tests to their Zebrunner ids, so a rerun
+   * restarts each existing record instead of registering a duplicate.
+   *
+   * The tests to rerun are not the whole picture: Playwright always runs setup and teardown
+   * projects in full, and those tests are absent from the requested scope. Exchanging
+   * `fullExecutionPlanContext` yields the original launch's complete test list, which covers them.
+   */
+  private async buildRerunTestIdIndex(exchanged: ExchangedLaunchContext): Promise<Map<string, number>> {
+    const index = new Map<string, number>();
+    const register = (tests: ExchangedLaunchContext['testsToRun']) => {
+      for (const test of tests || []) {
+        const correlationData = CorrelationData.parse(test.correlationData);
+        if (correlationData) {
+          index.set(correlationData.key(), test.id);
+        }
+      }
+    };
+
+    if (isNotBlankString(exchanged.fullExecutionPlanContext)) {
+      register((await this.apiClient.exchangeLaunchContext(exchanged.fullExecutionPlanContext)).testsToRun);
+    }
+    register(exchanged.testsToRun);
+
+    return index;
+  }
+
+  /** Correlation keys of the tests this rerun is limited to, or `undefined` when the whole suite runs. */
+  private rerunScope(exchanged: ExchangedLaunchContext | undefined): Set<string> | undefined {
+    if (!exchanged || exchanged.mode === 'NEW' || !exchanged.runOnlySpecificTests) {
+      return undefined;
+    }
+
+    const keys = new Set<string>();
+    for (const test of exchanged.testsToRun || []) {
+      const correlationData = CorrelationData.parse(test.correlationData);
+      if (correlationData) {
+        keys.add(correlationData.key());
+      }
+    }
+
+    if (!keys.size) {
+      throw new Error(
+        'Zebrunner asked to rerun specific tests, but none of them carries identity correlation data. ' +
+          'The original launch was reported by an agent version that did not write it, so the rerun cannot be scoped.',
+      );
+    }
+
+    return keys;
+  }
+
+  private async resolveRerunScope(): Promise<void> {
     try {
-      if (!process.env.REPORTING_RUN_CONTEXT) {
-        return suite;
+      const exchanged = await this.resolveRerunContext();
+      if (!this.rerunScope(exchanged) || this.rerunScopeApplied) {
+        return;
       }
 
-      const launchContext = JSON.parse(process.env.REPORTING_RUN_CONTEXT);
-      this.exchangedLaunchContext = await this.apiClient.exchangeLaunchContext(launchContext);
-
-      if (this.exchangedLaunchContext.mode === 'NEW' || !this.exchangedLaunchContext.runOnlySpecificTests) {
-        return suite;
+      // preprocess did not run (Playwright below 1.62) and neither did the preload, so nothing has
+      // narrowed the suite down. Running everything would overwrite results the user asked to keep.
+      if (process.env.REPORTING_PRELOAD_APPLIED !== '1') {
+        throw new Error(
+          'this run cannot be scoped down to the requested tests. Upgrade to Playwright 1.62 or later, ' +
+            'or preload the agent with NODE_OPTIONS="--import=./node_modules/@zebrunner/' +
+            'javascript-agent-playwright/build/javascript-agent-playwright/preload.mjs".',
+        );
       }
-
-      if (!this.exchangedLaunchContext.runAllowed) {
-        throw new Error(`${this.exchangedLaunchContext.reason}`);
-      }
-
-      // Deliberately not mutating the Suite here (this used to call
-      // recursiveTestsTraversal(suite, this.exchangedLaunchContext)). Playwright
-      // builds its dispatch plan (createPhasesTask) before reporter.onBegin
-      // (createReportBeginTask) ever runs, so no Suite mutation performed inside
-      // a reporter callback can change which tests actually execute — scoping a
-      // rerun down to specific tests has to happen before Playwright's CLI even
-      // parses argv (see preload.mjs's --test-list injection via NODE_OPTIONS).
-      // Beyond being ineffective, this mutation was actively harmful: onBegin
-      // computes totalTestCount from suite.allTests().length right after
-      // rerunResolver returns, and recursiveTestsTraversal matches tests by
-      // browser/os/version correlationData — any mismatch between that
-      // correlation and what was actually scoped upstream could silently strip
-      // tests from the Suite object and desync totalTestCount's baseline from
-      // what actually runs, which then hangs onEnd's finished-count guard
-      // forever (it can never observe the count it is waiting for).
-      return suite;
     } catch (error) {
-      this.logError('rerunResolver', error);
+      // Fail closed. Playwright does not await onBegin, so a rejection here would not stop the run
+      // on its own, and a "rerun" that silently runs everything overwrites results by design.
+      this.logError('rerun', error);
+      process.exit(1);
     }
   }
 
@@ -410,8 +602,8 @@ class ZebrunnerReporter implements PwReporter {
   }
 
   private startLogFlush(pwTestResult: PwTestResult, state: PwTestAttemptState, zbrTestId: number) {
-    const intervalMs = this.reportingConfig.logs.flushIntervalMs;
-    if (!intervalMs || !zbrTestId || state.flushTimer) {
+    const intervalMillis = this.reportingConfig.logs.flushIntervalMillis;
+    if (!intervalMillis || !zbrTestId || state.flushTimer) {
       return;
     }
 
@@ -419,7 +611,7 @@ class ZebrunnerReporter implements PwReporter {
       // Skipping while a flush runs keeps flushPromise pointing at the in-flight upload, not a no-op.
       if (state.flushing) return;
       state.flushPromise = this.flushTestLogs(pwTestResult, state, zbrTestId);
-    }, intervalMs);
+    }, intervalMillis);
     state.flushTimer.unref?.();
   }
 
@@ -601,13 +793,7 @@ class ZebrunnerReporter implements PwReporter {
   }
 
   private findOriginalRerunTestId(pwTest: ExtendedPwTestCase): number | undefined {
-    if (!this.exchangedLaunchContext?.testsToRun) {
-      return undefined;
-    }
-    const fullTestName = `${pwTest._projectId ? `${pwTest._projectId} > ` : ''}${getFullSuiteName(pwTest)} > ${
-      pwTest.title
-    }`;
-    return this.exchangedLaunchContext.testsToRun.find((test) => test.name === fullTestName)?.id;
+    return this.rerunTestIdByCorrelation?.get(buildCorrelationData(pwTest).key());
   }
 
   async onTestBegin(pwTest: ExtendedPwTestCase, pwTestResult: PwTestResult) {
@@ -683,7 +869,8 @@ class ZebrunnerReporter implements PwReporter {
       const trimmed = chunk.trim();
       console.log(trimmed);
       const message = stripTerminalCodes(trimmed).trim();
-      const isConsoleOnly = !!ZBR_CONSOLE_ONLY_PREFIX && message.startsWith(ZBR_CONSOLE_ONLY_PREFIX);
+      const consoleOnlyPrefix = this.reportingConfig.logs.consoleOnlyPrefix;
+      const isConsoleOnly = !!consoleOnlyPrefix && message.startsWith(consoleOnlyPrefix);
       if (pwTest && message && !this.reportingConfig.logs.ignoreConsole && !isConsoleOnly) {
         pwTestResult.steps.push(createPwStepObject(Date.now(), message, 'log:INFO'));
       }
@@ -940,14 +1127,16 @@ class ZebrunnerReporter implements PwReporter {
       }
       if (auxiliaryError) throw auxiliaryError;
 
-      if (ZBR_VERBOSE) {
+      if (isDebugEnabled()) {
         zinfo(dim(`uploaded ${fullTestName} (${formatDuration(Date.now() - uploadStartedAt)})`));
       }
     }
   }
 
   async onEnd(result?: PwFullResult) {
-    if (!this.reportingConfig.enabled) {
+    // Playwright calls onEnd without onBegin when the run fails while loading, so the config may
+    // never have been resolved.
+    if (!this.reportingConfig?.enabled) {
       zinfo(`all tests finished. ${this.formatResultSummary()}`);
       return;
     }
@@ -956,12 +1145,12 @@ class ZebrunnerReporter implements PwReporter {
       zwarn('run interrupted - finishing launch with the results reported so far.');
     } else {
       // all zebrunner tests finished (including retries), bounded so an interrupted/stuck test cannot hang the launch
-      const finishWaitTimeoutMs = parseInt(process.env.ZBR_FINISH_WAIT_TIMEOUT_MS, 10) || 60000;
+      const finishTimeoutMillis = this.reportingConfig.launch.finishTimeoutMillis;
       const waitStartedAt = Date.now();
       await until(
         () =>
           getFinishedTestCount(this.pwTestIdToZbrFinishedTry) === this.totalTestCount ||
-          Date.now() - waitStartedAt > finishWaitTimeoutMs,
+          Date.now() - waitStartedAt > finishTimeoutMillis,
       );
     }
 
@@ -1011,14 +1200,13 @@ class ZebrunnerReporter implements PwReporter {
       if (!text) continue;
 
       const lines = text.split('\n');
-      const maxLines = ZBR_VERBOSE ? lines.length : Math.min(lines.length, 12);
+      const maxLines = isDebugEnabled() ? lines.length : Math.min(lines.length, 12);
       for (let i = 0; i < maxLines; i += 1) {
         console.log(`    ${dim('|')} ${i === 0 ? red(lines[i]) : gray(lines[i])}`);
       }
       if (maxLines < lines.length) {
-        console.log(
-          `    ${dim('|')} ${dim(`... ${lines.length - maxLines} more line(s); set ZBR_LOG_VERBOSE=1 for full output`)}`,
-        );
+        const hint = 'set REPORTING_CONSOLE_LOG_LEVEL=debug for full output';
+        console.log(`    ${dim('|')} ${dim(`... ${lines.length - maxLines} more line(s); ${hint}`)}`);
       }
     }
   }
@@ -1048,11 +1236,11 @@ class ZebrunnerReporter implements PwReporter {
         if (this.zbrLaunchId && !this.launchFinished) {
           this.launchFinished = true;
           zwarn(`${reason} detected - finishing launch ${cyan(`#${this.zbrLaunchId}`)} on Zebrunner.`);
-          const abortTimeoutMs = parseInt(process.env.ZBR_ABORT_FINISH_TIMEOUT_MS, 10) || 10000;
+          const abortTimeoutMillis = this.reportingConfig.launch.abortTimeoutMillis;
           const endedAt = new Date();
           await Promise.race([
             this.finishActiveTestSessions(endedAt).then(() => this.finishLaunch(this.zbrLaunchId, endedAt)),
-            new Promise((resolve) => setTimeout(resolve, abortTimeoutMs)),
+            new Promise((resolve) => setTimeout(resolve, abortTimeoutMillis)),
           ]);
         }
       } catch (error) {
@@ -1111,18 +1299,13 @@ class ZebrunnerReporter implements PwReporter {
   private async startTestAndGetId(zbrLaunchId: number, pwTest: ExtendedPwTestCase, testStartedAt: Date) {
     try {
       const identity = buildTestIdentity(pwTest);
-      const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
       const zbrTestId = await this.apiClient.startTest(zbrLaunchId, {
         name: identity.name,
         className: identity.className,
         methodName: identity.methodName,
         startedAt: testStartedAt,
-        correlationData: JSON.stringify({
-          browser: browserCapabilities.browser.name,
-          version: browserCapabilities.browser.version,
-          os: browserCapabilities.os.name,
-        }),
+        correlationData: buildCorrelationData(pwTest).stringify(),
       });
 
       return zbrTestId;
@@ -1139,7 +1322,6 @@ class ZebrunnerReporter implements PwReporter {
   ) {
     try {
       const identity = buildTestIdentity(pwTest);
-      const browserCapabilities = parseBrowserCapabilities(pwTest.parent.project());
 
       const zbrTestId = await this.apiClient.restartTest(
         zbrLaunchId,
@@ -1149,11 +1331,7 @@ class ZebrunnerReporter implements PwReporter {
           className: identity.className,
           methodName: identity.methodName,
           startedAt: testStartedAt,
-          correlationData: JSON.stringify({
-            browser: browserCapabilities.browser.name,
-            version: browserCapabilities.browser.version,
-            os: browserCapabilities.os.name,
-          }),
+          correlationData: buildCorrelationData(pwTest).stringify(),
         },
       );
 
@@ -1204,10 +1382,10 @@ class ZebrunnerReporter implements PwReporter {
       if (overrideCapabilities?.deviceName) {
         capabilities.deviceName = overrideCapabilities.deviceName;
       }
-      const provider = resolveSessionProvider(overrideCapabilities);
-      if (provider) {
-        capabilities['zebrunner:provider'] = provider;
-      }
+      capabilities['zebrunner:provider'] = resolveSessionProvider(
+        this.reportingConfig.testSession.provider,
+        overrideCapabilities,
+      );
       const sessionId = await this.apiClient.startTestSession(zbrLaunchId, {
         sessionId: providerSessionId || randomUUID(),
         initiatedAt: testStartedAt,
@@ -1532,7 +1710,7 @@ class ZebrunnerReporter implements PwReporter {
     }
     const message = error instanceof Error ? error.message : String(error);
     zerror(`${cyan(errorStage)}: ${message}`);
-    if (ZBR_VERBOSE && error instanceof Error && error.stack) {
+    if (isDebugEnabled() && error instanceof Error && error.stack) {
       console.log(gray(error.stack));
     }
   }
