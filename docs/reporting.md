@@ -32,6 +32,7 @@ reporter: [
     server: {
       hostname: process.env.REPORTING_SERVER_HOSTNAME,
       accessToken: process.env.REPORTING_SERVER_ACCESS_TOKEN,
+      request: { retries: 2, retryDelayMillis: 1000 },
     },
     launch: {
       displayName: 'Playwright tests',
@@ -39,6 +40,10 @@ reporter: [
       environment: 'staging',
       locale: 'en_US',
       treatSkipsAsFailures: true,
+      labels: { Team: 'Payments' },
+      artifactReferences: { Build: 'https://ci.example.com/job/42' },
+      finishTimeoutMillis: 60000,
+      abortTimeoutMillis: 10000,
     },
     logs: {
       format: 'playwright-title',
@@ -49,13 +54,16 @@ reporter: [
       includeLocation: false,
       maxSourceLines: 3,
       maxMessageLength: 8000,
-      flushIntervalMs: 0,
+      flushIntervalMillis: 0,
       ignorePlaywrightSteps: false,
       ignoreConsole: false,
       ignoreCustom: false,
       ignoreManualScreenshots: false,
       ignoreAutoScreenshots: false,
+      consoleOnlyPrefix: 'reporting-agent:',
     },
+    console: { logLevel: 'info' },
+    testSession: { provider: 'ZEBRUNNER' },
   }),
 ],
 ```
@@ -110,6 +118,13 @@ Environment variables override values from `playwright.config.js`.
   Environment: `REPORTING_SERVER_HOSTNAME`.
 - `server.accessToken`: Zebrunner access token.
   Environment: `REPORTING_SERVER_ACCESS_TOKEN`.
+- `server.request.retries`: how many times a reporting request is retried after
+  a transient failure (DNS and connection errors, or HTTP 502, 503, 504). Any
+  other failure surfaces immediately. Default: `2`.
+  Environment: `REPORTING_SERVER_REQUEST_RETRIES`.
+- `server.request.retryDelayMillis`: base delay of the exponential backoff
+  between retries (`delay * 2 ** attempt`). `0` retries without waiting.
+  Default: `1000`. Environment: `REPORTING_SERVER_REQUEST_RETRY_DELAY_MILLIS`.
 
 Provide both server values when reporting is enabled.
 
@@ -123,6 +138,22 @@ Provide both server values when reporting is enabled.
 - `launch.locale`: launch locale. Environment: `REPORTING_LAUNCH_LOCALE`.
 - `launch.treatSkipsAsFailures`: reports skipped tests as failures.
   Default: `true`. Environment: `REPORTING_LAUNCH_TREAT_SKIPS_AS_FAILURES`.
+- `launch.labels`: labels attached to the launch, given as an object such as
+  `{ Team: 'Payments' }`. Blank values are dropped. No environment variable.
+- `launch.artifactReferences`: links attached to the launch, given as an object
+  such as `{ Build: 'https://ci/job/42' }`. Blank values are dropped. No
+  environment variable.
+- `launch.finishTimeoutMillis`: how long the reporter waits for every test to
+  finish reporting before it closes the launch. Finishing a test is
+  network-bound and lags Playwright's own completion, so the reporter waits for
+  the last one; the timeout keeps a test that never reports a finish from
+  hanging the process. Default: `60000`.
+  Environment: `REPORTING_LAUNCH_FINISH_TIMEOUT_MILLIS`.
+- `launch.abortTimeoutMillis`: how long the reporter delays process exit to
+  close the launch after `SIGTERM`, `SIGHUP`, an uncaught exception, or an
+  unhandled rejection. Without it an aborted run would leave the launch stuck
+  `IN_PROGRESS`. Default: `10000`.
+  Environment: `REPORTING_LAUNCH_ABORT_TIMEOUT_MILLIS`.
 
 ## Log formats
 
@@ -200,23 +231,52 @@ Set the format through `REPORTING_LOGS_FORMAT`.
   Environment: `REPORTING_LOGS_MAX_SOURCE_LINES`.
 - `logs.maxMessageLength`: maximum size of one log message before truncation.
   Default: `8000`. Environment: `REPORTING_LOGS_MAX_MESSAGE_LENGTH`.
-- `logs.flushIntervalMs`: upload buffered test logs every N milliseconds while
-  the test still runs. `0` (default) keeps the end-of-test log upload. Values
-  below `1000` are raised to `1000`.
-  Environment: `REPORTING_LOGS_FLUSH_INTERVAL_MS`.
+- `logs.flushIntervalMillis`: upload buffered test logs every N milliseconds
+  while the test still runs. `0` (default) keeps the end-of-test log upload.
+  Values below `1000` are raised to `1000`.
+  Environment: `REPORTING_LOGS_FLUSH_INTERVAL_MILLIS`.
 
 ## Console, custom logs, and screenshots
 
 - `logs.ignoreConsole`: ignores `console.log` output from tests.
   Default: `false`. Environment: `REPORTING_LOGS_IGNORE_CONSOLE`.
 - `logs.ignoreCustom`: ignores logs emitted through `currentTest.log`.
-  Default: `false`. Environment: `REPORTING_LOGS_IGNORE_MANUAL`.
+  Default: `false`. Environment: `REPORTING_LOGS_IGNORE_CUSTOM`.
 - `logs.ignoreManualScreenshots`: ignores screenshots emitted through
   `currentTest.attachScreenshot`. Default: `false`.
-  Environment: `REPORTING_LOGS_IGNORE_CUSTOM_SCREENSHOTS`.
+  Environment: `REPORTING_LOGS_IGNORE_MANUAL_SCREENSHOTS`.
 - `logs.ignoreAutoScreenshots`: does not upload Playwright-generated
   screenshots. Default: `false`.
   Environment: `REPORTING_LOGS_IGNORE_AUTO_SCREENSHOTS`.
+- `logs.consoleOnlyPrefix`: test stdout lines with this prefix stay visible in
+  the run output but are not attached as Zebrunner test logs.
+  Default: `reporting-agent:`.
+  Environment: `REPORTING_LOGS_CONSOLE_ONLY_PREFIX`.
+
+## Agent console output
+
+These control what the agent prints in the terminal. They change nothing about
+what is reported to Zebrunner.
+
+- `console.logLevel`: one of `silent`, `error`, `warn`, `info`, `debug`,
+  `trace`. Default: `info`. Use `debug` for per-test upload timings, full
+  failure output, and stack traces. Environment: `REPORTING_CONSOLE_LOG_LEVEL`.
+- `NO_COLOR`: any non-empty value disables ANSI colors, following the
+  [no-color.org](https://no-color.org) convention. Third-party variable, no
+  config equivalent.
+
+## Test session settings
+
+- `testSession.provider`: value reported as the `zebrunner:provider` capability
+  of a test session. The `zebrunner:provider` capability passed to
+  `currentTest.attachSessionCapabilities()` wins over this option.
+  Default: `ZEBRUNNER`, or `ZEBRUNNER_DEVICE_FARM` when the run is orchestrated
+  by Zebrunner Device Farm. Environment: `REPORTING_TEST_SESSION_PROVIDER`.
+
+Zebrunner Device Farm injects `PWM_ORCHESTRATOR`, `IOS_WS_ENDPOINT`, and
+`ANDROID_WS_ENDPOINT`. Any one of them being set resolves the provider to
+`ZEBRUNNER_DEVICE_FARM`. They are part of the Device Farm contract and are not
+meant to be set by hand.
 
 ## Legacy source-line option
 
@@ -417,35 +477,53 @@ action with an `ERROR` result. It keeps the Playwright timeout reason.
 
 ## Reruns
 
-Zebrunner can rerun only the failed tests of a launch. For a rerun, Zebrunner
-sets `REPORTING_RUN_CONTEXT`. The reporter exchanges this context to learn which
-tests to run again.
+Zebrunner can rerun only a subset of a launch, usually its failed tests. It
+starts the run with `REPORTING_RUN_CONTEXT` set to a context it issued. The
+agent hands that context back to Zebrunner, gets the list of tests to run, and
+narrows the run to them. The variable is injected by Zebrunner and is not meant
+to be set by hand; it is also readable as the `launch.context` reporter option.
 
-Playwright fixes its run plan before the reporter starts, so the reporter cannot
-narrow the run on its own. The agent scopes the rerun earlier, before Playwright
-parses its command line. Preload the agent module with `NODE_OPTIONS` so it can
-add a `--test-list` argument:
+On **Playwright 1.62 and later this needs no setup at all**. The agent scopes
+the run from the reporter's `preprocess()` hook, which Playwright awaits while
+it is still assembling the run plan. Each executed test re-attaches to the
+record it had in the original launch, so a rerun updates those results instead
+of creating duplicates.
+
+Setup and teardown projects are prerequisites of the tests being rerun, so
+Playwright always runs them in full; the agent leaves them alone and still
+re-attaches their results to the original records.
+
+### Playwright 1.58 to 1.61
+
+`preprocess()` does not exist on those versions, and no reporter hook runs early
+enough to change the run plan. Preload the agent so it can inject a
+`--test-list` argument before Playwright parses its command line:
 
 ```bash
 NODE_OPTIONS="--import ./node_modules/@zebrunner/javascript-agent-playwright/build/javascript-agent-playwright/preload.mjs" \
   npx playwright test
 ```
 
-The preload reads `REPORTING_RUN_CONTEXT`, gets the tests to run again, and adds
-the `--test-list` argument. It scopes the run correctly for a named project, no
-project, and a duplicated project name. Without the preload, a rerun runs the
-full suite. A normal run (no `REPORTING_RUN_CONTEXT`) is not affected.
+The preload is a no-op on Playwright 1.62 and later, so leaving it in place
+across an upgrade is harmless. Two limitations apply to it and not to
+`preprocess()`:
 
-## Reporter shutdown timeouts
+- It runs before Playwright loads `playwright.config`, so it reads
+  `REPORTING_SERVER_HOSTNAME` and `REPORTING_SERVER_ACCESS_TOKEN` from the
+  environment only. Configuring the server in `playwright.config` alone is not
+  enough for a rerun on these versions.
+- It identifies tests through a test-list file, whose entries are separated by
+  `>`. A test whose title contains that character cannot be expressed and the
+  run fails rather than silently skipping it.
 
-These environment variables tune reporter behavior outside the main config
-object:
+### When a rerun cannot be scoped
 
-- `ZBR_FINISH_WAIT_TIMEOUT_MS` sets the normal finish wait. The default is
-  `60000`.
-- `ZBR_ABORT_FINISH_TIMEOUT_MS` sets the abort finish wait. The default is
-  `10000`.
-- `ZBR_CONSOLE_ONLY_PREFIX` (default `reporting-agent:`) keeps diagnostic stdout
-  visible in the run output without attaching it as a Zebrunner test log
-- `ZBR_LOG_VERBOSE` expands reporter diagnostics and stack traces when set to
-  `1`
+A rerun that cannot be narrowed down fails instead of running everything:
+running the full suite would overwrite exactly the results the rerun was meant
+to preserve. The run stops with a non-zero exit code when Zebrunner rejects the
+context, when the exchange fails, and when neither `preprocess()` nor the
+preload is available.
+
+Rerun also requires the original launch to have been reported by an agent
+version that writes identity correlation data. A launch reported by an older
+version cannot be scoped, and the rerun fails with that reason.

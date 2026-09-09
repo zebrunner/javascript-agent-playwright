@@ -22,10 +22,15 @@ import { formatRequestError, withNetworkRetry, NetworkRetryOptions } from '../he
 export class ZebrunnerApiClient {
   private readonly logger = log.getLogger('zebrunner.api-client');
   private readonly accessToken: string;
+  private readonly retryOptions: NetworkRetryOptions;
   private readonly axiosInstance: AxiosInstance;
 
   constructor(reportingConfig: ReportingConfig) {
     this.accessToken = reportingConfig.server.accessToken;
+    this.retryOptions = {
+      retries: reportingConfig.server.request.retries,
+      delayMs: reportingConfig.server.request.retryDelayMillis,
+    };
     this.axiosInstance = axios.create({
       baseURL: reportingConfig.server.hostname,
       headers: {
@@ -59,18 +64,9 @@ export class ZebrunnerApiClient {
     );
   }
 
-  private retryOptions(): NetworkRetryOptions {
-    const retries = parseInt(process.env.ZBR_NET_RETRIES, 10);
-    const delayMs = parseInt(process.env.ZBR_NET_RETRY_DELAY_MS, 10);
-    return {
-      retries: Number.isFinite(retries) && retries >= 0 ? retries : 2,
-      delayMs: Number.isFinite(delayMs) && delayMs >= 0 ? delayMs : 1000,
-    };
-  }
-
   // Wraps a reporting request so a transient network failure or upstream 5xx is retried before it surfaces.
   private request<T>(op: () => Promise<T>): Promise<T> {
-    return withNetworkRetry(op, this.retryOptions());
+    return withNetworkRetry(op, this.retryOptions);
   }
 
   private async authenticateIfRequired() {

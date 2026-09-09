@@ -8,10 +8,13 @@ export { testRail, xray, zebrunner, zephyr } from './tcm';
 export type {
   ZebrunnerReporterOptions,
   ZebrunnerServerOptions,
+  ZebrunnerServerRequestOptions,
   ZebrunnerLaunchOptions,
   ZebrunnerLogsOptions,
+  ZebrunnerConsoleOptions,
   ZebrunnerMilestoneOptions,
   ZebrunnerNotificationsOptions,
+  ZebrunnerTestSessionOptions,
   TcmOptions,
   ZebrunnerTestCaseStatusOptions,
   ZebrunnerTcmOptions,
@@ -21,6 +24,7 @@ export type {
   ZebrunnerFlag,
   ZebrunnerNumeric,
   ZebrunnerLogFormat,
+  ZebrunnerConsoleLogLevel,
 } from './ReportingConfig/types';
 
 const REPORTER_MODULE_NAME = '@zebrunner/javascript-agent-playwright';
