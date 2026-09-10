@@ -10,10 +10,4 @@ npm install --save-dev @zebrunner/javascript-agent-playwright
 
 Use the official
 [Zebrunner Playwright documentation](https://zebrunner.com/documentation/reporting/playwright/)
-for the standard setup and test case management features.
-
-Read the [reporter guide](docs/reporting.md) for configuration options, runtime
-helpers, log formats, resource guidance, and shutdown timeouts.
-
-Read the [session fixture guide](docs/session-fixture.md) to run the standard `page`
-fixture on a Zebrunner remote browser.
+for the standard setup, test case management, reporting, and fixture configuration.
