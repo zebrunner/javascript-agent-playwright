@@ -15,5 +15,5 @@ for the standard setup and test case management features.
 Read the [reporter guide](docs/reporting.md) for configuration options, runtime
 helpers, log formats, resource guidance, and shutdown timeouts.
 
-Read the [remote fixture guide](docs/remote-browser.md) to run the standard `page`
+Read the [session fixture guide](docs/session-fixture.md) to run the standard `page`
 fixture on a Zebrunner remote browser.

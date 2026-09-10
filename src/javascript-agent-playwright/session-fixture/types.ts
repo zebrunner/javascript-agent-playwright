@@ -19,12 +19,12 @@ export type SessionCapabilities = Record<string, unknown> & {
 
 /** Per-run session configuration. Every field falls back to an environment variable when omitted. */
 export type SessionOptions = {
-  /** Force remote (`true`) or local (`false`). Defaults from `REMOTE`, then from the presence of a host. */
-  remote?: boolean;
-  /** Reuse one session per worker and refresh it between tests. Defaults from `REMOTE_REFRESH`. */
-  refresh?: boolean;
-  /** Remote host with the credentials in the URL. Defaults from `ZEBRUNNER_HUB_URL`, then `REMOTE_HOST`. */
-  host?: string;
+  /** Force remote (`true`) or local (`false`). Defaults from `REMOTE_SESSION_ENABLED`, then from the presence of a host. */
+  remoteEnabled?: boolean;
+  /** Reuse one session per worker and refresh it between tests. Defaults from `REMOTE_SESSION_REUSE`. */
+  reuseSession?: boolean;
+  /** Remote host with the credentials in the URL. Defaults from `ZEBRUNNER_HUB_URL`, then `REMOTE_HOST_URL`. */
+  remoteHostUrl?: string;
   /** Capabilities merged into the create request. */
   capabilities?: SessionCapabilities;
   /** Timeout for `POST /session`, in milliseconds. */

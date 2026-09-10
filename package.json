@@ -8,9 +8,9 @@
       "types": "./build/javascript-agent-playwright/index.d.ts",
       "default": "./build/javascript-agent-playwright/index.js"
     },
-    "./remote": {
-      "types": "./build/javascript-agent-playwright/remote-browser/index.d.ts",
-      "default": "./build/javascript-agent-playwright/remote-browser/index.js"
+    "./session-fixture": {
+      "types": "./build/javascript-agent-playwright/session-fixture/index.d.ts",
+      "default": "./build/javascript-agent-playwright/session-fixture/index.js"
     }
   },
   "files": [

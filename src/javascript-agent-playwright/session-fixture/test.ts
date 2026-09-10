@@ -111,7 +111,7 @@ const extendedTest = base.extend<
   remoteSession: async ({ _sessionRuntime }, use) => {
     if (!_sessionRuntime.session) {
       throw new Error(
-        'The test uses a local browser. Set REMOTE=true or REMOTE_HOST before you request `remoteSession`.',
+        'The test uses a local browser. Set REMOTE_SESSION_ENABLED=true or REMOTE_HOST_URL before you request `remoteSession`.',
       );
     }
     await use(_sessionRuntime.session);

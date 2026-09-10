@@ -184,13 +184,9 @@ type SessionCapabilities = {
   'zebrunner:provider'?: string;
 };
 
-// Injected by Zebrunner Device Farm; any one of them means the run is orchestrated by it.
+// Injected by Zebrunner Device Farm; its mobile hub endpoint means the run is orchestrated by it.
 const isDeviceFarmOrchestrated = (): boolean =>
-  Boolean(
-    isNotBlankString(process.env.PWM_ORCHESTRATOR) ||
-    isNotBlankString(process.env.IOS_WS_ENDPOINT) ||
-    isNotBlankString(process.env.ANDROID_WS_ENDPOINT),
-  );
+  Boolean(isNotBlankString(process.env.PLAYWRIGHT_MOBILE_HUB_URL));
 
 const resolveSessionProvider = (
   configuredProvider: string,

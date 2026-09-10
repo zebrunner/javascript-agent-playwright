@@ -29,13 +29,13 @@ export function resolveSessionConfig(
     stringValue(explicitCapabilities.browserVersion) ||
     stringValue(environmentCapabilities.playwrightVersion) ||
     stringValue(environmentCapabilities.browserVersion) ||
-    optionalEnv('REMOTE_PLAYWRIGHT_VERSION') ||
+    optionalEnv('REMOTE_SESSION_PLAYWRIGHT_VERSION') ||
     playwrightPackage.version;
   assertPlaywrightVersion(playwrightVersion);
 
   const hub = optionalEnv('ZEBRUNNER_HUB_URL');
-  const remoteHost = optionalEnv('REMOTE_HOST');
-  const selectedHost = options.host || hub || remoteHost;
+  const remoteHostUrl = optionalEnv('REMOTE_HOST_URL');
+  const selectedHost = options.remoteHostUrl || hub || remoteHostUrl;
   const host = parseHttpUrl(selectedHost || '', 'remote host');
   host.pathname = '';
   host.search = '';
@@ -57,7 +57,6 @@ export function resolveSessionConfig(
   const headless =
     booleanValue(explicitCapabilities.headless) ??
     booleanValue(environmentCapabilities.headless) ??
-    optionalBooleanEnv('REMOTE_PLAYWRIGHT_HEADLESS') ??
     playwrightHeadless;
 
   const environmentZebrunnerOptions = objectValue(environmentCapabilities['zebrunner:options']);
@@ -67,7 +66,7 @@ export function resolveSessionConfig(
       explicitCapabilities['zebrunner:idleTimeout'] ?? environmentCapabilities['zebrunner:idleTimeout'],
       'zebrunner:idleTimeout',
     ) ??
-    optionalNumberEnv('REMOTE_IDLE_TIMEOUT') ??
+    optionalNumberEnv('REMOTE_SESSION_IDLE_TIMEOUT') ??
     300;
   const capabilities: SessionCapabilities = {
     ...environmentCapabilities,
@@ -94,8 +93,8 @@ export function resolveSessionConfig(
     password,
     capabilities,
     createTimeoutMs: timeoutValue(options.createTimeoutMs, 'REMOTE_SESSION_CREATE_TIMEOUT_MS', 600_000),
-    connectTimeoutMs: timeoutValue(options.connectTimeoutMs, 'REMOTE_PLAYWRIGHT_CONNECT_TIMEOUT_MS', 120_000),
-    refreshTimeoutMs: timeoutValue(options.refreshTimeoutMs, 'REMOTE_PLAYWRIGHT_REFRESH_TIMEOUT_MS', 150_000),
+    connectTimeoutMs: timeoutValue(options.connectTimeoutMs, 'REMOTE_SESSION_CONNECT_TIMEOUT_MS', 120_000),
+    refreshTimeoutMs: timeoutValue(options.refreshTimeoutMs, 'REMOTE_SESSION_REFRESH_TIMEOUT_MS', 150_000),
     deleteTimeoutMs: timeoutValue(options.deleteTimeoutMs, 'REMOTE_SESSION_DELETE_TIMEOUT_MS', 30_000),
     defaultViewport: resolveDefaultViewport(browserName, headless, screenResolution),
   };
@@ -126,18 +125,18 @@ export function resolveLocalBrowserName(
   return playwrightBrowserName;
 }
 
-/** Reports whether to run on a remote session. Uses `options.remote`, then `REMOTE`, then the presence of a host. */
+/** Reports whether to run on a remote session. Uses `options.remoteEnabled`, then `REMOTE_SESSION_ENABLED`, then the presence of a host. */
 export function useRemoteSession(options: SessionOptions = {}): boolean {
-  if (options.remote !== undefined) return options.remote;
-  const remote = optionalBooleanEnv('REMOTE');
+  if (options.remoteEnabled !== undefined) return options.remoteEnabled;
+  const remote = optionalBooleanEnv('REMOTE_SESSION_ENABLED');
   if (remote !== undefined) return remote;
-  return Boolean(options.host || optionalEnv('REMOTE_HOST') || optionalEnv('ZEBRUNNER_HUB_URL'));
+  return Boolean(options.remoteHostUrl || optionalEnv('REMOTE_HOST_URL') || optionalEnv('ZEBRUNNER_HUB_URL'));
 }
 
-/** Reports whether to reuse one session per worker and refresh it. Uses `options.refresh`, then `REMOTE_REFRESH`. */
+/** Reports whether to reuse one session per worker and refresh it. Uses `options.reuseSession`, then `REMOTE_SESSION_REUSE`. */
 export function useSessionRefresh(options: SessionOptions = {}): boolean {
-  if (options.refresh !== undefined) return options.refresh;
-  return optionalBooleanEnv('REMOTE_REFRESH') ?? false;
+  if (options.reuseSession !== undefined) return options.reuseSession;
+  return optionalBooleanEnv('REMOTE_SESSION_REUSE') ?? false;
 }
 
 /** Returns the worker-fixture timeout for the local browser launch or the remote session create and refresh. Default 780000 ms. */
@@ -159,19 +158,19 @@ function assertPlaywrightVersion(requestedVersion: string): void {
 
 function environmentZebrunnerDefaults(): Record<string, unknown> {
   const options: Record<string, unknown> = {
-    enableVideo: optionalBooleanEnv('REMOTE_BROWSER_ENABLE_VIDEO') ?? true,
-    enableVNC: optionalBooleanEnv('REMOTE_BROWSER_ENABLE_VNC') ?? true,
-    enableLog: optionalBooleanEnv('REMOTE_BROWSER_ENABLE_LOG') ?? true,
-    enableDebug: optionalBooleanEnv('REMOTE_BROWSER_ENABLE_DEBUG') ?? false,
-    screenResolution: optionalEnv('REMOTE_BROWSER_SCREEN_RESOLUTION') || '1920x1080x24',
+    enableVideo: optionalBooleanEnv('REMOTE_SESSION_BROWSER_ENABLE_VIDEO') ?? true,
+    enableVNC: optionalBooleanEnv('REMOTE_SESSION_BROWSER_ENABLE_VNC') ?? true,
+    enableLog: optionalBooleanEnv('REMOTE_SESSION_BROWSER_ENABLE_LOG') ?? true,
+    enableDebug: optionalBooleanEnv('REMOTE_SESSION_BROWSER_ENABLE_DEBUG') ?? false,
+    screenResolution: optionalEnv('REMOTE_SESSION_BROWSER_SCREEN_RESOLUTION') || '1920x1080x24',
   };
   const optionalValues: Record<string, string | number | undefined> = {
-    cpu: optionalNumberEnv('REMOTE_BROWSER_CPU'),
-    memory: optionalNumberEnv('REMOTE_BROWSER_MEMORY'),
-    maxTimeout: optionalNumberEnv('REMOTE_MAX_TIMEOUT'),
-    videoScreenSize: optionalEnv('REMOTE_BROWSER_VIDEO_SCREEN_SIZE'),
-    frameRate: optionalNumberEnv('REMOTE_BROWSER_FRAME_RATE'),
-    timeZone: optionalEnv('REMOTE_BROWSER_TIME_ZONE'),
+    cpu: optionalNumberEnv('REMOTE_SESSION_BROWSER_CPU'),
+    memory: optionalNumberEnv('REMOTE_SESSION_BROWSER_MEMORY'),
+    maxTimeout: optionalNumberEnv('REMOTE_SESSION_MAX_TIMEOUT'),
+    videoScreenSize: optionalEnv('REMOTE_SESSION_BROWSER_VIDEO_SCREEN_SIZE'),
+    frameRate: optionalNumberEnv('REMOTE_SESSION_BROWSER_FRAME_RATE'),
+    timeZone: optionalEnv('REMOTE_SESSION_BROWSER_TIME_ZONE'),
   };
   for (const [key, value] of Object.entries(optionalValues)) {
     if (value !== undefined) options[key] = value;
@@ -195,7 +194,7 @@ function optionalBooleanEnv(name: string): boolean | undefined {
 
 function parseHttpUrl(raw: string, name: string): URL {
   if (!raw) {
-    throw new Error('Missing remote host. Set ZEBRUNNER_HUB_URL or REMOTE_HOST.');
+    throw new Error('Missing remote host. Set ZEBRUNNER_HUB_URL or REMOTE_HOST_URL.');
   }
   const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
   let url: URL;

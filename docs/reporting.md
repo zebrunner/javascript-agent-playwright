@@ -273,10 +273,7 @@ what is reported to Zebrunner.
   Default: `ZEBRUNNER`, or `ZEBRUNNER_DEVICE_FARM` when the run is orchestrated
   by Zebrunner Device Farm. Environment: `REPORTING_TEST_SESSION_PROVIDER`.
 
-Zebrunner Device Farm injects `PWM_ORCHESTRATOR`, `IOS_WS_ENDPOINT`, and
-`ANDROID_WS_ENDPOINT`. Any one of them being set resolves the provider to
-`ZEBRUNNER_DEVICE_FARM`. They are part of the Device Farm contract and are not
-meant to be set by hand.
+When using Playwright Mobile integration, the environment variable `PLAYWRIGHT_MOBILE_HUB_URL` is injected to indicate a Device Farm–orchestrated run. If this variable is set, the provider is resolved to `ZEBRUNNER_DEVICE_FARM`. This variable is managed by the Device Farm integration and should not be set manually.
 
 ## Legacy source-line option
 
