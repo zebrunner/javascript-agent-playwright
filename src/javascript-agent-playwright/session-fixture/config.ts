@@ -67,7 +67,7 @@ export function resolveSessionConfig(
       'zebrunner:idleTimeout',
     ) ??
     optionalNumberEnv('REMOTE_SESSION_IDLE_TIMEOUT') ??
-    300;
+    60;
   const capabilities: SessionCapabilities = {
     ...environmentCapabilities,
     ...explicitCapabilities,
