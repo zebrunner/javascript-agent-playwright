@@ -1,19 +1,24 @@
 import { EVENT_NAMES } from './constants/events';
 import { isNotBlankString, isNotEmptyArray, stdoutErrorEvent } from './helpers';
+import { materializeStdoutArtifact } from './helpers/materializeStdoutArtifact';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
-import { LogLevel } from './types';
+import { LogLevel, StructuredAction } from './types';
+import { sanitizeTelemetryValue } from './helpers/sanitizeTelemetry';
+
+const emitStdoutEvent = (event: { eventType: string; payload?: unknown }) => {
+  process.stdout.write(`${JSON.stringify(event)}\n`);
+};
 
 /**
  * @param {string} level 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string
  */
 const attachLog = (message: string, level: LogLevel = 'INFO') => {
   if (isNotBlankString(message) && isNotBlankString(level)) {
-    process.stdout.write(
-      JSON.stringify({
-        eventType: EVENT_NAMES.ATTACH_TEST_LOG,
-        payload: { message, level },
-      }),
-    );
+    emitStdoutEvent({
+      eventType: EVENT_NAMES.ATTACH_TEST_LOG,
+      payload: { message, level, timestamp: Date.now() },
+    });
   } else {
     stdoutErrorEvent(
       'currentTest.log',
@@ -23,9 +28,29 @@ const attachLog = (message: string, level: LogLevel = 'INFO') => {
 };
 
 export const currentTest = {
+  attachAction: (action: Omit<StructuredAction, 'id'> & { id?: string }): void => {
+    const validKind = ['playwright', 'bridge', 'appium', 'fixture'].includes(action?.kind);
+    const validStatus = action?.status === 'started' || action?.status === 'passed' || action?.status === 'failed';
+    const validTimes =
+      Number.isFinite(action?.startedAt) &&
+      (action.status === 'started' || (Number.isFinite(action?.endedAt) && action.endedAt >= action.startedAt));
+    if (!action || !isNotBlankString(action.method) || !validKind || !validStatus || !validTimes) {
+      stdoutErrorEvent('currentTest.attachAction', 'Action kind, method, status, and timestamps are invalid.');
+      return;
+    }
+
+    const payload: StructuredAction = {
+      ...action,
+      id: action.id || randomUUID(),
+      params: sanitizeTelemetryValue(action.params),
+      error: action.error ? String(sanitizeTelemetryValue(action.error)) : undefined,
+    };
+    emitStdoutEvent({ eventType: EVENT_NAMES.ATTACH_TEST_ACTION, payload });
+  },
+
   setMaintainer: (maintainer: string): void => {
     if (isNotBlankString(maintainer)) {
-      process.stdout.write(JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_MAINTAINER, payload: maintainer }));
+      emitStdoutEvent({ eventType: EVENT_NAMES.ATTACH_TEST_MAINTAINER, payload: maintainer });
     } else {
       stdoutErrorEvent(
         'currentTest.setMaintainer',
@@ -70,7 +95,7 @@ export const currentTest = {
     });
 
     if (isNotEmptyArray(values)) {
-      process.stdout.write(JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_LABELS, payload: { key, values } }));
+      emitStdoutEvent({ eventType: EVENT_NAMES.ATTACH_TEST_LABELS, payload: { key, values } });
     }
   },
 
@@ -91,9 +116,7 @@ export const currentTest = {
       return;
     }
 
-    process.stdout.write(
-      JSON.stringify({ eventType: EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES, payload: { name, value } }),
-    );
+    emitStdoutEvent({ eventType: EVENT_NAMES.ATTACH_TEST_ARTIFACT_REFERENCES, payload: { name, value } });
   },
 
   attachArtifact: (pathOrBuffer: Buffer | string, name?: string) => {
@@ -114,12 +137,50 @@ export const currentTest = {
       );
     }
 
-    process.stdout.write(
-      JSON.stringify({
-        eventType: EVENT_NAMES.ATTACH_TEST_ARTIFACT,
-        payload: { pathOrBuffer, timestamp, name },
-      }),
-    );
+    const artifact = materializeStdoutArtifact(pathOrBuffer, name);
+    emitStdoutEvent({
+      eventType: EVENT_NAMES.ATTACH_TEST_ARTIFACT,
+      payload: { ...artifact, timestamp, name },
+    });
+  },
+
+  attachVideo: (pathOrBuffer: Buffer | string, name?: string) => {
+    if (!Buffer.isBuffer(pathOrBuffer) && !fs.existsSync(pathOrBuffer)) {
+      stdoutErrorEvent(
+        'currentTest.attachVideo',
+        `pathOrBuffer must point to an existing file or contain Buffer. Buffer failed validation / file not found`,
+      );
+      return;
+    }
+
+    const artifact = materializeStdoutArtifact(pathOrBuffer, name, '.mp4');
+    emitStdoutEvent({
+      eventType: EVENT_NAMES.ATTACH_TEST_VIDEO,
+      payload: { ...artifact, timestamp: new Date().getTime(), name },
+    });
+  },
+
+  /** Registers Browser/Platform metadata and an optional provider session id. */
+  attachSessionCapabilities: (
+    capabilities: {
+      browserName?: string;
+      browserVersion?: string;
+      platformName?: string;
+      platformVersion?: string;
+      deviceName?: string;
+      'zebrunner:provider'?: string;
+    },
+    sessionId?: string,
+  ) => {
+    if (!capabilities || typeof capabilities !== 'object') {
+      stdoutErrorEvent('currentTest.attachSessionCapabilities', `capabilities must be an object.`);
+      return;
+    }
+
+    emitStdoutEvent({
+      eventType: EVENT_NAMES.ATTACH_TEST_SESSION_CAPABILITIES,
+      payload: { capabilities, sessionId },
+    });
   },
 
   attachScreenshot: (pathOrBuffer: Buffer | string) => {
@@ -131,16 +192,15 @@ export const currentTest = {
       return;
     }
 
-    process.stdout.write(
-      JSON.stringify({
-        eventType: EVENT_NAMES.ATTACH_TEST_SCREENSHOT,
-        payload: { pathOrBuffer },
-      }),
-    );
+    const screenshot = materializeStdoutArtifact(pathOrBuffer, undefined, '.png');
+    emitStdoutEvent({
+      eventType: EVENT_NAMES.ATTACH_TEST_SCREENSHOT,
+      payload: { ...screenshot, timestamp: Date.now() },
+    });
   },
 
   revertRegistration: () => {
     const eventType = EVENT_NAMES.REVERT_TEST_REGISTRATION;
-    process.stdout.write(JSON.stringify({ eventType }));
+    emitStdoutEvent({ eventType });
   },
 };

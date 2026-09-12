@@ -3,5 +3,7 @@ export const getCustomArtifactObject = (payload) => {
     timestamp: payload.timestamp,
     pathOrBuffer: payload.pathOrBuffer.type === 'Buffer' ? Buffer.from(payload.pathOrBuffer) : payload.pathOrBuffer,
     name: payload.name,
+    deleteAfterUpload: payload.deleteAfterUpload,
+    fingerprint: payload.fingerprint,
   };
 };

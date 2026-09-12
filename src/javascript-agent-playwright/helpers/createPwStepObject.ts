@@ -3,6 +3,7 @@ export const createPwStepObject = (
   title: string,
   action: string,
   screenshotPathOrBuffer?: string | Buffer,
+  deleteAfterUpload?: boolean,
 ) => {
   return {
     startTime: new Date(timestamp),
@@ -10,7 +11,10 @@ export const createPwStepObject = (
     duration: new Date().getTime() - timestamp,
     category: `zebrunner:${action}`,
     steps: [],
+    annotations: [],
+    attachments: [],
     titlePath: () => [`zebrunner:${action}`],
     screenshotPathOrBuffer,
+    deleteAfterUpload,
   };
 };

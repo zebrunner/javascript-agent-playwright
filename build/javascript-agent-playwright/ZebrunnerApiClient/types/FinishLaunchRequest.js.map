@@ -1,1 +1,0 @@
-{"version":3,"file":"FinishLaunchRequest.js","sourceRoot":"","sources":["../../../../src/javascript-agent-playwright/ZebrunnerApiClient/types/FinishLaunchRequest.ts"],"names":[],"mappings":";;;AAAA,MAAa,mBAAmB;IAC9B,OAAO,CAAO;IAEd;QACE,IAAI,CAAC,OAAO,GAAG,IAAI,IAAI,EAAE,CAAC;IAC5B,CAAC;CACF;AAND,kDAMC"}
