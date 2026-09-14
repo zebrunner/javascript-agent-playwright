@@ -67,10 +67,7 @@ export interface RemoteSession {
   readonly generation?: number;
   /** The connected Playwright browser. */
   readonly browser: Browser;
-  /** Viewport the fixture applies to new contexts, or `null` to let the window drive the size. */
-  readonly defaultViewport: { width: number; height: number } | null;
-
-  /** Creates a context with the session default viewport unless the options set one. */
+  /** Creates a context with the specified Playwright context options. */
   newContext(options?: BrowserContextOptions): ReturnType<Browser['newContext']>;
   /** Writes text to the session clipboard. */
   setClipboard(text: string): Promise<void>;

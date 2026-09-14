@@ -95,10 +95,6 @@ class ManagedRemoteSessionImpl implements ManagedRemoteSession {
     return this.activeBrowser;
   }
 
-  get defaultViewport(): { width: number; height: number } | null {
-    return this.config.defaultViewport;
-  }
-
   async connect(): Promise<void> {
     this.assertOpen();
     const browserType = browserTypeFor(this.playwright, this.state.browserType || this.state.browserName);
@@ -133,8 +129,7 @@ class ManagedRemoteSessionImpl implements ManagedRemoteSession {
   }
 
   newContext(options?: BrowserContextOptions): Promise<BrowserContext> {
-    const viewport = options && 'viewport' in options ? options.viewport : this.config.defaultViewport;
-    return this.browser.newContext({ ...options, viewport });
+    return this.browser.newContext(options);
   }
 
   async setClipboard(text: string): Promise<void> {

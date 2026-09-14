@@ -2,7 +2,7 @@ import playwrightPackage from '@playwright/test/package.json';
 
 import type { SessionCapabilities, SessionOptions } from './types';
 
-/** Fully resolved remote config: host, credentials, capabilities, timeouts, and viewport. */
+/** Fully resolved remote config: host, credentials, capabilities, and timeouts. */
 export type ResolvedSessionConfig = {
   host: URL;
   webSocketBaseUrl: URL;
@@ -13,7 +13,6 @@ export type ResolvedSessionConfig = {
   connectTimeoutMs: number;
   refreshTimeoutMs: number;
   deleteTimeoutMs: number;
-  defaultViewport: { width: number; height: number } | null;
 };
 
 /** Resolves the full remote config from options, environment, and the Playwright browser and headless values. */
@@ -84,8 +83,6 @@ export function resolveSessionConfig(
   };
 
   const webSocketBaseUrl = defaultWebSocketUrl(host);
-  const screenResolution = stringValue(capabilities['zebrunner:options']?.screenResolution);
-
   return {
     host,
     webSocketBaseUrl,
@@ -96,7 +93,6 @@ export function resolveSessionConfig(
     connectTimeoutMs: timeoutValue(options.connectTimeoutMs, 'REMOTE_SESSION_CONNECT_TIMEOUT_MS', 120_000),
     refreshTimeoutMs: timeoutValue(options.refreshTimeoutMs, 'REMOTE_SESSION_REFRESH_TIMEOUT_MS', 150_000),
     deleteTimeoutMs: timeoutValue(options.deleteTimeoutMs, 'REMOTE_SESSION_DELETE_TIMEOUT_MS', 30_000),
-    defaultViewport: resolveDefaultViewport(browserName, headless, screenResolution),
   };
 }
 
@@ -245,27 +241,6 @@ function timeoutValue(explicit: number | undefined, envName: string, fallback: n
     throw new Error(`${envName} must be a non-negative number.`);
   }
   return raw;
-}
-
-// Headed Chromium fills its own maximized window, so a client viewport would clip the top.
-function resolveDefaultViewport(
-  browserName: string,
-  headless: boolean,
-  screenResolution?: string,
-): { width: number; height: number } | null {
-  if (!headless && isChromiumFamily(browserName)) return null;
-  return parseScreenResolution(screenResolution);
-}
-
-function isChromiumFamily(browserName: string): boolean {
-  const name = browserName.replace(/^playwright-/, '').toLowerCase();
-  return name === 'chromium' || name === 'chrome' || name === 'edge' || name === 'microsoftedge';
-}
-
-function parseScreenResolution(value?: string): { width: number; height: number } {
-  const match = value ? /^(\d+)x(\d+)/.exec(value.trim()) : null;
-  if (!match) return { width: 1920, height: 1080 };
-  return { width: Number(match[1]), height: Number(match[2]) };
 }
 
 function objectValue(value: unknown): Record<string, unknown> {

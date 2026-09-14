@@ -242,9 +242,7 @@ const extendedTest = base.extend<
       timezoneId,
       userAgent,
       viewport,
-      // The remote session dictates its viewport, and local video recording is
-      // wired here; both must win over the user options above.
-      ...(session ? { viewport: session.defaultViewport } : {}),
+      // Local video recording must win over the user options above.
       ...(recordLocalVideo && testInfo ? { recordVideo: { dir: testInfo.outputDir } } : {}),
     });
     try {
