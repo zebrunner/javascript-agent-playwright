@@ -1,6 +1,21 @@
 import { TestCase as PwTestCase } from '@playwright/test/reporter';
 
 export type LogLevel = 'INFO' | 'ERROR' | 'WARN' | 'FATAL' | 'DEBUG' | 'TRACE' | string;
+export type LogFormat = 'structured' | 'playwright-title' | 'source-line';
+
+export type TestLogOptions = {
+  ignorePlaywrightSteps: boolean;
+  includeHooks: boolean;
+  includeFixtures: boolean;
+  includeBridgeActions: boolean;
+  format: LogFormat;
+  includeDuration: boolean;
+  includeLocation: boolean;
+  maxSourceLines: number;
+  maxMessageLength: number;
+  // Set while a test is still running: a step's duration and error are not final until it ends.
+  onlyCompletedSteps?: boolean;
+};
 
 export type TestLog = {
   level: LogLevel;
@@ -9,6 +24,7 @@ export type TestLog = {
   type: 'log' | 'screenshot';
   testId: number;
   screenshotPathOrBuffer?: string | Buffer;
+  deleteAfterUpload?: boolean;
   isPwTestStep?: boolean;
 };
 
@@ -25,14 +41,22 @@ export type FileArtifact = {
   pathOrBuffer: string | Buffer;
   name?: string;
   contentType?: string;
+  deleteAfterUpload?: boolean;
+  fingerprint?: string;
+};
+
+export type StructuredAction = {
+  id: string;
+  kind: 'playwright' | 'bridge' | 'appium' | 'fixture';
+  method: string;
+  params?: unknown;
+  startedAt: number;
+  endedAt?: number;
+  status: 'started' | 'passed' | 'failed';
+  error?: string;
+  source?: { file?: string; line?: number; column?: number };
 };
 
 export interface ExtendedPwTestCase extends PwTestCase {
-  maintainer: string;
-  testCases: ZbrTestCase[];
-  labels: { key: string; value: string }[];
-  shouldBeReverted: boolean;
-  artifactReferences: { name: string; value: string }[];
-  customArtifacts: FileArtifact[];
-  _projectId: string;
+  _projectId?: string;
 }

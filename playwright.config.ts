@@ -49,8 +49,10 @@ export default defineConfig({
           treatSkipsAsFailures: true,
         },
         logs: {
+          format: 'structured',
           ignorePlaywrightSteps: false,
           useLinesFromSourceCode: true,
+          includeDuration: false,
           ignoreConsole: false,
           ignoreCustom: false,
           ignoreManualScreenshots: false,

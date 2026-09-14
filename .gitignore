@@ -1,3 +1,6 @@
+# macOS
+.DS_Store
+
 # Logs
 logs
 *.log
@@ -37,9 +40,16 @@ bower_components
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
+# Compiled TypeScript output
+build/
+
 # Dependency directories
 node_modules/
 jspm_packages/
+
+# Single package manager of record is npm (package-lock.json)
+yarn.lock
+pnpm-lock.yaml
 
 # TypeScript v1 declaration files
 typings/

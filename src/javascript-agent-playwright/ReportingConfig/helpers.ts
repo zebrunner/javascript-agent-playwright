@@ -29,3 +29,18 @@ export function getBoolean(envVar: string, configValue: any, defaultValue = fals
 export function getNumber(envVar: string, configValue: any, defaultValue: number = null): number {
   return parseInt(process.env[envVar], 10) || parseInt(configValue, 10) || defaultValue;
 }
+
+// Unlike getNumber, an explicitly configured 0 is honoured instead of falling through to the default.
+export function getNonNegativeNumber(envVar: string, configValue: any, defaultValue: number): number {
+  const envValue = parseInt(process.env[envVar], 10);
+  if (Number.isFinite(envValue) && envValue >= 0) {
+    return envValue;
+  }
+
+  const parsedConfigValue = parseInt(configValue, 10);
+  if (Number.isFinite(parsedConfigValue) && parsedConfigValue >= 0) {
+    return parsedConfigValue;
+  }
+
+  return defaultValue;
+}

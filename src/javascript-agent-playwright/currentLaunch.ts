@@ -1,7 +1,12 @@
 import { EVENT_NAMES } from './constants/events';
 import { stdoutErrorEvent } from './helpers';
 import { isNotBlankString, isNotEmptyArray } from './helpers/type-utils';
+import { materializeStdoutArtifact } from './helpers/materializeStdoutArtifact';
 import fs from 'fs';
+
+const emitStdoutEvent = (event: { eventType: string; payload?: unknown }) => {
+  process.stdout.write(`${JSON.stringify(event)}\n`);
+};
 
 export const currentLaunch = {
   attachLabel: (key: string, ...values: string[]) => {
@@ -30,7 +35,7 @@ export const currentLaunch = {
     });
 
     if (isNotEmptyArray(values)) {
-      process.stdout.write(JSON.stringify({ eventType: EVENT_NAMES.ATTACH_LAUNCH_LABELS, payload: { key, values } }));
+      emitStdoutEvent({ eventType: EVENT_NAMES.ATTACH_LAUNCH_LABELS, payload: { key, values } });
     }
   },
 
@@ -51,9 +56,10 @@ export const currentLaunch = {
       return;
     }
 
-    process.stdout.write(
-      JSON.stringify({ eventType: EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT_REFERENCES, payload: { name, value } }),
-    );
+    emitStdoutEvent({
+      eventType: EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT_REFERENCES,
+      payload: { name, value },
+    });
   },
 
   attachArtifact: (pathOrBuffer: Buffer | string, name?: string) => {
@@ -74,11 +80,10 @@ export const currentLaunch = {
       );
     }
 
-    process.stdout.write(
-      JSON.stringify({
-        eventType: EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT,
-        payload: { pathOrBuffer, timestamp, name },
-      }),
-    );
+    const artifact = materializeStdoutArtifact(pathOrBuffer, name);
+    emitStdoutEvent({
+      eventType: EVENT_NAMES.ATTACH_LAUNCH_ARTIFACT,
+      payload: { ...artifact, timestamp, name },
+    });
   },
 };

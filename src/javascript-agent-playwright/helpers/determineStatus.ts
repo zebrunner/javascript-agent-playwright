@@ -5,3 +5,8 @@ export const determineStatus = (status) => {
 
   return 'ABORTED';
 };
+
+export const determineLogLevel = (status) => {
+  if (status === 'failed' || status === 'timedOut' || status === 'interrupted') return 'ERROR';
+  return 'INFO';
+};
