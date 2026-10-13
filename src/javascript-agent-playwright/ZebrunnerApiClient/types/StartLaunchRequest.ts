@@ -25,6 +25,7 @@ export class StartLaunchRequest {
     name?: string;
   };
   notifications?: {
+    enabled: boolean;
     notifyOnEachFailure?: boolean;
     targets: NotificationTarget[];
   };
@@ -45,6 +46,7 @@ export class StartLaunchRequest {
       name: reportingConfig.milestone.name,
     };
     this.notifications = {
+      enabled: reportingConfig.notifications.enabled,
       notifyOnEachFailure: reportingConfig.notifications.notifyOnEachFailure,
       targets: [
         {

@@ -173,6 +173,7 @@ export class ReportingConfig {
     };
 
     this.notifications = {
+      enabled: getBoolean('REPORTING_NOTIFICATION_ENABLED', config?.notifications?.enabled, true),
       notifyOnEachFailure: getBoolean(
         'REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE',
         config?.notifications?.notifyOnEachFailure,

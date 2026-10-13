@@ -162,6 +162,11 @@ export interface ZebrunnerMilestoneOptions {
 
 export interface ZebrunnerNotificationsOptions {
   /**
+   * Send notifications to the configured targets. Defaults to `true`.
+   * Env: `REPORTING_NOTIFICATION_ENABLED`.
+   */
+  enabled?: ZebrunnerFlag;
+  /**
    * Send a notification on every test failure instead of only when the launch finishes.
    * Env: `REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE`.
    */
@@ -358,6 +363,7 @@ export interface MilestoneConfig {
 }
 
 export interface NotificationsConfig {
+  readonly enabled: boolean;
   readonly notifyOnEachFailure: boolean;
 
   readonly slackChannels: string;
